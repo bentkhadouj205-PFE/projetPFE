@@ -30,7 +30,6 @@ router.post('/login', async (req, res) => {
         id: MUNICIPAL_AGENT_CREDENTIALS.id,
         email: MUNICIPAL_AGENT_CREDENTIALS.email,
         firstName: 'Municipal_Agent',
-        lastName: '',
         name: 'Municipal_Agent',
         role: 'municipal_agent',
         service: 'Administration Système',
@@ -50,7 +49,7 @@ router.get('/employees', async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, email, first_name, last_name, role, service, position,
-              phone, join_date, status, created_at, updated_at
+               join_date, status, created_at, updated_at
        FROM employees
        ORDER BY created_at DESC`
     );
@@ -66,7 +65,7 @@ router.get('/employees/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, email, first_name, last_name, role, service, position,
-              phone, join_date, status, created_at, updated_at
+              join_date, status, created_at, updated_at
        FROM employees
        WHERE id = $1`,
       [req.params.id]

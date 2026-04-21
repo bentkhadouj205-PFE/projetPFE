@@ -16,7 +16,7 @@ router.post('/submit', async (req, res) => {
     }
 
     const { citizenData, subject, description, serviceType } = req.body;
-    // citizenData: { firstName, lastName, email, nin, phone, address }
+    // citizenData: { firstName, lastName, email, nin, address }
 
     // Find the employee whose `service` matches the requested serviceType
     const { rows: empRows } = await pool.query(
@@ -38,7 +38,7 @@ router.post('/submit', async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO requests
          (citizen_first_name, citizen_last_name, citizen_email, citizen_nin,
-          citizen_phone, citizen_address,
+           citizen_address,
           subject, description,
           assigned_to, assigned_employee_name,
           status, document_status)
@@ -49,7 +49,6 @@ router.post('/submit', async (req, res) => {
         citizenData.lastName,
         citizenData.email,
         citizenData.nin,
-        citizenData.phone    ?? null,
         citizenData.address  ?? null,
         subject,
         description,
@@ -98,7 +97,7 @@ router.post('/login', async (req, res) => {
 
     const { rows } = await pool.query(
       `SELECT id, email, password_hash, first_name, last_name,
-              role, service, position, phone, status
+              role, service, position, status
        FROM employees
        WHERE email = $1`,
       [email.trim()]

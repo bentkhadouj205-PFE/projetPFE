@@ -32,7 +32,6 @@ export class PDFService {
         const citizenInfo = [
           ['Nom complet:', `${requestRow.citizen_first_name ?? ''} ${requestRow.citizen_last_name ?? ''}`.trim()],
           ['Email:',       requestRow.citizen_email   ?? 'Non spécifié'],
-          ['Téléphone:',   requestRow.citizen_phone   ?? 'Non spécifié'],
           ['NIN:',         requestRow.citizen_nin     ?? 'Non spécifié'],
           ['Adresse:',     requestRow.citizen_address ?? 'Non spécifiée']
         ];

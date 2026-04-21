@@ -8,7 +8,7 @@ router.get('/position/:position', async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, email, first_name, last_name, role, service, position,
-              phone, join_date, status, created_at, updated_at
+             join_date, status, created_at, updated_at
        FROM employees
        WHERE position = $1
        LIMIT 1`,
@@ -30,7 +30,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, email, first_name, last_name, role, service, position,
-              phone, join_date, status, created_at, updated_at
+               join_date, status, created_at, updated_at
        FROM employees
        WHERE id = $1`,
       [req.params.id]
@@ -51,7 +51,7 @@ router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, email, first_name, last_name, role, service, position,
-              phone, join_date, status, created_at, updated_at
+               join_date, status, created_at, updated_at
        FROM employees
        WHERE status = 'active'
        ORDER BY first_name`

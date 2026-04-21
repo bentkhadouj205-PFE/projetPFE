@@ -18,9 +18,7 @@ CREATE TABLE users (
     prenom VARCHAR(100) NOT NULL,
     nin VARCHAR(18) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
-    telephone VARCHAR(20) NOT NULL,
     adresse TEXT NOT NULL,
-    code_postal VARCHAR(10) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role user_role NOT NULL DEFAULT 'citoyen',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -32,7 +30,7 @@ CREATE TABLE citizens (
     last_name VARCHAR(100),
     nin VARCHAR(20) UNIQUE,
     email VARCHAR(255),
-    phone VARCHAR(20),
+    adresse TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -46,7 +44,6 @@ CREATE TABLE employees (
     role employee_role NOT NULL DEFAULT 'employee',
     service VARCHAR(150),
     position VARCHAR(150),
-    phone VARCHAR(20),
     join_date DATE,
     status employee_status NOT NULL DEFAULT 'active',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -109,7 +106,7 @@ CREATE TABLE notifications (
 CREATE TABLE IF NOT EXISTS chat_messages (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     citizen_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    from_role    VARCHAR(20) NOT NULL CHECK (from_role IN ('citizen', 'agent')),
+    from_role    VARCHAR(20) NOT NULL CHECK (from_role IN ('citizen', 'minicipal_agent')),
     message      TEXT NOT NULL,
     is_read      BOOLEAN NOT NULL DEFAULT FALSE,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
