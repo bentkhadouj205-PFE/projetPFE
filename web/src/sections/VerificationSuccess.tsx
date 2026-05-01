@@ -15,15 +15,24 @@ export const VerificationSuccess: React.FC<{ onLogin: () => void }> = ({ onLogin
       if (!token) { setStatus('error'); return; }
       
       try {
-        const res = await fetch(`${API_BASE_URL}/admin/verify-email?token=${token}`);
+        console.log('📡 [VERIFY] Sending token to backend:', token.substring(0, 8) + '...');
+        const res = await fetch(`${API_BASE_URL}/validations/activate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+        
         const data = await res.json();
         if (res.ok) {
+          console.log('✅ [VERIFY] Activation successful!');
           setUserName(data.name || '');
           setStatus('success');
         } else {
+          console.error('❌ [VERIFY] Backend rejected token:', data.error);
           setStatus('error');
         }
-      } catch {
+      } catch (err) {
+        console.error('❌ [VERIFY] Network error:', err);
         setStatus('error');
       }
     };
