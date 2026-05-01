@@ -461,11 +461,13 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     console.log(' Sending Validation request:', { status: 'termine' });
 
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${BACKEND_URL}/api/validations/${id}/validate`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
+          'ngrok-skip-browser-warning': 'true',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ status: 'termine' }),
       });
@@ -504,11 +506,13 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     console.log('Sending Rejection request:', { status: 'refuse', comment: rejectReason });
 
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${BACKEND_URL}/api/validations/${id}/reject`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
+          'ngrok-skip-browser-warning': 'true',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ reason: rejectReason }),
       });
