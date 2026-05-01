@@ -651,11 +651,32 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   );
 
   const RequestStatusBadge = ({ status }: { status: any }) => {
-    // Map database values to UI styles
-    const s = status === 'en_attente' ? 'pending' : status;
-    const styles: any = { pending: 'bg-amber-100 text-amber-800 border-amber-200', validated: 'bg-green-100 text-green-800 border-green-200', rejected: 'bg-red-100 text-red-800 border-red-200' };
-    const labels: any = { pending: language === 'fr' ? 'En attente' : 'Pending', validated: language === 'fr' ? 'Validé' : 'Validated', rejected: language === 'fr' ? 'Rejeté' : 'Rejected' };
-    return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${styles[s] || styles.pending}`}>{labels[s] || s}</span>;
+    const styles: Record<string, string> = {
+      en_attente: 'bg-amber-100 text-amber-800 border-amber-200',
+      termine:    'bg-green-100 text-green-800 border-green-200',
+      rejete:     'bg-red-100 text-red-800 border-red-200',
+      pending:    'bg-amber-100 text-amber-800 border-amber-200',
+      validated:  'bg-green-100 text-green-800 border-green-200',
+      rejected:   'bg-red-100 text-red-800 border-red-200',
+    };
+
+    const labels: Record<string, { fr: string; en: string }> = {
+      en_attente: { fr: 'En attente', en: 'Pending' },
+      termine:    { fr: 'Validé',     en: 'Validated' },
+      rejete:     { fr: 'Rejeté',     en: 'Rejected' },
+      pending:    { fr: 'En attente', en: 'Pending' },
+      validated:  { fr: 'Validé',     en: 'Validated' },
+      rejected:   { fr: 'Rejeté',     en: 'Rejected' },
+    };
+
+    const style = styles[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+    const label = labels[status] ? labels[status][language as 'fr' | 'en'] : status;
+
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${style}`}>
+        {label}
+      </span>
+    );
   };
 
   const CompareRow = ({ label, citizen, registry }: { label: string; citizen: string; registry: string | null }) => {
