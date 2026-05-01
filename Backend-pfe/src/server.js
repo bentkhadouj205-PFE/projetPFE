@@ -40,7 +40,7 @@ const allowedOrigins = [
   'http://192.168.1.6:5173',
   'https://cane-canopener-glove.ngrok-free.app',
   'https://cane-canopener-glove.ngrok-free.dev',
-  process.env.FRONTEND_URL, // For Render production
+  process.env.FRONTEND_URL?.replace(/\/$/, ''), // Strip trailing slash for CORS safety
 ].filter(Boolean);
 
 // ───────────── Socket.IO ─────────────
