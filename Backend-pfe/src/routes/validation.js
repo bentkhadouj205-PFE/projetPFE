@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
   try {
     const { data: requests, error } = await supabase
       .from('demandes_inscription')
-      .select('*');
+      .select('id, nom, prenom, nin, email, adresse, date_naissance, commune, status, commentaire, photo_cni_path, photo_domicile_path');
 
     if (error) return res.status(500).json({ error: error.message });
 
