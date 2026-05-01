@@ -52,6 +52,17 @@ const io = new Server(server, {
   },
 });
 
+// 🛡️ Bulletproof CORS: Manual header injection for Socket.IO engine
+io.engine.on("headers", (headers, req) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  headers["Access-Control-Allow-Credentials"] = "true";
+  headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
+  headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, ngrok-skip-browser-warning";
+});
+
 export { io };
 
 io.on('connection', (socket) => {
