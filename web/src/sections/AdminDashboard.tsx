@@ -66,10 +66,10 @@ interface Demande {
 
 const mapStatus = (s: string): RegistrationRequest['status'] => {
   const status = String(s || '').toLowerCase().trim();
-  if (['en_attente', 'pending'].includes(status)) return 'pending';
-  if (['validee', 'valide', 'completed', 'validated', 'termine', 'terminee'].includes(status)) return 'validated';
-  if (['rejetee', 'rejected', 'refuse', 'refused'].includes(status)) return 'rejected';
-  return 'pending';
+  if (['en_attente', 'pending'].includes(status)) return 'en_attente';
+  if (['validee', 'valide', 'completed', 'validated', 'termine', 'terminee', 'approved', 'verified'].includes(status)) return 'termine';
+  if (['rejetee', 'rejected', 'refuse', 'refused', 'rejete', 'denied'].includes(status)) return 'refuse';
+  return 'en_attente';
 };
 
 const normalizeRequest = (raw: any): RegistrationRequest => ({
@@ -213,7 +213,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [requestSearch, setRequestSearch] = useState('');
-  const [validationStatusFilter, setValidationStatusFilter] = useState<'all' | 'pending' | 'validated' | 'rejected'>('all');
+  const [validationStatusFilter, setValidationStatusFilter] = useState<'all' | 'en_attente' | 'termine' | 'refuse'>('all');
 
   // ── Chat state with Socket.IO ────────────────────────────────────────────
   const [chats, setChats] = useState<CitizenChat[]>([]);
@@ -223,11 +223,11 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const chatEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
 
-  const pendingCount = requests.filter((r) => r.status === 'pending').length;
+  const pendingCount = requests.filter((r) => r.status === 'en_attente').length;
   const unreadCount = chats.reduce((acc, c) => acc + c.messages.filter((m) => !m.read && m.from === 'citizen').length, 0);
   const activeChat = chats.find((c) => c.citizenId === activeChatId) ?? null;
-  const currentRequestStatus = selectedRequest ? mapStatus(selectedRequest.status) : 'pending';
-  const isProcessed = currentRequestStatus === 'validated' || currentRequestStatus === 'rejected';
+  const currentRequestStatus = selectedRequest ? selectedRequest.status : 'en_attente';
+  const isProcessed = currentRequestStatus === 'termine' || currentRequestStatus === 'refuse';
 
 
   // ── Fetch registration requests from PostgreSQL ───────────────────────────
@@ -480,8 +480,8 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
         throw new Error(data.message || 'Validation failed');
       }
 
-      setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: 'validated' } : r));
-      setSelectedRequest((prev) => prev ? { ...prev, status: 'validated' } : prev);
+      setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: 'termine' } : r));
+      setSelectedRequest((prev) => prev ? { ...prev, status: 'termine' } : prev);
       setShowRejectInput(false);
       await fetchData();
       toast.success(language === 'fr' ? "Email d'activation envoyé" : 'Activation email sent');
@@ -525,8 +525,8 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
         throw new Error(data.message || 'Rejection failed');
       }
 
-      setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: 'rejected', rejectionReason: rejectReason } : r));
-      setSelectedRequest((prev) => prev ? { ...prev, status: 'rejected', rejectionReason: rejectReason } : prev);
+      setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: 'refuse', rejectionReason: rejectReason } : r));
+      setSelectedRequest((prev) => prev ? { ...prev, status: 'refuse', rejectionReason: rejectReason } : prev);
       setShowRejectInput(false);
       setRejectReason('');
       await fetchData();
@@ -1076,10 +1076,10 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                         <p className="text-2xl font-bold dark:text-white">{requests.length}</p>
                       </CardContent>
                     </Card>
-                    {(['pending', 'validated', 'rejected'] as const).map((s) => {
-                      const count = requests.filter((r) => mapStatus(r.status) === s).length;
-                      const colors = { pending: 'text-amber-700 dark:text-amber-400', validated: 'text-green-700 dark:text-green-400', rejected: 'text-red-700 dark:text-red-400' };
-                      const labels = { pending: language === 'fr' ? 'En attente' : 'Pending', validated: language === 'fr' ? 'Validés' : 'Validated', rejected: language === 'fr' ? 'Rejetés' : 'Rejected' };
+                    {(['en_attente', 'termine', 'refuse'] as const).map((s) => {
+                      const count = requests.filter((r) => r.status === s).length;
+                      const colors = { en_attente: 'text-amber-700 dark:text-amber-400', termine: 'text-green-700 dark:text-green-400', refuse: 'text-red-700 dark:text-red-400' };
+                      const labels = { en_attente: language === 'fr' ? 'En attente' : 'Pending', termine: language === 'fr' ? 'Validés' : 'Validated', refuse: language === 'fr' ? 'Rejetés' : 'Rejected' };
                       return (
                         <Card
                           key={s}
@@ -1285,7 +1285,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                     </div>
 
                     {/* ACTIONS — Hide after action */}
-                    {(selectedRequest.status === 'pending' || selectedRequest.status === 'en_attente') && (
+                    {selectedRequest.status === 'en_attente' && (
                       <div className="pt-6 border-t border-slate-100 mt-6">
                         <div className="grid grid-cols-2 gap-4">
                           <button
