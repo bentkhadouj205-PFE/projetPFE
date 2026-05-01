@@ -1,5 +1,4 @@
 import express from 'express';
-import emailjs from '@emailjs/nodejs';
 import { supabase } from '../supabaseClient.js';
 
 const router = express.Router();
@@ -197,63 +196,7 @@ router.put('/requests/:id/status', async (req, res) => {
 
     if (error) throw error;
 
-    // 🛡️ 4. Trigger Email via EmailJS
-    const targetEmail = data.email || data.citizen_email;
-    const firstName = data.prenom || '';
-    const lastName = data.nom || '';
-
-    if (targetEmail) {
-      console.log('📧 Starting email send process...');
-      console.log('📧 Target Email:', targetEmail);
-      
-      const SERVICE_ID = process.env.EMAILJS_SERVICE_ID || 'SERVICE_ID';
-      const TEMPLATE_ID = process.env.EMAILJS_TEMPLATE_ID || 'TEMPLATE_ID';
-      const TEMPLATE_ID_REJECT = process.env.EMAILJS_TEMPLATE_ID_REJECT || 'TEMPLATE_ID_REJECT';
-      const PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY || 'PUBLIC_KEY';
-
-      try {
-        console.log('📧 Attempting to send via EmailJS...');
-        if (dbStatus === 'termine') {
-          const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-account?token=${id}`;
-          
-          await emailjs.send(
-            SERVICE_ID,
-            TEMPLATE_ID,
-            {
-              to_email: targetEmail,
-              nom: lastName,
-              prenom: firstName,
-              verification_link: verificationLink,
-            },
-            {
-              publicKey: PUBLIC_KEY,
-              privateKey: process.env.EMAILJS_PRIVATE_KEY // Optional depending on EmailJS settings
-            }
-          );
-          console.log(`✅ Activation email sent via EmailJS to ${targetEmail}`);
-        } else if (dbStatus === 'refuse') {
-          await emailjs.send(
-            SERVICE_ID,
-            TEMPLATE_ID_REJECT,
-            {
-              to_email: targetEmail,
-              nom: lastName,
-              prenom: firstName,
-              commentaire: comment || 'Les informations ne correspondent pas.',
-            },
-            {
-              publicKey: PUBLIC_KEY,
-              privateKey: process.env.EMAILJS_PRIVATE_KEY
-            }
-          );
-          console.log(`❌ Rejection email sent via EmailJS to ${targetEmail}`);
-        }
-      } catch (emailError) {
-        console.error('❌ EMAIL ERROR:', emailError);
-        console.error('❌ EMAIL ERROR STRING:', JSON.stringify(emailError, null, 2));
-        // We don't throw the error so the status update still succeeds in the dashboard
-      }
-    }
+    // Email notifications handled elsewhere (e.g. validation.js) or disabled per user request
 
     return res.json({ success: true, message: 'Traitement terminé', request: data });
   } catch (error) {

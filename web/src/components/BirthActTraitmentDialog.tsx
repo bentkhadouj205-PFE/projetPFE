@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
-import emailjs from '@emailjs/browser';
+import { API_BASE_URL, BACKEND_URL } from '@/lib/apiBase';
 import {
   Dialog,
   DialogContent,
@@ -368,7 +368,7 @@ export function BirthActTraitmentDialog({
     setSending(true);
     try {
       // 1. Get the High-Quality PDF from the backend as base64
-      const pdfResponse = await fetch('http://localhost:5000/api/email/generate-pdf', {
+      const pdfResponse = await fetch(`${BACKEND_URL}/api/email/generate-pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -383,17 +383,7 @@ export function BirthActTraitmentDialog({
       if (!pdfResponse.ok) throw new Error('Failed to generate PDF on server');
       const { pdfBase64 } = await pdfResponse.json();
 
-      // 2. Send via EmailJS (Notification Only - Free Plan doesn't support attachments)
-      await emailjs.send(
-        'service_mkkgy5p',
-        'template_adw38dw',
-        {
-          to_email: citizen.email,
-          user_name: `${citizen.firstName} ${citizen.lastName || ''}`.trim(),
-          date: new Date().toLocaleDateString('fr-FR'),
-        },
-        'iXE66zW89bTXOdiwQ'
-      );
+      // Email notification handled by backend or removed per user request
 
       // 3. Auto-download PDF for the Municipal Agent
       const link = document.createElement('a');
@@ -410,7 +400,7 @@ export function BirthActTraitmentDialog({
       );
 
     } catch (error: any) {
-      console.error('EmailJS error:', error);
+      console.error('Send error:', error);
       alert(
         language === 'fr'
           ? ` Erreur d'envoi: ${error.message}`
