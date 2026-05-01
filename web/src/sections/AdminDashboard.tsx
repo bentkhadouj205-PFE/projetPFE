@@ -246,7 +246,12 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const fetchData = async () => {
     // Fetch validations from your Express backend
     try {
-      const res = await fetch(`${BACKEND_URL}/api/validations`);
+      const res = await fetch(`${BACKEND_URL}/api/validations`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+          'Content-Type': 'application/json',
+        }
+      });
       const data = await res.json();
       console.log('API RESPONSE (Validations):', data);
 
@@ -458,7 +463,10 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     try {
       const response = await fetch(`${BACKEND_URL}/api/validations/${id}/validate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
         body: JSON.stringify({ status: 'termine' }),
       });
 
@@ -498,7 +506,10 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     try {
       const response = await fetch(`${BACKEND_URL}/api/validations/${id}/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
         body: JSON.stringify({ reason: rejectReason }),
       });
 
