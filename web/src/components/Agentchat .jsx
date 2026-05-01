@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import axios from "axios";
 
-const SERVER_URL = "http://localhost:5000"; // ← change if deployed
+import { BACKEND_URL } from "@/lib/apiBase";
+const SERVER_URL = BACKEND_URL;
 
 export default function AgentChat({ agentId }) {
   const socketRef = useRef(null);
@@ -16,7 +17,13 @@ export default function AgentChat({ agentId }) {
 
   // ── Connect Socket ────────────────────────────────────────────────────────
   useEffect(() => {
-    const socket = io(SERVER_URL, { transports: ["websocket"] });
+    const socket = io(SERVER_URL, { 
+      transports: ["polling", "websocket"],
+      withCredentials: true,
+      extraHeaders: {
+        "ngrok-skip-browser-warning": "true"
+      }
+    });
     socketRef.current = socket;
 
     socket.on("connect", () => {
@@ -72,7 +79,9 @@ export default function AgentChat({ agentId }) {
 
   // ── Load conversations on mount ───────────────────────────────────────────
   useEffect(() => {
-    axios.get(`${SERVER_URL}/api/chat/conversations`)
+    axios.get(`${SERVER_URL}/api/chat/conversations`, {
+      headers: { "ngrok-skip-browser-warning": "true" }
+    })
       .then((res) => {
         const convs = res.data.conversations.map((c) => ({
           citizenId:   c.citizen_id,
@@ -91,7 +100,9 @@ export default function AgentChat({ agentId }) {
 
     // Load history
     try {
-      const res = await axios.get(`${SERVER_URL}/api/chat/history/${citizenId}`);
+      const res = await axios.get(`${SERVER_URL}/api/chat/history/${citizenId}`, {
+        headers: { "ngrok-skip-browser-warning": "true" }
+      });
       setMessages(res.data.messages);
     } catch (e) {
       console.error(e);
