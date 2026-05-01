@@ -3,7 +3,9 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import pool from '../db.js'; // pg Pool
+import { supabase } from '../supabaseClient.js';
+
+import { io } from '../server.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,7 +15,7 @@ const router = express.Router();
 // ── Multer config ──────────────────────────────────────────────────────────────
 const storage = multer.diskStorage({
   destination(req, file, cb) {
-    const uploadPath = path.join(__dirname, '../uploads/demandes');
+    const uploadPath = path.join(__dirname, '../uploads/inscriptions');
     if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
     cb(null, uploadPath);
   },
@@ -24,45 +26,40 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-// ── POST /demandes/extrait-naissance ──────────────────────────────────────────
-router.post('/extrait-naissance', async (req, res) => {
-  try {
-    const {
-      user_id, nom, prenom, nin,
-      wilaya_naissance, commune,
-      date_naissance, date_demande
-    } = req.body;
+// ── GET /demandes (all demandes) ──────────────────────────────────────────────
+router.get('/demandes', async (req, res) => {
+  const { type } = req.query;
 
-    if (!user_id || !wilaya_naissance || !commune || !date_naissance) {
-      return res.status(400).json({
-        success: false,
-        message: 'Champs obligatoires manquants: user_id, wilaya_naissance, commune, date_naissance'
-      });
-    }
-
-    const { rows } = await pool.query(
-      `INSERT INTO demandes
-         (user_id, type_document, nom, prenom, nin,
-          wilaya_naissance, commune, date_naissance, date_demande, status)
-       VALUES ($1, 'extrait_naissance', $2, $3, $4, $5, $6, $7, $8, 'en_attente')
-       RETURNING id`,
-      [
-        user_id, nom, prenom, nin,
-        wilaya_naissance, commune,
-        date_naissance,
-        date_demande || new Date()
-      ]
-    );
-
-    res.status(201).json({
-      success: true,
-      message: 'Demande extrait de naissance créée avec succès',
-      demandeId: rows[0].id
-    });
-  } catch (error) {
-    console.error('Erreur extrait-naissance:', error);
-    res.status(500).json({ success: false, message: error.message });
+  let query = supabase.from('demandes_inscription').select('*');
+  if (type) {
+    query = query.eq('type_document', type);
   }
+
+  const { data, error } = await query;
+
+  if (error) return res.status(500).json(error);
+
+  // Normalize paths: Robust conversion of absolute/Windows paths to relative web paths
+  const normalizedData = data.map(item => {
+    const newItem = { ...item };
+    const pathKeys = ['cni_recto_path', 'cni_verso_path', 'selfie_path', 'photo_cni_path', 'photo_domicile_path'];
+    
+    pathKeys.forEach(key => {
+      if (typeof newItem[key] === 'string' && newItem[key].length > 0) {
+        // Find 'uploads' in the path and get everything after it
+        const uploadsIndex = newItem[key].toLowerCase().indexOf('uploads');
+        if (uploadsIndex !== -1) {
+          newItem[key] = '/' + newItem[key].substring(uploadsIndex).replace(/\\/g, '/');
+        } else if (!newItem[key].startsWith('/')) {
+          // If it's just a filename, assume it's in inscriptions
+          newItem[key] = '/uploads/inscriptions/' + newItem[key];
+        }
+      }
+    });
+    return newItem;
+  });
+
+  res.json({ data: normalizedData });
 });
 
 // ── POST /demandes/certificat-residence ──────────────────────────────────────
@@ -77,142 +74,53 @@ router.post(
       const { user_id, nom, prenom, nin, date_demande } = req.body;
 
       if (!user_id || !nom || !prenom || !nin) {
-        return res.status(400).json({
-          success: false,
-          message: 'Champs obligatoires manquants: user_id, nom, prenom, nin'
-        });
-      }
-      if (!req.files?.photo_cni || !req.files?.photo_domicile) {
-        return res.status(400).json({
-          success: false,
-          message: 'Les deux photos sont obligatoires (photo_cni et photo_domicile)'
-        });
+        return res.status(400).json({ success: false, message: 'Champs obligatoires manquants' });
       }
 
-      const photoCniPath      = req.files.photo_cni[0].path;
-      const photoDomicilePath = req.files.photo_domicile[0].path;
+      // CORRECT: Save ONLY the relative path using the exact logic requested
+      const fileUrl1 = `/uploads/inscriptions/${req.files.photo_cni[0].filename}`;
+      const fileUrl2 = `/uploads/inscriptions/${req.files.photo_domicile[0].filename}`;
 
-      const { rows } = await pool.query(
-        `INSERT INTO demandes
-           (user_id, type_document, nom, prenom, nin,
-            photo_cni_path, photo_domicile_path, date_demande, status)
-         VALUES ($1, 'certificat_residence', $2, $3, $4, $5, $6, $7, 'en_attente')
-         RETURNING id`,
-        [user_id, nom, prenom, nin, photoCniPath, photoDomicilePath, date_demande || new Date()]
-      );
+      const { data, error } = await supabase
+        .from('demandes_inscription')
+        .insert([
+          {
+            user_id,
+            type_document: 'certificat_residence',
+            nom,
+            prenom,
+            nin,
+            cni_recto_path: fileUrl1,
+            selfie_path: fileUrl2,
+            date_demande: date_demande || new Date(),
+            status: 'pending'
+          }
+        ])
+        .select('id');
 
-      res.status(201).json({
-        success: true,
-        message: 'Demande certificat de résidence envoyée avec succès',
-        demandeId: rows[0].id
-      });
+      if (error) throw error;
+
+      //  Real-time notification
+      const newDemande = {
+        id: data[0].id,
+        user_id,
+        type_document: 'certificat_residence',
+        nom,
+        prenom,
+        nin,
+        cni_recto_path: fileUrl1,
+        selfie_path: fileUrl2,
+        date_demande: date_demande || new Date(),
+        status: 'pending'
+      };
+      io.to('agents_room').emit('new_demande', newDemande);
+
+      res.status(201).json({ success: true, demandeId: data[0].id });
     } catch (error) {
       console.error('Erreur certificat-residence:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
 );
-
-// ── POST /demandes/autorisation-voirie ────────────────────────────────────────
-router.post(
-  '/autorisation-voirie',
-  upload.fields([
-    { name: 'photo_cni', maxCount: 1 },
-    { name: 'photo_domicile', maxCount: 1 }
-  ]),
-  async (req, res) => {
-    try {
-      const { user_id, nom, prenom, nin, date_demande } = req.body;
-
-      if (!user_id || !nom || !prenom || !nin) {
-        return res.status(400).json({
-          success: false,
-          message: 'Champs obligatoires manquants: user_id, nom, prenom, nin'
-        });
-      }
-      if (!req.files?.photo_cni || !req.files?.photo_domicile) {
-        return res.status(400).json({
-          success: false,
-          message: 'Les deux documents sont obligatoires (photo_cni et photo_domicile)'
-        });
-      }
-
-      const photoCniPath      = req.files.photo_cni[0].path;
-      const photoDomicilePath = req.files.photo_domicile[0].path;
-
-      const { rows } = await pool.query(
-        `INSERT INTO demandes
-           (user_id, type_document, nom, prenom, nin,
-            photo_cni_path, photo_domicile_path, date_demande, status)
-         VALUES ($1, 'authorisation_de_voirie', $2, $3, $4, $5, $6, $7, 'en_attente')
-         RETURNING id`,
-        [user_id, nom, prenom, nin, photoCniPath, photoDomicilePath, date_demande || new Date()]
-      );
-
-      res.status(201).json({
-        success: true,
-        message: "Demande d'autorisation de voirie envoyée avec succès",
-        demandeId: rows[0].id
-      });
-    } catch (error) {
-      console.error('Erreur autorisation-voirie:', error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  }
-);
-
-// ── GET /demandes/mes-demandes/:userId ────────────────────────────────────────
-router.get('/mes-demandes/:userId', async (req, res) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT * FROM demandes
-       WHERE user_id = $1
-       ORDER BY date_demande DESC`,
-      [req.params.userId]
-    );
-    res.json({ success: true, demandes: rows });
-  } catch (error) {
-    console.error('Erreur mes-demandes:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// ── GET /demandes/:id ─────────────────────────────────────────────────────────
-router.get('/:id', async (req, res) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT * FROM demandes WHERE id = $1`,
-      [req.params.id]
-    );
-    if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Demande non trouvée' });
-    }
-    res.json({ success: true, demande: rows[0] });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// ── PUT /demandes/:id/status (agent only) ─────────────────────────────────────
-router.put('/:id/status', async (req, res) => {
-  try {
-    const { status, commentaire } = req.body;
-    const { rows } = await pool.query(
-      `UPDATE demandes
-       SET status = $1,
-           commentaire = COALESCE($2, commentaire),
-           date_traitement = NOW()
-       WHERE id = $3
-       RETURNING *`,
-      [status, commentaire || null, req.params.id]
-    );
-    if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Demande non trouvée' });
-    }
-    res.json({ success: true, demande: rows[0] });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
 
 export default router;

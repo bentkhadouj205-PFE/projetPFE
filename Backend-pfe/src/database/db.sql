@@ -1,4 +1,4 @@
-CREATE TYPE user_role         AS ENUM ('citoyen', 'municipal_agent', 'employee');
+ CREATE TYPE user_role         AS ENUM ('citoyen', 'municipal_agent', 'employee');
 
 CREATE TYPE employee_role     AS ENUM ('municipal_agent', 'employee');
 
@@ -102,13 +102,12 @@ CREATE TABLE notifications (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE TABLE IF NOT EXISTS chat_messages (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     citizen_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     from_role    VARCHAR(20) NOT NULL CHECK (from_role IN ('citizen', 'minicipal_agent')),
     message      TEXT NOT NULL,
-    is_read      BOOLEAN NOT NULL DEFAULT FALSE,
+      is_read      BOOLEAN NOT NULL DEFAULT FALSE,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
  

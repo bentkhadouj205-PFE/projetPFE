@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSocket, connectSocket, disconnectSocket } from '@/services/socket';
+import { API_BASE_URL, BACKEND_URL } from '@/lib/apiBase';
 import { toast } from 'sonner';
 import type { User, Task } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -16,18 +17,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/lib/supabaseClient';
 import {
   LayoutDashboard, Users, CheckSquare, Settings, LogOut, Plus, Search,
   MoreVertical, Trash2, UserCheck, UserX, Briefcase, Calendar, TrendingUp,
-  CheckCircle2, Moon, Sun, FileText, CheckCircle, XCircle, Eye, ArrowLeft,
+  CheckCircle2, Moon, Sun, XCircle, Eye, ArrowLeft,
   ShieldCheck, ShieldX, MessageSquare, Send, Bell,
+  FileText, Clock, Shield, FileCheck, AlertTriangle
 } from 'lucide-react';
-import { fr } from 'date-fns/locale/fr';
-
+import axios from 'axios';
 // ─── Types ────────────────────────────────────────────────────────────────────
-
 interface RegistrationRequest {
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   nin: string;
@@ -35,8 +36,10 @@ interface RegistrationRequest {
   dob: string;
   commune: string;
   address: string;
-  status: 'pending' | 'validated' | 'rejected';
+  status: 'pending' | 'validated' | 'rejected' | 'en_attente' | 'validee' | 'rejetee' | 'termine' | 'refuse';
   rejectionReason?: string;
+  cniScanPath: string | null;   // ← CNI photo from citizen
+  selfiePath: string | null;    // ← Selfie from citizen
   reg: {
     firstName: string | null;
     lastName: string | null;
@@ -45,6 +48,57 @@ interface RegistrationRequest {
     commune: string | null;
   };
 }
+interface Demande {
+  id: string;
+  userId: string;
+  typeDocument: string;
+  firstName: string;
+  lastName: string;
+  nin: string;
+  commune: string;
+  dateNaissance: string;
+  dateDemande: string;
+  status: string;
+  rejectionReason?: string;
+  photoCniPath?: string;
+  photoDomicilePath?: string;
+}
+
+const mapStatus = (s: string): RegistrationRequest['status'] => {
+  const status = String(s || '').toLowerCase().trim();
+  if (['en_attente', 'pending'].includes(status)) return 'pending';
+  if (['validee', 'valide', 'completed', 'validated', 'termine', 'terminee'].includes(status)) return 'validated';
+  if (['rejetee', 'rejected', 'refuse', 'refused'].includes(status)) return 'rejected';
+  return 'pending';
+};
+
+const normalizeRequest = (raw: any): RegistrationRequest => ({
+  id: raw?.id != null ? String(raw.id) : '',
+  firstName: raw?.firstName ?? raw?.prenom ?? raw?.citizen_first_name ?? raw?.first_name ?? '',
+  lastName: raw?.lastName ?? raw?.nom ?? raw?.citizen_last_name ?? raw?.last_name ?? '',
+  nin: raw?.nin ?? raw?.citizen_nin ?? '',
+  email: raw?.email ?? raw?.citizen_email ?? '',
+  dob: raw?.dob ?? raw?.date_naissance ?? raw?.date_of_birth ?? '',
+  commune: raw?.commune ?? '',
+  address: raw?.address ?? raw?.adresse ?? raw?.citizen_address ?? '',
+  status: mapStatus(raw?.status ?? 'pending'),
+  rejectionReason: raw?.rejectionReason ?? raw?.rejection_reason ?? raw?.commentaire ?? raw?.comment,
+  cniScanPath: raw?.cniScanPath ?? raw?.cni_scan_path ?? raw?.cni_recto_path ?? null,
+  selfiePath: raw?.selfiePath ?? raw?.selfie_path ?? raw?.photo_domicile_path ?? null,
+  reg: raw?.reg ? {
+    firstName: raw.reg.firstName ?? raw.reg.prenom ?? raw.reg.first_name ?? null,
+    lastName: raw.reg.lastName ?? raw.reg.nom ?? raw.reg.last_name ?? null,
+    nin: raw.reg.nin ?? null,
+    dob: raw.reg.dob ?? raw.reg.date_naissance ?? null,
+    commune: raw.reg.commune ?? null,
+  } : {
+    firstName: null,
+    lastName: null,
+    nin: null,
+    dob: null,
+    commune: null,
+  },
+});
 
 interface ChatMessage {
   id: number;
@@ -81,35 +135,65 @@ interface MunicipalAgentDashboardProps {
     completeTask: (id: string) => void;
   };
 }
-
 // ─── Constants ────────────────────────────────────────────────────────────────
-
 const SERVICES = [
   {
     id: 'civil', name: 'Civil Status', nameFr: 'État Civil', color: 'bg-blue-500',
-    keywords: ['fiche_residence','fiche de residence','certificat_residence','certificat de residence','acte_naissance','acte de naissance','certificat_mariage','certificat de mariage','etat civil','état civil'],
+    documents: [
+      { en: 'Birth Certificate', fr: 'Acte de naissance' },
+      { en: 'Marriage Certificate', fr: 'Certificat de mariage' },
+      { en: 'Residence Form', fr: 'Fiche de résidence' },
+      { en: 'Residence Certificate', fr: 'Certificat de résidence' }
+    ],
+    keywords: ['fiche_residence', 'fiche de residence', 'certificat_residence', 'certificat de residence', 'acte_naissance', 'acte de naissance', 'certificat_mariage', 'certificat de mariage', 'etat civil', 'état civil'],
   },
   {
     id: 'autorisation', name: 'Road Occupancy Permit', nameFr: 'Autorisation de voirie', color: 'bg-green-500',
-    keywords: ['autorisation de voirie','voirie','road occupancy'],
+    documents: [
+      { en: 'Road Occupancy Permit', fr: 'Autorisation de voirie' }
+    ],
+    keywords: ['autorisation de voirie', 'voirie', 'road occupancy'],
   },
 ];
 
 const SERVICE_LABELS: Record<string, { en: string; fr: string }> = {
-  'fiche de residence':     { en: 'Civil status', fr: 'État civil' },
-  'certificat de residence':{ en: 'Civil status', fr: 'État civil' },
-  'acte de naissance':      { en: 'Civil status', fr: 'État civil' },
-  'certificat de mariage':  { en: 'Civil status', fr: 'État civil' },
+  'fiche de residence': { en: 'Civil status', fr: 'État civil' },
+  'certificat de residence': { en: 'Civil status', fr: 'État civil' },
+  'acte de naissance': { en: 'Civil status', fr: 'État civil' },
+  'certificat de mariage': { en: 'Civil status', fr: 'État civil' },
   'autorisation de voirie': { en: 'Autorisation de voirie', fr: 'Autorisation de voirie' },
 };
 
 const POSITION_LABELS: Record<string, { en: string; fr: string }> = {
-  'fiche_residence':        { en: 'Residence Form',        fr: 'Fiche de résidence' },
-  'certificat_residence':   { en: 'Residence Certificate', fr: 'Certificat de résidence' },
-  'acte_naissance':         { en: 'Birth Certificate',     fr: 'Acte de naissance' },
-  'certificat_mariage':     { en: 'Marriage Certificate',  fr: 'Certificat de mariage' },
+  'fiche_residence': { en: 'Residence Form', fr: 'Fiche de résidence' },
+  'certificat_residence': { en: 'Residence Certificate', fr: 'Certificat de résidence' },
+  'acte_naissance': { en: 'Birth Certificate', fr: 'Acte de naissance' },
+  'certificat_mariage': { en: 'Marriage Certificate', fr: 'Certificat de mariage' },
   'autorisation de voirie': { en: 'Road Occupancy Permit', fr: 'Autorisation de voirie' },
 };
+
+// ─── Helpers for Comparison Layout ──────────────────────────────────────────
+
+const CompareRow: React.FC<{ label: string; citizen: string; registry?: string | null }> = ({ label, citizen, registry }) => {
+  const matches = registry && citizen.toLowerCase().trim() === registry.toLowerCase().trim();
+  return (
+    <div className="grid grid-cols-2 text-sm border-b border-slate-100 last:border-0">
+      <div className="p-4 border-r border-slate-100 bg-white">
+        <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">{label}</p>
+        <p className={`font-semibold ${!matches && registry ? 'text-red-500' : 'text-slate-700'}`}>
+          {citizen || '—'}
+        </p>
+      </div>
+      <div className="p-4 bg-slate-50/30">
+        <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">{label}</p>
+        <p className="font-semibold text-slate-500">
+          {registry || '—'}
+        </p>
+      </div>
+    </div>
+  );
+};
+
 
 export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDark, toggleDarkMode }: MunicipalAgentDashboardProps) {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -123,11 +207,13 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
 
   // ── Validation state ──────────────────────────────────────────────────────
   const [requests, setRequests] = useState<RegistrationRequest[]>([]);
+  const [demandes, setDemandes] = useState<Demande[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
   const [validationView, setValidationView] = useState<'table' | 'detail'>('table');
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [requestSearch, setRequestSearch] = useState('');
+  const [validationStatusFilter, setValidationStatusFilter] = useState<'all' | 'pending' | 'validated' | 'rejected'>('all');
 
   // ── Chat state with Socket.IO ────────────────────────────────────────────
   const [chats, setChats] = useState<CitizenChat[]>([]);
@@ -140,77 +226,175 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const pendingCount = requests.filter((r) => r.status === 'pending').length;
   const unreadCount = chats.reduce((acc, c) => acc + c.messages.filter((m) => !m.read && m.from === 'citizen').length, 0);
   const activeChat = chats.find((c) => c.citizenId === activeChatId) ?? null;
+  const currentRequestStatus = selectedRequest ? mapStatus(selectedRequest.status) : 'pending';
+  const isProcessed = currentRequestStatus === 'validated' || currentRequestStatus === 'rejected';
+
 
   // ── Fetch registration requests from PostgreSQL ───────────────────────────
+
+  const [citizens, setCitizens] = useState<any[]>([]);
+
+  // Debug logs
+  console.log('Rendering AdminDashboard with:', {
+    requestsCount: requests.length,
+    citizensCount: citizens.length,
+    activeTab
+  });
+  if (citizens.length > 0) console.log('First citizen sample:', citizens[0]);
+
+  // ── Fetch registration requests - Real-time polling ───────────────────────
+  const fetchData = async () => {
+    // Fetch validations from your Express backend
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/validations`);
+      const data = await res.json();
+      console.log('API RESPONSE (Validations):', data);
+
+      if (data.data) {
+        // Use normalizeRequest to ensure the fields match our frontend interface
+        const normalized = data.data.map((req: any) => normalizeRequest(req));
+
+        // DEBUG: Verify mapping (nom -> lastName, prenom -> firstName)
+        console.log("Normalized first row:", normalized[0]);
+
+        setRequests(normalized);
+
+        setDemandes(data.data.map((d: any) => ({
+          id: d.id,
+          userId: d.user_id,
+          typeDocument: d.type_document,
+          firstName: d.firstName || d.prenom,
+          lastName: d.nom,
+          nin: d.nin,
+          commune: d.commune,
+          dateNaissance: d.date_naissance,
+          dateDemande: d.date_demande,
+          status: d.status,
+          rejectionReason: d.commentaire,
+          photoCniPath: d.photo_cni_path,
+          photoDomicilePath: d.photo_domicile_path
+        })));
+      }
+    } catch (err) {
+      console.error('Validations fetch error:', err);
+      setRequests([]);
+    }
+
+    // 2. Fetch citizens from Supabase
+    try {
+      const { data, error } = await supabase
+        .schema('register')
+        .from('citizens_safe')
+        .select('*');
+
+      if (error) {
+        console.error('Supabase citizens_safe error:', error.message);
+        return;
+      }
+
+      console.log('Citizens loaded from schema:', data);
+      setCitizens(data);
+    } catch (err) {
+      console.error('Supabase fetch failed:', err);
+    }
+  };
+
+  // Safe session logger — never logs you out automatically
   useEffect(() => {
-    fetch('http://localhost:5000/api/validations')
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then(setRequests)
-      .catch((err) => {
-        console.error('Fetch error:', err);
-        toast.error(language === 'fr' ? 'Erreur chargement demandes' : 'Failed to load requests');
-      });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Supabase session:', session ? session.user.email : 'No session (using app auth)');
+    });
   }, []);
 
+  // Around line 328 — fetch block
+  useEffect(() => {
+    // Fetch immediately on load
+    fetchData();
+
+    // Refresh every 30s — not every second
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [language]);
+
   // ── Initialize Socket.IO connection ───────────────────────────────────────
-useEffect(() => {
-const socket = connectSocket();
-  socketRef.current = socket;
+  useEffect(() => {
+    const socket = connectSocket();
+    socketRef.current = socket;
 
-  socket.on('connect', () => {
-    setIsSocketConnected(true);
-    socket.emit('agent:join'); // No need to pass agentId, server gets it from JWT
-    socket.emit('chat:get-conversations');
-  });
+    socket.on('connect', () => {
+      setIsSocketConnected(true);
+      socket.emit('agent:join'); // No need to pass agentId, server gets it from JWT
+      socket.emit('chat:get-conversations');
+    });
 
-  socket.on('chat:conversations', (conversations: CitizenChat[]) => {
-    setChats(conversations);
-  });
+    socket.on('chat:conversations', (conversations: CitizenChat[]) => {
+      setChats(conversations);
+    });
 
-  socket.on('chat:new-message', (data) => {
-    setChats((prev) => {
-      const existing = prev.find((c) => c.citizenId === data.citizenId);
-      if (existing) {
-        return prev.map((c) =>
+    socket.on('chat:new-message', (data) => {
+      setChats((prev) => {
+        const existing = prev.find((c) => c.citizenId === data.citizenId);
+        if (existing) {
+          return prev.map((c) =>
+            c.citizenId === data.citizenId
+              ? { ...c, messages: [...c.messages, data.message] }
+              : c
+          );
+        }
+        return [...prev, {
+          citizenId: data.citizenId,
+          citizenName: data.citizenName,
+          citizenEmail: data.citizenEmail,
+          messages: [data.message]
+        }];
+      });
+
+      if (activeChatId !== data.citizenId && data.message.from === 'citizen') {
+        toast.info(`New message from ${data.citizenName}`);
+      }
+    });
+
+    socket.on('chat:message-sent', (data) => {
+      setChats((prev) =>
+        prev.map((c) =>
           c.citizenId === data.citizenId
             ? { ...c, messages: [...c.messages, data.message] }
             : c
-        );
-      }
-      return [...prev, {
-        citizenId: data.citizenId,
-        citizenName: data.citizenName,
-        citizenEmail: data.citizenEmail,
-        messages: [data.message]
-      }];
+        )
+      );
     });
 
-    if (activeChatId !== data.citizenId && data.message.from === 'citizen') {
-      toast.info(`New message from ${data.citizenName}`);
-    }
-  });
+    // Listen for new document requests
+    socket.on('new_demande', (data: any) => {
+      console.log('REALTIME: New demande received:', data);
+      const mapped: Demande = {
+        id: data.id,
+        userId: data.user_id,
+        typeDocument: data.type_document,
+        firstName: data.prenom,
+        lastName: data.nom,
+        nin: data.nin,
+        commune: data.commune || '',
+        dateNaissance: data.date_naissance || '',
+        dateDemande: data.date_demande,
+        status: data.status,
+        rejectionReason: data.commentaire || '',
+        photoCniPath: data.photo_cni_path,
+        photoDomicilePath: data.photo_domicile_path
+      };
+      setDemandes(prev => [mapped, ...prev]);
+      toast.info(`Nouvelle demande de ${data.prenom} ${data.nom}`);
+    });
 
-  socket.on('chat:message-sent', (data) => {
-    setChats((prev) =>
-      prev.map((c) =>
-        c.citizenId === data.citizenId
-          ? { ...c, messages: [...c.messages, data.message] }
-          : c
-      )
-    );
-  });
-
-  return () => {
-    socket.off('connect');
-    socket.off('chat:conversations');
-    socket.off('chat:new-message');
-    socket.off('chat:message-sent');
-    disconnectSocket();
-  };
-}, [user.id]);
+    return () => {
+      socket.off('connect');
+      socket.off('chat:conversations');
+      socket.off('chat:new-message');
+      socket.off('chat:message-sent');
+      socket.off('new_demande');
+      // disconnectSocket(); // Prevent full disconnect on StrictMode remounts
+    };
+  }, [user.id]);
 
   // ── Scroll chat to bottom on new message ──────────────────────────────────
   useEffect(() => {
@@ -233,7 +417,7 @@ const socket = connectSocket();
   // ── Send message via Socket.IO ───────────────────────────────────────────
   const sendAgentMessage = useCallback(() => {
     if (!chatMessage.trim() || !activeChatId || !socketRef.current) return;
-    
+
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const messageData = {
       citizenId: activeChatId,
@@ -246,39 +430,91 @@ const socket = connectSocket();
   }, [chatMessage, activeChatId]);
 
   const filteredRequests = requests.filter((r) => {
-    const q = requestSearch.toLowerCase();
-    return r.firstName.toLowerCase().includes(q) || r.lastName.toLowerCase().includes(q) ||
-           r.nin.includes(q) || r.email.toLowerCase().includes(q);
+    const q = (requestSearch || '').toLowerCase();
+    const firstName = (r.firstName || '').toLowerCase();
+    const lastName = (r.lastName || '').toLowerCase();
+    const email = (r.email || '').toLowerCase();
+    const nin = (r.nin || '').toLowerCase();
+
+    const matchesSearch = firstName.includes(q) || lastName.includes(q) || nin.includes(q) || email.includes(q);
+
+    if (validationStatusFilter === 'all') return matchesSearch;
+    return matchesSearch && mapStatus(r.status) === validationStatusFilter;
   });
 
   // ── Validate → sends activation email via backend ────────────────────────
-  const handleValidate = async (id: number) => {
+  const handleValidate = async (id: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      console.error(' CRITICAL: Invalid UUID format detected:', id);
+      toast.error('Format ID invalide');
+      return;
+    }
+
+    console.log(' Sending Validation for ID:', id);
+
+    console.log(' Sending Validation request:', { status: 'termine' });
+
     try {
-      await fetch(`http://localhost:3001/api/validations/${id}/validate`, { method: 'POST' });
+      const response = await fetch(`${BACKEND_URL}/api/validations/${id}/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'termine' }),
+      });
+
+      const data = await response.json();
+      console.log('⬅ Server Response:', data);
+
+      if (!response.ok) {
+        console.error(' Server returned error:', data);
+        throw new Error(data.message || 'Validation failed');
+      }
+
       setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: 'validated' } : r));
       setSelectedRequest((prev) => prev ? { ...prev, status: 'validated' } : prev);
       setShowRejectInput(false);
+      await fetchData();
       toast.success(language === 'fr' ? "Email d'activation envoyé" : 'Activation email sent');
-    } catch {
+    } catch (error) {
+      console.error(' handleValidate Error:', error);
       toast.error(language === 'fr' ? 'Erreur de validation' : 'Validation failed');
     }
   };
 
   // ── Reject → sends rejection email via backend ───────────────────────────
-  const handleReject = async (id: number) => {
+  const handleReject = async (id: string) => {
     if (!rejectReason.trim()) {
       toast.error(language === 'fr' ? 'Veuillez entrer un motif' : 'Please enter a reason');
       return;
     }
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      console.error(' CRITICAL: Invalid UUID format detected:', id);
+      return;
+    }
+
+    console.log('Sending Rejection request:', { status: 'refuse', comment: rejectReason });
+
     try {
-      await fetch(`http://localhost:3001/api/validations/${id}/reject`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(`${BACKEND_URL}/api/validations/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: rejectReason }),
       });
+
+      const data = await response.json();
+      console.log('* Server Response:', data);
+
+      if (!response.ok) {
+        console.error(' Rejection failed:', data);
+        throw new Error(data.message || 'Rejection failed');
+      }
+
       setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: 'rejected', rejectionReason: rejectReason } : r));
       setSelectedRequest((prev) => prev ? { ...prev, status: 'rejected', rejectionReason: rejectReason } : prev);
       setShowRejectInput(false);
       setRejectReason('');
+      await fetchData();
       toast.error(language === 'fr' ? 'Demande rejetée — email envoyé' : 'Rejected — email sent');
     } catch {
       toast.error(language === 'fr' ? 'Erreur de rejet' : 'Rejection failed');
@@ -289,13 +525,31 @@ const socket = connectSocket();
     setSelectedRequest(req); setShowRejectInput(false); setRejectReason(''); setValidationView('detail');
   };
 
-  const isMatch = (a: string, b: string | null) => !!b && a === b;
-  const allMatch = (req: RegistrationRequest) =>
-    !!req.reg.nin &&
-    req.firstName === req.reg.firstName && req.lastName === req.reg.lastName &&
-    req.nin === req.reg.nin && req.dob === req.reg.dob &&
-    req.commune === req.reg.commune;
+  const normText = (s: string | null | undefined) => String(s ?? '').trim().toLowerCase();
+  const isMatch = (citizen: string, registry: string | null) => {
+    if (registry == null || String(registry).trim() === '') return false;
+    const c = String(citizen ?? '').trim();
+    const r = String(registry).trim();
+    const c10 = c.slice(0, 10);
+    const r10 = r.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(c10) && /^\d{4}-\d{2}-\d{2}$/.test(r10)) return c10 === r10;
+    return normText(c) === normText(r);
+  };
 
+  const allMatchRegistry = (req: RegistrationRequest) => {
+    if (!req.reg?.nin) return false;
+    const citizenFirstName = req.firstName || '';
+    const citizenLastName = req.lastName || '';
+    const citizenDob = req.dob || '';
+    const citizenCommune = req.commune || '';
+
+    if (!isMatch(citizenFirstName, req.reg.firstName)) return false;
+    if (!isMatch(citizenLastName, req.reg.lastName)) return false;
+    if (!isMatch(req.nin, req.reg.nin)) return false;
+    if (citizenDob && !isMatch(citizenDob, req.reg.dob != null ? String(req.reg.dob) : null)) return false;
+    if (citizenCommune && !isMatch(citizenCommune, req.reg.commune)) return false;
+    return true;
+  };
   // ── Employee helpers ──────────────────────────────────────────────────────
   const getEmpName = (emp: any) => ({ first: emp.firstName || emp.name?.split(' ')[0] || '', last: emp.lastName || emp.name?.split(' ').slice(1).join(' ') || '' });
   const translateService = (raw: string) => { const e = SERVICE_LABELS[raw?.toLowerCase()]; return e ? e[language] : raw; };
@@ -311,7 +565,7 @@ const socket = connectSocket();
     if (!isRealEmployee(emp)) return false;
     const { first, last } = getEmpName(emp); const q = searchQuery.toLowerCase();
     return first.toLowerCase().includes(q) || last.toLowerCase().includes(q) ||
-           emp.email?.toLowerCase().includes(q) || emp.service?.toLowerCase().includes(q);
+      emp.email?.toLowerCase().includes(q) || emp.service?.toLowerCase().includes(q);
   });
 
   const allRealEmployees = employees.employees.filter(isRealEmployee);
@@ -324,7 +578,7 @@ const socket = connectSocket();
 
   const handleAddEmployee = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); const fd = new FormData(e.currentTarget);
-    employees.addEmployee({ email: fd.get('email') as string, password: 'employee123', firstName: fd.get('firstName') as string, lastName: fd.get('lastName') as string, role: 'employee' as const, service: newEmployeeService, position: newEmployeePosition, phone: fd.get('phone') as string, joinDate: new Date().toISOString().split('T')[0], status: 'active' as const });
+    employees.addEmployee({ email: fd.get('email') as string, password: 'employee123', firstName: fd.get('firstName') as string, lastName: fd.get('lastName') as string, role: 'employee' as const, service: newEmployeeService, position: newEmployeePosition, joinDate: new Date().toISOString().split('T')[0], status: 'active' as const });
     setIsAddEmployeeOpen(false); setNewEmployeeService('État civil'); setNewEmployeePosition('Fiche de résidence');
     toast.success(language === 'fr' ? 'Employé ajouté' : 'Employee added');
   };
@@ -337,8 +591,8 @@ const socket = connectSocket();
 
   const getStatusColor = (s: Task['status']) =>
     s === 'completed' ? 'bg-green-100 text-green-700 border-green-200' :
-    s === 'in-progress' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-    'bg-gray-100 text-gray-700 border-gray-200';
+      s === 'in-progress' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+        'bg-gray-100 text-gray-700 border-gray-200';
 
   const getTabTitle = () => {
     const titles: Record<string, { fr: string; en: string }> = {
@@ -371,9 +625,8 @@ const socket = connectSocket();
   const SidebarItem = ({ icon: Icon, label, value, badge }: { icon: React.ElementType; label: string; value: string; badge?: number }) => (
     <button
       onClick={() => { setActiveTab(value); setValidationView('table'); }}
-      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all ${
-        activeTab === value ? 'bg-primary text-primary-foreground shadow-md' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-      }`}
+      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all ${activeTab === value ? 'bg-primary text-primary-foreground shadow-md' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+        }`}
     >
       <div className="flex items-center gap-3"><Icon className="w-5 h-5" /><span className="font-medium">{label}</span></div>
       {badge !== undefined && badge > 0 && (
@@ -382,10 +635,12 @@ const socket = connectSocket();
     </button>
   );
 
-  const RequestStatusBadge = ({ status }: { status: RegistrationRequest['status'] }) => {
-    const styles = { pending: 'bg-amber-100 text-amber-800 border-amber-200', validated: 'bg-green-100 text-green-800 border-green-200', rejected: 'bg-red-100 text-red-800 border-red-200' };
-    const labels = { pending: language === 'fr' ? 'En attente' : 'Pending', validated: language === 'fr' ? 'Validé' : 'Validated', rejected: language === 'fr' ? 'Rejeté' : 'Rejected' };
-    return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${styles[status]}`}>{labels[status]}</span>;
+  const RequestStatusBadge = ({ status }: { status: any }) => {
+    // Map database values to UI styles
+    const s = status === 'en_attente' ? 'pending' : status;
+    const styles: any = { pending: 'bg-amber-100 text-amber-800 border-amber-200', validated: 'bg-green-100 text-green-800 border-green-200', rejected: 'bg-red-100 text-red-800 border-red-200' };
+    const labels: any = { pending: language === 'fr' ? 'En attente' : 'Pending', validated: language === 'fr' ? 'Validé' : 'Validated', rejected: language === 'fr' ? 'Rejeté' : 'Rejected' };
+    return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${styles[s] || styles.pending}`}>{labels[s] || s}</span>;
   };
 
   const CompareRow = ({ label, citizen, registry }: { label: string; citizen: string; registry: string | null }) => {
@@ -443,8 +698,6 @@ const socket = connectSocket();
           <Button variant="outline" className="w-full" onClick={onLogout}><LogOut className="w-4 h-4 mr-2" />{t('logout')}</Button>
         </div>
       </aside>
-
-      {/* ── Main Content ─────────────────────────────────────────────────── */}
       <main className="flex-1 overflow-auto">
 
         {/* Header */}
@@ -456,6 +709,17 @@ const socket = connectSocket();
             </div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher />
+              <div className="relative">
+                <Button variant="outline" size="icon" onClick={() => { setActiveTab('validations'); setValidationView('table'); }}>
+                  <Bell className="w-4 h-4" />
+                </Button>
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    {pendingCount}
+                  </span>
+                )}
+              </div>
+
               <Button variant="outline" size="icon" onClick={toggleDarkMode}>
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
@@ -508,10 +772,12 @@ const socket = connectSocket();
                 </Card>
               </div>
 
+
+
               {/* ── Pending requests alert card ── */}
               {pendingCount > 0 && (
                 <Card
-                  className="cursor-pointer hover:shadow-md transition-shadow border-amber-200 dark:border-amber-800 dark:bg-slate-800"
+                  className="cursor-pointer hover:shadow-md transition-shadow border-amber-200 dark:border-amber-800 dark:bg-slate-800 mb-6"
                   onClick={() => { setActiveTab('validations'); setValidationView('table'); }}
                 >
                   <CardContent className="p-4 flex items-center gap-4">
@@ -548,13 +814,29 @@ const socket = connectSocket();
                         </div>
                       </CardHeader>
                       <CardContent className="p-4 pt-0">
-                        <p className="text-xs text-slate-500">{service.employees.length} {language === 'en' ? 'employees' : 'employés'}</p>
-                        {selectedService === service.id && service.employees.length > 0 && (
-                          <div className="mt-3 space-y-2">{service.employees.map((emp) => <CompactEmployeeCard key={emp.id} employee={emp} />)}</div>
-                        )}
-                        {selectedService === service.id && service.employees.length === 0 && (
-                          <p className="text-xs text-slate-400 mt-2 italic">{language === 'fr' ? 'Aucun employé assigné' : 'No employees assigned'}</p>
-                        )}
+                        <div className="flex justify-between items-center mb-3">
+                          <p className="text-xs text-slate-500">{service.employees.length} {language === 'en' ? 'employees' : 'employés'}</p>
+                          <Badge variant="outline" className="text-[10px] py-0 h-4">{service.documents?.length || 0} {language === 'fr' ? 'Types' : 'Types'}</Badge>
+                        </div>
+
+                        {/* List of Documents handled by this service - Styled like the screenshot */}
+                        <div className="space-y-2 mb-6">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">
+                            {language === 'fr' ? 'TYPES DE DOCUMENTS' : 'DOCUMENT TYPES'}
+                          </p>
+                          {service.documents?.map((doc: any, idx: number) => (
+                            <div key={idx} className="flex items-center gap-4 p-3 bg-white dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-600 hover:border-primary/30 transition-colors shadow-sm group">
+                              <div className={`w-11 h-11 rounded-full ${service.color} flex items-center justify-center shadow-inner`}>
+                                <span className="text-white font-bold text-lg">{doc.fr[0]}</span>
+                              </div>
+                              <span className="flex-1 text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                                {language === 'fr' ? doc.fr : doc.en}
+                              </span>
+                              <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                            </div>
+                          ))}
+                        </div>
+
                       </CardContent>
                     </Card>
                   ))}
@@ -581,7 +863,6 @@ const socket = connectSocket();
                         <div className="space-y-2"><Label>{t('lastName')}</Label><Input name="lastName" required /></div>
                       </div>
                       <div className="space-y-2"><Label>{t('email')}</Label><Input name="email" type="email" required /></div>
-                      <div className="space-y-2"><Label>{t('phone')}</Label><Input name="phone" required /></div>
                       <div className="space-y-2">
                         <Label>{t('service')}</Label>
                         <Select name="service" required value={newEmployeeService} onValueChange={setNewEmployeeService}>
@@ -741,63 +1022,115 @@ const socket = connectSocket();
               {/* TABLE VIEW */}
               {validationView === 'table' && (
                 <>
-                  <div className="grid grid-cols-3 gap-4">
-                    {(['pending','validated','rejected'] as const).map((s) => {
-                      const count = requests.filter((r) => r.status === s).length;
-                      const colors = { pending:'text-amber-700 dark:text-amber-400', validated:'text-green-700 dark:text-green-400', rejected:'text-red-700 dark:text-red-400' };
-                      const labels = { pending: language==='fr'?'En attente':'Pending', validated: language==='fr'?'Validés':'Validated', rejected: language==='fr'?'Rejetés':'Rejected' };
+                  <div className="grid grid-cols-4 gap-4">
+                    <Card
+                      className={`cursor-pointer transition-all dark:bg-slate-800 dark:border-slate-700 ${validationStatusFilter === 'all' ? 'ring-2 ring-primary' : ''}`}
+                      onClick={() => setValidationStatusFilter('all')}
+                    >
+                      <CardContent className="p-4">
+                        <p className="text-xs text-slate-500 mb-1">{language === 'fr' ? 'Toutes' : 'All'}</p>
+                        <p className="text-2xl font-bold dark:text-white">{requests.length}</p>
+                      </CardContent>
+                    </Card>
+                    {(['pending', 'validated', 'rejected'] as const).map((s) => {
+                      const count = requests.filter((r) => mapStatus(r.status) === s).length;
+                      const colors = { pending: 'text-amber-700 dark:text-amber-400', validated: 'text-green-700 dark:text-green-400', rejected: 'text-red-700 dark:text-red-400' };
+                      const labels = { pending: language === 'fr' ? 'En attente' : 'Pending', validated: language === 'fr' ? 'Validés' : 'Validated', rejected: language === 'fr' ? 'Rejetés' : 'Rejected' };
                       return (
-                        <Card key={s} className="dark:bg-slate-800 dark:border-slate-700">
+                        <Card
+                          key={s}
+                          className={`cursor-pointer transition-all dark:bg-slate-800 dark:border-slate-700 ${validationStatusFilter === s ? 'ring-2 ring-primary' : ''}`}
+                          onClick={() => setValidationStatusFilter(s)}
+                        >
                           <CardContent className="p-4"><p className="text-xs text-slate-500 mb-1">{labels[s]}</p><p className={`text-2xl font-bold ${colors[s]}`}>{count}</p></CardContent>
                         </Card>
                       );
                     })}
                   </div>
 
-                  <div className="relative w-80">
+                  {/* Debug Info */}
+                  <div className="mb-4 p-2 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-[10px] font-mono flex gap-4">
+                    <span>Registry: {citizens.length} records</span>
+                    <span>Requests: {requests.length} records</span>
+                  </div>
+
+                  <div className="relative w-80 mb-4">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input placeholder={language==='fr'?'Rechercher par nom, NIN...':'Search by name, NIN...'} value={requestSearch} onChange={(e)=>setRequestSearch(e.target.value)} className="pl-10" />
+                    <Input placeholder={language === 'fr' ? 'Rechercher par nom, NIN...' : 'Search by name, NIN...'} value={requestSearch} onChange={(e) => setRequestSearch(e.target.value)} className="pl-10" />
                   </div>
 
                   <Card className="dark:bg-slate-800 dark:border-slate-700">
                     <CardContent className="p-0">
                       <div className="overflow-x-auto">
-                        <Table className="min-w-[900px]">
+                        <Table key={requests.length} className="min-w-[900px]">
                           <TableHeader>
                             <TableRow className="dark:border-slate-700">
-                              <TableHead className="w-[150px] dark:text-slate-400">{language==='fr'?'Nom complet':'Full name'}</TableHead>
+                              <TableHead className="w-[150px] dark:text-slate-400">{language === 'fr' ? 'Nom complet' : 'Full name'}</TableHead>
                               <TableHead className="w-[110px] dark:text-slate-400">NIN</TableHead>
                               <TableHead className="w-[160px] dark:text-slate-400">Email</TableHead>
-                              <TableHead className="w-[100px] dark:text-slate-400">{language==='fr'?'Naissance':'Date of birth'}</TableHead>
-                              <TableHead className="w-[100px] dark:text-slate-400">Commune</TableHead>
-                              <TableHead className="w-[150px] dark:text-slate-400">{language==='fr'?'Adresse':'Address'}</TableHead>
-                              <TableHead className="w-[75px] dark:text-slate-400">CNI PDF</TableHead>
-                              <TableHead className="w-[90px] dark:text-slate-400">{language==='fr'?'Statut':'Status'}</TableHead>
+                              <TableHead className="w-[150px] dark:text-slate-400">{language === 'fr' ? 'Adresse' : 'Address'}</TableHead>
+                              <TableHead className="w-[100px] dark:text-slate-400">CNI PDF</TableHead>
+                              <TableHead className="w-[100px] dark:text-slate-400">Photo Selfie</TableHead>
+                              <TableHead className="w-[90px] dark:text-slate-400">{language === 'fr' ? 'Statut' : 'Status'}</TableHead>
                               <TableHead className="w-[70px]" />
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {filteredRequests.map((req) => (
-                              <TableRow key={req.id} className="dark:border-slate-700">
-                                <TableCell className="font-medium dark:text-white whitespace-nowrap">{req.firstName} {req.lastName}</TableCell>
-                                <TableCell className="font-mono text-xs dark:text-slate-300 whitespace-nowrap">{req.nin.substring(0,9)}…</TableCell>
-                                <TableCell className="text-blue-600 dark:text-blue-400 text-xs whitespace-nowrap">{req.email}</TableCell>
-                                <TableCell className="dark:text-slate-300 text-sm whitespace-nowrap">{req.dob}</TableCell>
-                                <TableCell className="dark:text-slate-300 text-sm whitespace-nowrap">{req.commune}</TableCell>
-                                <TableCell className="dark:text-slate-300 text-xs max-w-[150px] truncate" title={req.address}>{req.address}</TableCell>
-                                <TableCell>
-                                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1" onClick={()=>toast.info(`Opening CNI for ${req.firstName}`)}>
-                                    <FileText className="w-3 h-3" />PDF
-                                  </Button>
-                                </TableCell>
-                                <TableCell><RequestStatusBadge status={req.status} /></TableCell>
-                                <TableCell>
-                                  <Button size="sm" className="h-7 px-3 text-xs gap-1 whitespace-nowrap" onClick={()=>openDetail(req)}>
-                                    <Eye className="w-3 h-3" />{language==='fr'?'Voir':'View'}
-                                  </Button>
+                            {filteredRequests.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={8} className="text-center py-8 text-slate-500 italic">
+                                  {language === 'fr' ? 'Aucune demande trouvée' : 'No requests found'}
                                 </TableCell>
                               </TableRow>
-                            ))}
+                            ) : (
+                              filteredRequests.map((req) => {
+                                console.log("ROW:", req);
+                                return (
+                                  <TableRow key={req.id} className="dark:border-slate-700">
+                                    <TableCell className="font-medium dark:text-white whitespace-nowrap">{req.lastName} {req.firstName}</TableCell>
+                                    <TableCell className="font-mono text-xs dark:text-slate-300 whitespace-nowrap">
+                                      {req.nin ? `${String(req.nin).substring(0, 9)}…` : '—'}
+                                    </TableCell>
+                                    <TableCell className="text-blue-600 dark:text-blue-400 text-xs whitespace-nowrap">{req.email}</TableCell>
+                                    <TableCell className="dark:text-slate-300 text-xs max-w-[150px] truncate" title={req.address}>{req.address}</TableCell>
+                                    <TableCell>
+                                      {req.cniScanPath ? (
+                                        <a href={req.cniScanPath.startsWith('http') ? req.cniScanPath : `http://localhost:5000${req.cniScanPath}`} target="_blank" rel="noreferrer">
+                                          <img
+                                            src={req.cniScanPath.startsWith('http') ? req.cniScanPath : `http://localhost:5000${req.cniScanPath}`}
+                                            alt="CNI"
+                                            width="80"
+                                            className="rounded border border-slate-200 dark:border-slate-700"
+                                          />
+                                        </a>
+                                      ) : (
+                                        <span className="text-xs text-slate-400 italic">No File</span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      {req.selfiePath ? (
+                                        <a href={req.selfiePath.startsWith('http') ? req.selfiePath : `http://localhost:5000${req.selfiePath}`} target="_blank" rel="noreferrer">
+                                          <img
+                                            src={req.selfiePath.startsWith('http') ? req.selfiePath : `http://localhost:5000${req.selfiePath}`}
+                                            alt="Selfie"
+                                            width="80"
+                                            className="rounded border border-slate-200 dark:border-slate-700"
+                                          />
+                                        </a>
+                                      ) : (
+                                        <span className="text-xs text-slate-400 italic">—</span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell><RequestStatusBadge status={req.status} /></TableCell>
+                                    <TableCell>
+                                      <Button size="sm" className="h-7 px-3 text-xs gap-1 whitespace-nowrap" onClick={() => openDetail(req)}>
+                                        <Eye className="w-3 h-3" />{language === 'fr' ? 'Voir' : 'View'}
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })
+                            )}
                           </TableBody>
                         </Table>
                       </div>
@@ -806,108 +1139,146 @@ const socket = connectSocket();
                 </>
               )}
 
-              {/* DETAIL VIEW */}
+              {/* PREMIUM DETAIL VIEW */}
               {validationView === 'detail' && selectedRequest && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3">
-                    <Button variant="outline" size="sm" onClick={()=>setValidationView('table')} className="gap-2"><ArrowLeft className="w-4 h-4" />{language==='fr'?'Retour':'Back'}</Button>
-                    <div>
-                      <h2 className="text-lg font-semibold dark:text-white">{selectedRequest.firstName} {selectedRequest.lastName}</h2>
-                      <p className="text-sm text-slate-500">{selectedRequest.email}</p>
+                <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-full">
+                  <div className="max-w-4xl mx-auto space-y-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <Button variant="outline" size="sm" onClick={() => setValidationView('table')} className="bg-white">
+                        <ArrowLeft className="w-4 h-4 mr-2" /> Back
+                      </Button>
+                      <div className="flex flex-col items-end">
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-white">{selectedRequest.firstName} {selectedRequest.lastName}</h2>
+                        <p className="text-sm text-slate-500">{selectedRequest.email}</p>
+                      </div>
+                      <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 px-3 py-1">
+                        {selectedRequest.status === 'en_attente' ? 'Pending' : selectedRequest.status}
+                      </Badge>
                     </div>
-                    <div className="ml-auto"><RequestStatusBadge status={selectedRequest.status} /></div>
-                  </div>
 
-                  <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-700 rounded-lg px-4 py-2.5 flex-wrap">
-                    <span className="text-xs text-slate-500 shrink-0">{language==='fr'?'Vérification auto :':'Auto-check:'}</span>
-                    <code className="text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-2 py-0.5 text-slate-700 dark:text-slate-300">
-                      SELECT * FROM Registry WHERE nin_citizen = nin_registry
-                    </code>
-                    <span className={`ml-auto flex items-center gap-1.5 text-xs font-medium shrink-0 ${allMatch(selectedRequest)?'text-green-700 dark:text-green-400':'text-red-600 dark:text-red-400'}`}>
-                      {allMatch(selectedRequest)
-                        ? <><CheckCircle className="w-4 h-4" />{language==='fr'?'Correspondance trouvée':'Match found'}</>
-                        : <><XCircle className="w-4 h-4" />{language==='fr'?'Divergence détectée':'Mismatch detected'}</>}
-                    </span>
-                  </div>
-
-                  <Card className="dark:bg-slate-800 dark:border-slate-700">
-                    <CardContent className="p-0">
-                      <div className="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-700 border-b border-slate-100 dark:border-slate-700">
-                        <div className="px-6 py-3 flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
-                          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{language==='fr'?'Informations citoyen':'Citizen information'}</span>
+                    {/* COMPARISON CARD */}
+                    <Card className="shadow-sm border-slate-200 overflow-hidden">
+                      <div className="grid grid-cols-2">
+                        <div className="p-4 bg-slate-50 border-r border-b flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Citizen Information</span>
                         </div>
-                        <div className="px-6 py-3 flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block" />
-                          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{language==='fr'?'Registre (BDD)':'Registry record (DB)'}</span>
+                        <div className="p-4 bg-slate-50 border-b flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Registry Record (DB)</span>
                         </div>
                       </div>
-                      <div className="px-6 py-2">
-                        <CompareRow label={language==='fr'?'Nom':'Last name'} citizen={selectedRequest.lastName} registry={selectedRequest.reg.lastName} />
-                        <CompareRow label={language==='fr'?'Prénom':'First name'} citizen={selectedRequest.firstName} registry={selectedRequest.reg.firstName} />
-                        <CompareRow label={language==='fr'?'Date de naissance':'Date of birth'} citizen={selectedRequest.dob} registry={selectedRequest.reg.dob} />
-                        <CompareRow label="NIN" citizen={selectedRequest.nin} registry={selectedRequest.reg.nin} />
-                        <CompareRow label={language==='fr'?'Commune':'Commune'} citizen={selectedRequest.commune} registry={selectedRequest.reg.commune} />
-                      </div>
-                      <div className="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-700 border-t border-slate-100 dark:border-slate-700">
-                        <div className="px-6 py-4">
-                          <p className="text-xs text-slate-400 mb-2">{language==='fr'?'CNI — scan soumis':'CNI — submitted scan'}</p>
-                          <div className="h-20 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center gap-2 border border-dashed border-slate-300 dark:border-slate-600">
-                            <FileText className="w-5 h-5 text-slate-400" /><span className="text-xs text-slate-400">cni_scan.pdf</span>
-                          </div>
+                      <CardContent className="p-0">
+                        <div className="divide-y divide-slate-100">
+                          <CompareRow label="Last name" citizen={selectedRequest.lastName || ''} registry={selectedRequest.reg?.lastName} />
+                          <CompareRow label="First name" citizen={selectedRequest.firstName || ''} registry={selectedRequest.reg?.firstName} />
+                          <CompareRow label="NIN" citizen={selectedRequest.nin} registry={selectedRequest.reg?.nin} />
                         </div>
-                        <div className="px-6 py-4">
-                          <p className="text-xs text-slate-400 mb-2">{language==='fr'?'CNI — copie registre':'CNI — registry copy'}</p>
-                          <div className="h-20 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center gap-2 border border-dashed border-slate-300 dark:border-slate-600">
-                            <FileText className="w-5 h-5 text-slate-400" /><span className="text-xs text-slate-400">cni_registry.pdf</span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {selectedRequest.status === 'pending' && (
-                    <div className="space-y-3">
-                      {!showRejectInput ? (
-                        <div className="flex gap-4">
-                          <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-2" onClick={()=>handleValidate(selectedRequest.id)}>
-                            <ShieldCheck className="w-4 h-4" />{language==='fr'?"Valider — envoyer email d'activation":'Validate — send activation email'}
-                          </Button>
-                          <Button variant="destructive" className="flex-1 gap-2" onClick={()=>setShowRejectInput(true)}>
-                            <ShieldX className="w-4 h-4" />{language==='fr'?'Rejeter — envoyer email de rejet':'Reject — send rejection email'}
-                          </Button>
-                        </div>
-                      ) : (
-                        <Card className="dark:bg-slate-800 border-red-200 dark:border-red-900">
-                          <CardContent className="p-4 space-y-3">
-                            <p className="text-sm font-medium text-red-700 dark:text-red-400">{language==='fr'?'Motif du rejet (envoyé par email)':'Rejection reason (sent by email)'}</p>
-                            <textarea
-                              className="w-full border border-slate-200 dark:border-slate-600 rounded-lg p-3 text-sm resize-none bg-white dark:bg-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-400"
-                              rows={3}
-                              placeholder={language==='fr'?'Ex : Le document CNI ne correspond pas...':'e.g. ID document does not match...'}
-                              value={rejectReason}
-                              onChange={(e)=>setRejectReason(e.target.value)}
-                            />
-                            <div className="flex gap-3 justify-end">
-                              <Button variant="outline" size="sm" onClick={()=>{setShowRejectInput(false);setRejectReason('');}}>{t('cancel')}</Button>
-                              <Button variant="destructive" size="sm" className="gap-1" onClick={()=>handleReject(selectedRequest.id)}>
-                                <XCircle className="w-3.5 h-3.5" />{language==='fr'?'Confirmer le rejet':'Confirm rejection'}
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-                  )}
-
-                  {selectedRequest.status === 'rejected' && selectedRequest.rejectionReason && (
-                    <Card className="border-red-200 dark:border-red-900 dark:bg-slate-800">
-                      <CardContent className="p-4">
-                        <p className="text-xs text-slate-400 mb-1">{language==='fr'?'Motif du rejet':'Rejection reason'}</p>
-                        <p className="text-sm text-red-700 dark:text-red-400">{selectedRequest.rejectionReason}</p>
                       </CardContent>
                     </Card>
-                  )}
+                    {/* CNI scan vs Selfie — both uploaded by citizen */}
+                    <div className="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-700 border-t border-slate-100 dark:border-slate-700">
+
+                      {/* Left — CNI scan */}
+                      <div className="px-6 py-4">
+                        <p className="text-xs text-slate-400 mb-2">
+                          {language === 'fr' ? 'CNI — scan soumis' : 'CNI — submitted scan'}
+                        </p>
+                        {selectedRequest.cniScanPath ? (
+                          <a
+                            href={selectedRequest.cniScanPath}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <img
+                              src={selectedRequest.cniScanPath}
+                              alt="CNI scan"
+                              className="w-full h-40 object-cover rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:opacity-90 transition-opacity"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          </a>
+                        ) : (
+                          <div className="h-20 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center gap-2 border border-dashed border-slate-300 dark:border-slate-600">
+                            <FileText className="w-5 h-5 text-slate-400" />
+                            <span className="text-xs text-slate-400">
+                              {language === 'fr' ? 'Aucun document' : 'No document'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right — Selfie */}
+                      <div className="px-6 py-4">
+                        <p className="text-xs text-slate-400 mb-2">
+                          {language === 'fr' ? 'Photo selfie du citoyen' : 'Citizen selfie photo'}
+                        </p>
+                        {selectedRequest.selfiePath ? (
+                          <a
+                            href={selectedRequest.selfiePath}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <img
+                              src={selectedRequest.selfiePath}
+                              alt="Selfie"
+                              className="w-full h-40 object-cover rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:opacity-90 transition-opacity"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          </a>
+                        ) : (
+                          <div className="h-20 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center gap-2 border border-dashed border-slate-300 dark:border-slate-600">
+                            <FileText className="w-5 h-5 text-slate-400" />
+                            <span className="text-xs text-slate-400">
+                              {language === 'fr' ? 'Aucune photo' : 'No photo'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ACTIONS — Hide after action */}
+                    {(selectedRequest.status === 'pending' || selectedRequest.status === 'en_attente') && (
+                      <div className="pt-6 border-t border-slate-100 mt-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <button
+                            type="button"
+                            onClick={() => handleValidate(selectedRequest.id)}
+                            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
+                          >
+                            <ShieldCheck className="w-5 h-5" />
+                            Validate — send activation email
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReject(selectedRequest.id)}
+                            className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
+                          >
+                            <XCircle className="w-5 h-5" />
+                            Reject — send rejection email
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Show status badge after action */}
+                    {(selectedRequest.status === 'validated' || selectedRequest.status === 'termine') && (
+                      <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-center gap-2 text-emerald-600 font-bold text-lg animate-in zoom-in duration-300">
+                        <CheckCircle2 className="w-6 h-6" />
+                        Demande validée ✅
+                      </div>
+                    )}
+
+                    {(selectedRequest.status === 'rejected' || selectedRequest.status === 'refuse') && (
+                      <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-center gap-2 text-red-500 font-bold text-lg animate-in zoom-in duration-300">
+                        <XCircle className="w-6 h-6" />
+                        Demande rejetée ❌
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -916,7 +1287,7 @@ const socket = connectSocket();
           {/* ── Messages / Chat with Socket.IO ────────────────────────────────── */}
           {activeTab === 'messages' && (
             <div className="flex gap-6 h-[calc(100vh-180px)]">
-              
+
               {/* Conversation list */}
               <div className="w-72 flex-shrink-0">
                 <Card className="dark:bg-slate-800 dark:border-slate-700 h-full">
@@ -925,9 +1296,9 @@ const socket = connectSocket();
                       {language === 'fr' ? 'Conversations' : 'Conversations'}
                     </CardTitle>
                     {/* Connection status indicator */}
-                    <div 
-                      className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-green-500' : 'bg-red-500'}`} 
-                      title={isSocketConnected ? 'Connected' : 'Disconnected'} 
+                    <div
+                      className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-green-500' : 'bg-red-500'}`}
+                      title={isSocketConnected ? 'Connected' : 'Disconnected'}
                     />
                   </CardHeader>
                   <CardContent className="p-0">
@@ -944,9 +1315,8 @@ const socket = connectSocket();
                             <button
                               key={chat.citizenId}
                               onClick={() => openChat(chat.citizenId)}
-                              className={`w-full flex items-start gap-3 p-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${
-                                activeChatId === chat.citizenId ? 'bg-slate-50 dark:bg-slate-700' : ''
-                              }`}
+                              className={`w-full flex items-start gap-3 p-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${activeChatId === chat.citizenId ? 'bg-slate-50 dark:bg-slate-700' : ''
+                                }`}
                             >
                               <Avatar className="w-9 h-9 flex-shrink-0">
                                 <AvatarFallback className="bg-primary text-primary-foreground text-xs">
@@ -1014,17 +1384,15 @@ const socket = connectSocket();
                         {activeChat.messages.map((msg) => (
                           <div key={msg.id} className={`flex ${msg.from === 'agent' ? 'justify-end' : 'justify-start'}`}>
                             <div
-                              className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${
-                                msg.from === 'agent'
-                                  ? 'bg-primary text-primary-foreground rounded-br-sm'
-                                  : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-bl-sm'
-                              }`}
+                              className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${msg.from === 'agent'
+                                ? 'bg-primary text-primary-foreground rounded-br-sm'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-bl-sm'
+                                }`}
                             >
                               <p className="text-sm leading-relaxed">{msg.text}</p>
                               <p
-                                className={`text-[10px] mt-1 ${
-                                  msg.from === 'agent' ? 'text-primary-foreground/70 text-right' : 'text-slate-400'
-                                }`}
+                                className={`text-[10px] mt-1 ${msg.from === 'agent' ? 'text-primary-foreground/70 text-right' : 'text-slate-400'
+                                  }`}
                               >
                                 {msg.time}
                               </p>
@@ -1051,9 +1419,9 @@ const socket = connectSocket();
                           disabled={!isSocketConnected}
                           className="flex-1"
                         />
-                        <Button 
-                          onClick={sendAgentMessage} 
-                          disabled={!chatMessage.trim() || !isSocketConnected} 
+                        <Button
+                          onClick={sendAgentMessage}
+                          disabled={!chatMessage.trim() || !isSocketConnected}
                           size="icon"
                         >
                           <Send className="w-4 h-4" />
@@ -1071,19 +1439,19 @@ const socket = connectSocket();
             <div className="max-w-2xl">
               <Card className="dark:bg-slate-800 dark:border-slate-700">
                 <CardHeader>
-                  <CardTitle className="dark:text-white">{language==='fr'?'Paramètres Agent Municipal':'Municipal Agent Settings'}</CardTitle>
-                  <CardDescription>{language==='fr'?'Gérer les paramètres de votre compte':'Manage your account settings'}</CardDescription>
+                  <CardTitle className="dark:text-white">{language === 'fr' ? 'Paramètres Agent Municipal' : 'Municipal Agent Settings'}</CardTitle>
+                  <CardDescription>{language === 'fr' ? 'Gérer les paramètres de votre compte' : 'Manage your account settings'}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2"><Label>{t('email')}</Label><Input value={user.email} disabled /></div>
-                  <div className="space-y-2"><Label>{language==='fr'?'Nom complet':'Full Name'}</Label><Input value={`${user.firstName} ${user.lastName}`} disabled /></div>
+                  <div className="space-y-2"><Label>{language === 'fr' ? 'Nom complet' : 'Full Name'}</Label><Input value={`${user.firstName} ${user.lastName}`} disabled /></div>
                   <div className="space-y-2"><Label>{t('service')}</Label><Input value={user.service} disabled /></div>
-                  <div className="space-y-2"><Label>{language==='fr'?'Poste':'Position'}</Label><Input value={user.position} disabled /></div>
+                  <div className="space-y-2"><Label>{language === 'fr' ? 'Poste' : 'Position'}</Label><Input value={user.position} disabled /></div>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium dark:text-white">{t('logout')}</p>
-                      <p className="text-sm text-slate-500">{language==='fr'?'Se déconnecter':'Sign out of your account'}</p>
+                      <p className="text-sm text-slate-500">{language === 'fr' ? 'Se déconnecter' : 'Sign out of your account'}</p>
                     </div>
                     <Button variant="outline" onClick={onLogout}><LogOut className="w-4 h-4 mr-2" />{t('logout')}</Button>
                   </div>

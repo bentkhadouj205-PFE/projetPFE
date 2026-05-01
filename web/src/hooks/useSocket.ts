@@ -1,38 +1,53 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { API_BASE_URL } from '@/lib/apiBase';
 
+const socketBaseUrl = 'http://192.168.1.6:5000';
+
 export const useSocket = (userId: string, userRole: string) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    if (!userId || !API_BASE_URL) return;
+    if (!userId || socketRef.current) return;
 
-    const newSocket = io(API_BASE_URL, {
-      transports: ['websocket'],
-      query: { userId, userRole }
+    socketRef.current = io(socketBaseUrl, {
+      query: { userId, userRole },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
-    newSocket.on('connect', () => {
-      console.log(' Socket connected!');
+    socketRef.current.on('connect', () => {
+      console.log('Socket connected!', socketRef.current?.id);
     });
 
-    newSocket.on('new-notification', (notification) => {
-      console.log(' New notification:', notification);
+    socketRef.current.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason);
+    });
+
+    socketRef.current.on('connect_error', (err) => {
+      console.error('Socket connection error:', err.message);
+    });
+
+    socketRef.current.on('new-notification', (notification) => {
+      console.log('New notification:', notification);
       setNotifications(prev => [notification, ...prev]);
     });
 
-    setSocket(newSocket);
-
     return () => {
-      newSocket.disconnect();
+      // Only disconnect on actual app unmount, not React StrictMode remounts
+      // if (socketRef.current) {
+      //   socketRef.current.disconnect();
+      //   socketRef.current = null;
+      // }
     };
   }, [userId, userRole]);
 
   const sendNotification = (data: any) => {
-    if (socket) {
-      socket.emit('send-notification', data);
+    if (socketRef.current) {
+      socketRef.current.emit('send-notification', data);
     }
   };
 
@@ -40,5 +55,5 @@ export const useSocket = (userId: string, userRole: string) => {
     setNotifications([]);
   };
 
-  return { socket, notifications, sendNotification, clearNotifications };
+  return { socket: socketRef.current, notifications, sendNotification, clearNotifications };
 };

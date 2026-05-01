@@ -11,7 +11,7 @@ interface Request {
     lastName: string;
     email: string;
     nin: string;
-    phone: string;
+   
   };
   subject: string;
   description: string;

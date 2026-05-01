@@ -20,7 +20,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 import {
   LayoutDashboard, CheckSquare, UserCircle, Settings, LogOut,
-  Mail, Phone, Briefcase, Building, Calendar, Clock,
+  Mail, Briefcase, Building, Calendar, Clock,
   CheckCircle2, Award, Bell, Moon, Sun, FileText, Search, Filter, Eye,
 } from 'lucide-react';
 
@@ -78,15 +78,13 @@ export function EmployeeDashboard({
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Sarah — Acte de naissance
   const [birthActOpen, setBirthActOpen] = useState(false);
   const [birthActTask, setBirthActTask] = useState<TaskWithCitizen | null>(null);
 
-  // Fatima — Carte de séjour
   const [carteSejourOpen, setCarteSejourOpen] = useState(false);
   const [carteSejourTask, setCarteSejourTask] = useState<TaskWithCitizen | null>(null);
 
-  const myTasks = tasks.getTasksByEmployee(user.id) as TaskWithCitizen[];
+  const myTasks = (tasks.tasks || []) as TaskWithCitizen[];
 
   const serviceLower = (user.service || '').toLowerCase();
   const positionLower = (user.position || '').toLowerCase();
@@ -156,16 +154,15 @@ export function EmployeeDashboard({
   const handleUpdateProfile = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    onUpdateUser({ ...user, firstName: formData.get('firstName') as string, lastName: formData.get('lastName') as string, phone: formData.get('phone') as string });
+    onUpdateUser({ ...user, firstName: formData.get('firstName') as string, lastName: formData.get('lastName') as string, });
     setIsEditing(false);
     toast.success(language === 'fr' ? 'Profil mis à jour avec succès' : 'Profile updated successfully');
   };
 
   const SidebarItem = ({ icon: Icon, label, value, badge }: { icon: React.ElementType; label: string; value: string; badge?: number }) => (
     <button onClick={() => setActiveTab(value)}
-      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all ${
-        activeTab === value ? 'bg-primary text-primary-foreground shadow-md' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-      }`}>
+      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all ${activeTab === value ? 'bg-primary text-primary-foreground shadow-md' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+        }`}>
       <div className="flex items-center gap-3">
         <Icon className="w-5 h-5" />
         <span className="font-medium">{label}</span>
@@ -259,7 +256,9 @@ export function EmployeeDashboard({
               <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('email')}</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('nin')}</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('status')}</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Document</th>
+              {!showBirthActColumns && (
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Document</th>
+              )}
               <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">{t('actions')}</th>
             </tr>
           </thead>
@@ -314,12 +313,14 @@ export function EmployeeDashboard({
                 <td className="px-4 py-3 whitespace-nowrap">
                   <Badge className={`${getStatusColor(task.status)} text-xs`}>{getStatusLabel(task.status)}</Badge>
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <Badge className={`${getDocumentStatusColor(task.documentStatus)} text-xs`}>
-                    <FileText className="w-3 h-3 mr-1" />
-                    {getDocumentStatusLabel(task.documentStatus)}
-                  </Badge>
-                </td>
+                {!showBirthActColumns && (
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <Badge className={`${getDocumentStatusColor(task.documentStatus)} text-xs`}>
+                      <FileText className="w-3 h-3 mr-1" />
+                      {getDocumentStatusLabel(task.documentStatus)}
+                    </Badge>
+                  </td>
+                )}
                 <td className="px-4 py-3 whitespace-nowrap text-right">
                   <div className="flex items-center justify-end gap-2">
                     <Button variant="ghost" size="sm"
@@ -518,7 +519,6 @@ export function EmployeeDashboard({
                         <div className="space-y-2"><Label htmlFor="lastName">{t('lastName')}</Label><Input id="lastName" name="lastName" defaultValue={user.lastName} required /></div>
                       </div>
                       <div className="space-y-2"><Label htmlFor="email">{t('email')}</Label><Input id="email" value={user.email} disabled /></div>
-                      <div className="space-y-2"><Label htmlFor="phone">{t('phone')}</Label><Input id="phone" name="phone" defaultValue={user.phone} required /></div>
                       <div className="space-y-2"><Label>{t('service')}</Label><Input value={user.service} disabled /></div>
                       <div className="flex gap-4">
                         <Button type="submit">{t('save')}</Button>
@@ -540,7 +540,7 @@ export function EmployeeDashboard({
                       <Separator />
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
-                          {[{ icon: Mail, label: t('email'), value: user.email }, { icon: Phone, label: t('phone'), value: user.phone }].map(({ icon: Icon, label, value }) => (
+                          {[{ icon: Mail, label: t('email'), value: user.email }].map(({ icon: Icon, label, value }) => (
                             <div key={label} className="flex items-center gap-3">
                               <Icon className="w-5 h-5 text-slate-400" />
                               <div><p className="text-sm text-slate-500">{label}</p><p className="font-medium dark:text-white">{value}</p></div>
@@ -595,7 +595,7 @@ export function EmployeeDashboard({
         citizen={birthActTask?.citizen ?? null}
         language={language}
         onCancel={() => setBirthActTask(null)}
-        onValidate={() => {}}
+        onValidate={() => { }}
       />
 
       {/* Fatima — Carte de séjour */}
@@ -605,7 +605,7 @@ export function EmployeeDashboard({
         citizen={carteSejourTask?.citizen ?? null}
         language={language}
         onCancel={() => setCarteSejourTask(null)}
-        onValidate={() => {}}
+        onValidate={() => { }}
       />
 
       {/* Other employees */}
@@ -613,7 +613,7 @@ export function EmployeeDashboard({
         requestId={selectedRequestId}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        position={user.position }
+        position={user.position}
         onValidationComplete={handleValidationComplete}
         language={language}
       />

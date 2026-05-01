@@ -1,8 +1,8 @@
 import express from 'express';
 import pool from '../db.js'; // pg Pool
+import { supabase } from '../supabaseClient.js';
 
 const router = express.Router();
-
 // GET /employees/position/:position
 router.get('/position/:position', async (req, res) => {
   try {

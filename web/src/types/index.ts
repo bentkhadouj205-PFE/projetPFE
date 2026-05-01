@@ -9,7 +9,6 @@ export interface User {
   role: UserRole;
   service: string;
   position: string;
-  phone: string;
   joinDate: string;
   avatar?: string;
   status: 'active' | 'inactive';

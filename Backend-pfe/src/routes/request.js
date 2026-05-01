@@ -1,8 +1,9 @@
 import express from 'express';
 import pool from '../db.js'; // pg Pool
 import { emailService, initializeEmail } from './emailServices.js';
-import { PDFService } from './pdfservice.js';
+import { PDFService } from '../server/pdfservice.js';
 import bcrypt from 'bcrypt';
+import { supabase } from '../supabaseClient.js';
 
 const router = express.Router();
 let emailInitialized = false;
@@ -90,24 +91,21 @@ router.post('/submit', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
       return res.status(400).json({ message: 'Email et mot de passe requis' });
     }
 
-    const { rows } = await pool.query(
-      `SELECT id, email, password_hash, first_name, last_name,
-              role, service, position, status
-       FROM employees
-       WHERE email = $1`,
-      [email.trim()]
-    );
+    // Query Supabase employees table instead of PostgreSQL
+    const { data: emp, error } = await supabase
+      .from('employees')
+      .select('id, email, password_hash, first_name, last_name, role, service, position, status')
+      .eq('email', email.trim())
+      .single();
 
-    if (rows.length === 0) {
+    if (error || !emp) {
       return res.status(401).json({ message: 'Identifiants incorrects' });
     }
 
-    const emp = rows[0];
     if (emp.status !== 'active') {
       return res.status(403).json({ message: 'Compte inactif' });
     }
@@ -117,12 +115,12 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Identifiants incorrects' });
     }
 
-    console.log(`Connexion employé: ${emp.first_name} ${emp.last_name} (${emp.position})`);
+    console.log(`Connexion employé (Supabase): ${emp.first_name} ${emp.last_name} (${emp.position})`);
 
     res.json({
       message: 'Connexion réussie',
       employee: {
-        id:        emp.id,
+        id:        emp.id,  // returns Supabase UUID
         email:     emp.email,
         firstName: emp.first_name,
         lastName:  emp.last_name,
@@ -136,17 +134,93 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// ── GET /requests (all or filtered by service) ────────────────────────────────
+router.get('/', async (req, res) => {
+  try {
+    const { service } = req.query;
+    console.log('SERVICE RECEIVED:', service);
+
+    if (!service) {
+      return res.status(400).json({ message: 'Le paramètre service est requis' });
+    }
+
+    // Mapping layer to ensure UI names match DB types
+    const serviceMap = {
+      'Civil Status': 'extrait_naissance',
+      'Residence': 'certificat_residence',
+      'Mariage': 'certificat_mariage',
+      'Voirie': 'autorisation_voirie',
+      'extrait_naissance': 'extrait_naissance',
+      'certificat_residence': 'certificat_residence',
+      'certificat_mariage': 'certificat_mariage',
+      'autorisation_voirie': 'autorisation_voirie'
+    };
+
+    const dbService = serviceMap[service] || service;
+
+    let query = supabase.from('demandes').select('*');
+    if (dbService) {
+      query = query.eq('type_document', dbService);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    console.log(`RESULT for ${dbService}:`, data.length);
+    res.json({ requests: data });
+  } catch (error) {
+    console.error('Request fetch error:', error.message);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // ── GET /requests/my-requests/:employeeId ─────────────────────────────────────
 router.get('/my-requests/:employeeId', async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT * FROM requests
-       WHERE assigned_to = $1
-       ORDER BY created_at DESC`,
-      [req.params.employeeId]
-    );
-    res.json({ count: rows.length, requests: rows });
+    const { employeeId } = req.params;
+
+    // Step 1: get employee from Supabase using their UUID
+    const { data: emp, error: empError } = await supabase
+      .from('employees')
+      .select('id, email, service, position')
+      .eq('id', employeeId)
+      .single();
+
+    if (empError || !emp) {
+      console.error('Employee lookup error:', empError);
+      return res.status(404).json({ message: 'Employé non trouvé' });
+    }
+
+    const position = (emp.position || '').toLowerCase();
+    let documentTypes = [];
+
+    if (position.includes('naissance')) {
+      documentTypes = ['extrait_naissance'];
+    } else if (position.includes('résidence') || position.includes('residence') || position.includes('fiche')) {
+      documentTypes = ['certificat_residence'];
+    } else if (position.includes('mariage')) {
+      documentTypes = ['certificat_mariage'];
+    } else if (position.includes('voirie')) {
+      documentTypes = ['autorisation_voirie'];
+    }
+
+    if (!documentTypes.length) {
+      return res.json({ count: 0, requests: [] });
+    }
+
+    // Step 2: query Supabase demandes by document type
+    const { data: demandes, error } = await supabase
+      .from('demandes')
+      .select('*')
+      .in('type_document', documentTypes)
+      .order('date_demande', { ascending: false });
+
+    if (error) return res.status(500).json({ message: error.message });
+
+    res.json({ count: demandes.length, requests: demandes });
+
   } catch (error) {
+    console.error('Error in my-requests:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -171,6 +245,25 @@ router.get('/status/:status', async (req, res) => {
       [req.params.status]
     );
     res.json({ count: rows.length, requests: rows });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ── PUT /requests/:requestId/read ─────────────────────────────────────────────
+router.put('/:requestId/read', async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    const { data, error } = await supabase
+      .from('demandes')
+      .update({ status: 'lu' })
+      .eq('id', requestId)
+      .select();
+
+    if (error) throw error;
+
+    res.json({ success: true, data: data[0] });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

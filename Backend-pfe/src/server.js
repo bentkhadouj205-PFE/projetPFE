@@ -1,106 +1,116 @@
+// Force restart at 12:24
+import 'dotenv/config';
 import express from 'express';
 import http from 'http';
+import path from 'path';
 import { Server } from 'socket.io';
-import dotenv from 'dotenv';
 import cors from 'cors';
-import pkg from 'pg';
 import bcrypt from 'bcrypt';
+import { supabase } from './supabaseClient.js';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const { Pool } = pkg;
-
-// ───────────── PostgreSQL Pool ─────────────
-const pool = new Pool({
-  user:     process.env.DB_USER     || 'postgres',
-  host:     process.env.DB_HOST     || 'localhost',
-  database: process.env.DB_NAME     || 'notification_db',
-  password: process.env.DB_PASSWORD || '1234',
-  port:     parseInt(process.env.DB_PORT) || 5432,
-});
-
-export { pool };
-export default pool;
+//  Force load check
+console.log(" FORCE ENV LOAD - SMTP_USER is:", process.env.SMTP_USER);
+console.log(" DEBUG - SMTP_USER length:", process.env.SMTP_USER?.length);
+console.log(" DEBUG - SMTP_PASS length:", process.env.SMTP_PASS?.length);
 
 // ───────────── Import Routes ─────────────
 import notificationRoutes from './routes/notification.js';
-import authRoutes         from './routes/authRoutes.js';
-import adminRoutes        from './routes/admin.js';
-import demandeRoutes      from './routes/demandeRoutes.js';
-import employeeRoutes     from './routes/employee.js';
-import requestRoutes      from './routes/request.js';
-import chatRoutes         from './routes/chatRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import adminRoutes from './routes/admin.js';
+import demandeRoutes from './routes/demandeRoutes.js';
+import employeeRoutes from './routes/employee.js';
+import requestRoutes from './routes/request.js';
+import chatRoutes from './routes/chatRoutes.js';
+import pdfRoutes from './routes/pdfRoutes.js';
+import emailCertificateRoutes from './routes/emailCertificate.js';
+import validationRoutes from './routes/validation.js';
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 5000;
 
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://192.168.1.6:5173',
+  'https://cane-canopener-glove.ngrok-free.app',
+  'https://cane-canopener-glove.ngrok-free.dev',
+  process.env.FRONTEND_URL, // For Render production
+].filter(Boolean);
+
 // ───────────── Socket.IO ─────────────
 const io = new Server(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
 export { io };
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  SOCKET.IO — Chat logic
-//  Events used by React frontend:
-//    EMIT   → agent:join, chat:get-conversations, chat:send-message, chat:mark-read
-//    LISTEN ← chat:conversations, chat:new-message, chat:message-sent
-//
-//  Events used by Flutter frontend:
-//    EMIT   → citizen:join, citizen:send-message
-//    LISTEN ← chat:new-agent-message, chat:message-sent
-// ─────────────────────────────────────────────────────────────────────────────
-
 io.on('connection', (socket) => {
-  console.log('Socket connecté:', socket.id);
+  const { userId, userRole } = socket.handshake.query;
+  console.log('Nouveau socket connecte:', socket.id, 'UserId:', userId, 'Role:', userRole);
+  console.log('Handshake Query:', socket.handshake.query);
 
-  // ── AGENT joins (React) ───────────────────────────────────────────────────
-  // React: socket.emit('agent:join')
+  if (userId) {
+    if (userRole === 'municipal_agent') {
+      socket.join('agents_room');
+      console.log('Municipal Agent rejoint agents_room:', userId);
+    } else if (userRole === 'employee') {
+      socket.join(`employee_${userId}`);
+      console.log('Employe rejoint room:', `employee_${userId}`);
+    }
+  }
+
   socket.on('agent:join', () => {
     socket.join('agents_room');
     socket.role = 'agent';
     console.log(`Agent rejoint agents_room (socket: ${socket.id})`);
   });
-
   // ── AGENT requests conversation list (React) ──────────────────────────────
-  // React: socket.emit('chat:get-conversations')
   socket.on('chat:get-conversations', async () => {
     try {
-      const { rows } = await pool.query(`
-        SELECT
-          cm.citizen_id                                          AS "citizenId",
-          u.prenom || ' ' || u.nom                              AS "citizenName",
-          u.email                                               AS "citizenEmail",
-          JSON_AGG(
-            JSON_BUILD_OBJECT(
-              'id',       cm2.id,
-              'from',     cm2.from_role,
-              'text',     cm2.message,
-              'time',     TO_CHAR(cm2.created_at AT TIME ZONE 'UTC', 'HH24:MI'),
-              'read',     cm2.is_read
-            )
-            ORDER BY cm2.created_at ASC
-          ) AS messages
-        FROM (
-          SELECT DISTINCT ON (citizen_id) citizen_id, created_at
-          FROM chat_messages
-          ORDER BY citizen_id, created_at DESC
-        ) cm
-        JOIN users u ON u.id = cm.citizen_id
-        JOIN chat_messages cm2 ON cm2.citizen_id = cm.citizen_id
-        GROUP BY cm.citizen_id, u.prenom, u.nom, u.email
-        ORDER BY MAX(cm.created_at) DESC
-      `);
+      // Fetch latest message per citizen
+      const { data: conversations, error } = await supabase
+        .from('chat_messages')
+        .select(`
+          citizen_id,
+          users (prenom, nom, email),
+          id, from_role, message, created_at, is_read
+        `)
+        .order('created_at', { ascending: true });
 
-      // citizenId must be a number in the frontend types (CitizenChat.citizenId: number)
-      // We keep it as-is (UUID string) — frontend just uses it as a key
-      socket.emit('chat:conversations', rows);
+      if (error) throw error;
+
+      // Group by citizenId manually since Supabase select is simpler than the previous complex SQL
+      const grouped = {};
+      conversations.forEach(msg => {
+        const cid = msg.citizen_id;
+        if (!grouped[cid]) {
+          grouped[cid] = {
+            citizenId: cid,
+            citizenName: `${msg.users.prenom} ${msg.users.nom}`,
+            citizenEmail: msg.users.email,
+            messages: []
+          };
+        }
+        grouped[cid].messages.push({
+          id: msg.id,
+          from: msg.from_role,
+          text: msg.message,
+          time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          read: msg.is_read
+        });
+      });
+
+      socket.emit('chat:conversations', Object.values(grouped));
     } catch (err) {
       console.error('chat:get-conversations error:', err.message);
       socket.emit('chat:conversations', []);
@@ -108,25 +118,23 @@ io.on('connection', (socket) => {
   });
 
   // ── AGENT sends message (React) ───────────────────────────────────────────
-  // React: socket.emit('chat:send-message', { citizenId, text, time })
   socket.on('chat:send-message', async ({ citizenId, text, time }) => {
     try {
-      const { rows } = await pool.query(
-        `INSERT INTO chat_messages (citizen_id, from_role, message, is_read)
-         VALUES ($1, 'agent', $2, TRUE)
-         RETURNING id, citizen_id, from_role, message, is_read, created_at`,
-        [citizenId, text]
-      );
-      const saved = rows[0];
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert([{ citizen_id: citizenId, from_role: 'agent', message: text, is_read: true }])
+        .select()
+        .single();
+
+      if (error) throw error;
 
       const messageObj = {
-        id:   saved.id,
+        id: data.id,
         from: 'agent',
-        text: saved.message,
-        time: time || new Date(saved.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: data.message,
+        time: time || new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         read: true,
       };
-
       // Confirm to the sending agent
       socket.emit('chat:message-sent', {
         citizenId,
@@ -144,15 +152,14 @@ io.on('connection', (socket) => {
   });
 
   // ── AGENT marks conversation as read (React) ──────────────────────────────
-  // React: socket.emit('chat:mark-read', { citizenId })
   socket.on('chat:mark-read', async ({ citizenId }) => {
     try {
-      await pool.query(
-        `UPDATE chat_messages
-         SET is_read = TRUE
-         WHERE citizen_id = $1 AND from_role = 'citizen'`,
-        [citizenId]
-      );
+      await supabase
+        .from('chat_messages')
+        .update({ is_read: true })
+        .eq('citizen_id', citizenId)
+        .eq('from_role', 'citizen');
+
       // Notify all agents to update unread badges
       io.to('agents_room').emit('chat:conversation-read', { citizenId });
     } catch (err) {
@@ -161,36 +168,36 @@ io.on('connection', (socket) => {
   });
 
   // ── CITIZEN joins (Flutter) ───────────────────────────────────────────────
-  // Flutter: socket.emit('citizen:join', { citizenId })
   socket.on('citizen:join', ({ citizenId }) => {
     socket.join(`citizen_${citizenId}`);
     socket.citizenId = citizenId;
-    socket.role      = 'citizen';
+    socket.role = 'citizen';
     console.log(`Citoyen rejoint citizen_${citizenId} (socket: ${socket.id})`);
   });
 
   // ── CITIZEN sends message (Flutter) ──────────────────────────────────────
-  // Flutter: socket.emit('citizen:send-message', { citizenId, message })
   socket.on('citizen:send-message', async ({ citizenId, message }) => {
     try {
       // Fetch citizen info
-      const { rows: userRows } = await pool.query(
-        `SELECT nom, prenom, email FROM users WHERE id = $1`,
-        [citizenId]
-      );
-      const user = userRows[0];
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('nom, prenom, email')
+        .eq('id', citizenId)
+        .single();
+
+      if (userError) throw userError;
 
       // Save message
-      const { rows } = await pool.query(
-        `INSERT INTO chat_messages (citizen_id, from_role, message)
-         VALUES ($1, 'citizen', $2)
-         RETURNING id, citizen_id, from_role, message, is_read, created_at`,
-        [citizenId, message]
-      );
-      const saved = rows[0];
+      const { data: saved, error: msgError } = await supabase
+        .from('chat_messages')
+        .insert([{ citizen_id: citizenId, from_role: 'citizen', message: message }])
+        .select()
+        .single();
+
+      if (msgError) throw msgError;
 
       const messageObj = {
-        id:   saved.id,
+        id: saved.id,
         from: 'citizen',
         text: saved.message,
         time: new Date(saved.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -198,12 +205,11 @@ io.on('connection', (socket) => {
       };
 
       // Broadcast to all agents (React dashboard)
-      // React listens: socket.on('chat:new-message', (data) => ...)
       io.to('agents_room').emit('chat:new-message', {
-        citizenId:    citizenId,
-        citizenName:  user ? `${user.prenom} ${user.nom}` : 'Citoyen',
-        citizenEmail: user?.email ?? '',
-        message:      messageObj,
+        citizenId: citizenId,
+        citizenName: `${user.prenom} ${user.nom}`,
+        citizenEmail: user.email,
+        message: messageObj,
       });
 
       // Confirm to citizen (Flutter)
@@ -214,69 +220,40 @@ io.on('connection', (socket) => {
       socket.emit('chat:error', { error: err.message });
     }
   });
-
-  // ── Disconnect ────────────────────────────────────────────────────────────
   socket.on('disconnect', () => {
     console.log('Socket déconnecté:', socket.id);
   });
 });
-
-// ───────────── Middleware ─────────────
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ───────────── Routes ─────────────
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/auth',          authRoutes);
-app.use('/api/admin',         adminRoutes);
-app.use('/api/demandes',      demandeRoutes);
-app.use('/api/employees',     employeeRoutes);
-app.use('/api/requests',      requestRoutes);
-app.use('/api/chat',          chatRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api', demandeRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/requests', requestRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/pdf', pdfRoutes);
+app.use('/api/email', emailCertificateRoutes);
+app.use('/api/validations', validationRoutes);
 
 app.get('/', (req, res) => {
-  res.json({ message: 'Baladiya Digital API — PostgreSQL + Socket.IO' });
+  res.json({ message: 'Baladiya Digital API — Supabase + Socket.IO' });
 });
 
-// ───────────── Seed Employees ─────────────
-async function seedEmployees() {
-  const seeds = [
-    { id: '11111111-1111-1111-1111-111111111111', first_name: 'Sarah',  last_name: '', email: 'sarah@gmail.com',  password: 'employee123', service: 'Fiche de residence',     position: 'fiche_residence',      role: 'employee', status: 'active', join_date: '2024-01-01' },
-    { id: '22222222-2222-2222-2222-222222222222', first_name: 'Jamel',  last_name: '', email: 'jamel@gmail.com',  password: 'employee123', service: 'Certificat de residence', position: 'certificat_residence', role: 'employee', status: 'active', join_date: '2024-01-01' },
-    { id: '33333333-3333-3333-3333-333333333333', first_name: 'Fatima', last_name: '', email: 'fatima@gmail.com', password: 'employee123', service: 'Acte de naissance',        position: 'acte_naissance',       role: 'employee', status: 'active', join_date: '2024-01-01' },
-    { id: '44444444-4444-4444-4444-444444444444', first_name: 'Maria',  last_name: '', email: 'maria@gmail.com',  password: 'employee123', service: 'Certificat de mariage',   position: 'certificat_mariage',   role: 'employee', status: 'active', join_date: '2024-01-01' },
-    { id: '55555555-5555-5555-5555-555555555555', first_name: 'Karim',  last_name: '', email: 'karim@gmail.com',  password: 'employee123', service: 'service technique',        position: 'autorisation_voirie',  role: 'employee', status: 'active', join_date: '2024-01-01' },
-  ];
-
-  for (const emp of seeds) {
-    const { rows } = await pool.query(`SELECT id FROM employees WHERE id = $1`, [emp.id]);
-    if (rows.length === 0) {
-      const password_hash = await bcrypt.hash(emp.password, 10);
-      await pool.query(
-        `INSERT INTO employees (id, first_name, last_name, email, password_hash, service, position, role, status, join_date)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-        [emp.id, emp.first_name, emp.last_name, emp.email, password_hash, emp.service, emp.position, emp.role, emp.status, emp.join_date]
-      );
-      console.log(`Employé créé: ${emp.first_name} (${emp.position})`);
-    }
-  }
-  console.log('Seed employés terminé');
-}
-
 // ───────────── Start Server ─────────────
-async function startServer() {
-  try {
-    await pool.query('SELECT 1');
-    console.log('PostgreSQL connecté');
-    await seedEmployees();
-    server.listen(PORT, () => {
-      console.log(`Serveur démarré sur http://localhost:${PORT}`);
-      console.log(`Socket.IO actif sur ws://localhost:${PORT}`);
-    });
-  } catch (error) {
-    console.error('Erreur démarrage:', error.message);
-    process.exit(1);
-  }
-}
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Serveur démarré sur port ${PORT}`);
+  console.log(`✅ Socket.IO actif`);
+});
 
-startServer();
+server.on('error', (err) => {
+  console.error('💥 Server error:', err);
+});

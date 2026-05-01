@@ -5,7 +5,7 @@ let io;
 function initializeSocket(server) {
   io = new Server(server, {
     cors: {
-      origin: 'http://localhost:5173', // Your React frontend URL
+      origin: 'http://localhost:5000', // Your React frontend URL
       credentials: true,
       methods: ['GET', 'POST']
     }

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, FileText, User, Phone, Mail, MapPin, Upload, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, FileText, User,  Mail, MapPin, Upload, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface DocumentRequest {
@@ -15,8 +15,7 @@ export interface DocumentRequest {
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
-  documentType: 'birth' |'marriage' | 'residence' | 'nationality' | 'other';
+  documentType: 'birth' |'marriage' | 'residence' | 'other';
   fullNameOnDocument?: string;
   birthDate?: string;
   birthPlace?: string;
@@ -39,9 +38,9 @@ interface DocumentRequestFormProps {
 
 const documentTypes = [
   { value: 'birth', label: 'Acte de naissance', description: 'Extrait d\'acte de naissance' },
-  { value: 'marriage', label: 'Acte de mariage',description: 'Certificat de mariage' },
+  { value: 'marriage', label: 'Acte de mariage', description: 'Certificat de mariage' },
   { value: 'residence', label: 'Fiche de Résidence', description: 'Attestation de résidence' },
-  { value: 'residence', label: 'Certificat de résidence',  description: 'Certificat de résidence' },
+  { value: 'residence_cert', label: 'Certificat de résidence', description: 'Certificat de résidence' },
   { value: 'tichnical', label: 'Authorisation de voirie', description: 'Authorisation de voirie' },
 ];
 
@@ -53,7 +52,7 @@ export function DocumentRequestForm({ citizenId, onSubmit }: DocumentRequestForm
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
+    
     fullNameOnDocument: '',
     birthDate: '',
     birthPlace: '',
@@ -179,19 +178,7 @@ export function DocumentRequestForm({ citizenId, onSubmit }: DocumentRequestForm
               required
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone" className="flex items-center gap-2">
-              <Phone className="w-4 h-4" />
-              Téléphone *
-            </Label>
-            <Input
-              id="phone"
-              value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              placeholder="05XX XX XX XX"
-              required
-            />
-          </div>
+         
         </div>
       </div>
 

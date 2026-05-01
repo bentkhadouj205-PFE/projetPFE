@@ -14,7 +14,7 @@ import {
 import {
   User,
   Mail,
-  Phone,
+ 
   MapPin,
   CreditCard,
   FileText,
@@ -33,7 +33,6 @@ interface Citizen {
   lastName: string;
   email: string;
   nin: string;
-  phone: string;
   address: string;
   wilaya?: string;
   commune?: string;
@@ -121,10 +120,34 @@ export function CitizenRequestModal({
     
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/requests/request/${requestId}`);
+      const response = await fetch(`${API_BASE_URL}/requests/${requestId}`);
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      setRequest(data);
+      
+      // Map PostgreSQL flat response to expected nested structure if necessary
+      const mappedData: RequestData = {
+        _id: data.id || data._id,
+        citizen: {
+          firstName: data.citizen_first_name || data.citizen?.firstName,
+          lastName: data.citizen_last_name || data.citizen?.lastName,
+          email: data.citizen_email || data.citizen?.email,
+          nin: data.citizen_nin || data.citizen?.nin,
+          address: data.citizen_address || data.citizen?.address,
+          wilaya: data.citizen_wilaya || data.citizen?.wilaya,
+          commune: data.citizen_commune || data.citizen?.commune,
+          actYear: data.citizen_act_year || data.citizen?.actYear,
+          actNumber: data.citizen_act_number || data.citizen?.actNumber,
+        },
+        subject: data.subject,
+        description: data.description,
+        status: data.status,
+        documentStatus: data.document_status || data.documentStatus,
+        serviceType: data.service_type || data.serviceType,
+        createdAt: data.created_at || data.createdAt,
+        comment: data.comment,
+      };
+      
+      setRequest(mappedData);
     } catch (error) {
       toast.error('Erreur lors du chargement des détails');
       console.error(error);
@@ -267,10 +290,6 @@ export function CitizenRequestModal({
                 <div className="flex items-center gap-3 text-sm">
                   <Mail className="w-4 h-4 text-slate-400" />
                   <span className="text-slate-600 dark:text-slate-300">{request.citizen.email}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600 dark:text-slate-300">{request.citizen.phone || 'Non spécifié'}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <CreditCard className="w-4 h-4 text-slate-400" />

@@ -9,7 +9,7 @@ const CITIZENS: Citizen[] = [
     lastName: 'Ben Ali',
     nin: '1234567890123000478',
     email: 'ahmed.Fassi@email.com',
-    phone: '0555123456',
+    
   },
   {
     id: 'c2',
@@ -17,7 +17,7 @@ const CITIZENS: Citizen[] = [
     lastName: 'Trabelsi',
     nin: '9876543210987',
     email: 'samira.trabelsi@email.com',
-    phone: '0555987654',
+   
   },
   {
     id: 'c3',
@@ -25,7 +25,7 @@ const CITIZENS: Citizen[] = [
     lastName: 'Benkiran',
     nin: '7891234567890000012',
     email: 'aicha.benkiran@email.com',
-    phone: '0555321654',
+    
     wilaya: 'Mostaganem',
     commune: 'Bir El Djir',
     actYear: '1998',

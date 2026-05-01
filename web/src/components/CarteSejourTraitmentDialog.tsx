@@ -375,13 +375,17 @@ export function CarteSejourTraitmentDialog({
 
         {/* ── Step 2: Demande Preview ── */}
         {step === 'demande' && citizen && (
-          <DemandePreview
-            citizen={citizenWithAdresse}
-            language={language}
-            onApprove={() => setStep('certificate')}
-            onReject={() => onOpenChange(false)}
-            onBack={() => setStep('form')}
-          />
+          <>
+            <DialogTitle className="sr-only">{tr.title}</DialogTitle>
+            <DialogDescription className="sr-only">{tr.subtitle}</DialogDescription>
+            <DemandePreview
+              citizen={citizenWithAdresse}
+              language={language}
+              onApprove={() => setStep('certificate')}
+              onReject={() => onOpenChange(false)}
+              onBack={() => setStep('form')}
+            />
+          </>
         )}
         {step === 'certificate' && citizen && (
           <>

@@ -5,7 +5,9 @@ import { Citizen } from './models/Citizen.js';
 import { Employee } from './models/employee.js';      
 import Demande from './models/Demande.js';
 import { Request } from './models/request.js';        
-import { Notification } from './models/notifications.js';  
+import { Notification } from './models/notifications.js'; 
+import {pdfRoutes} from './routes/pdfRoutes.js';
+
 
 async function syncDatabase() {
   try {

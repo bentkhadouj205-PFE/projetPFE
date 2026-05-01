@@ -5,16 +5,25 @@ dotenv.config();
 
 const { Pool } = pkg;
 
-const pool = new Pool({
+// APP database (users, requests, chat, notifications...)
+export const appPool = new Pool({
   user:     process.env.DB_USER     || 'postgres',
   host:     process.env.DB_HOST     || 'localhost',
-  database: process.env.DB_NAME     || 'baladiya_db',
+  database: process.env.APP_DB_NAME || 'baladiya_db',
   password: process.env.DB_PASSWORD || 'postgres',
   port:     parseInt(process.env.DB_PORT) || 5432,
 });
 
-pool.on('error', (err) => {
-  console.error('Erreur pool PostgreSQL:', err.message);
+// REGISTRY database (citizens, CNI, NIN...)
+export const registryPool = new Pool({
+  user:     process.env.DB_USER          || 'postgres',
+  host:     process.env.DB_HOST          || 'localhost',
+  database: process.env.REGISTRY_DB_NAME || 'baladiya_registry',
+  password: process.env.DB_PASSWORD      || 'postgres',
+  port:     parseInt(process.env.DB_PORT) || 5432,
 });
 
-export default pool;
+appPool.on('error',      err => console.error('APP DB error:',      err.message));
+registryPool.on('error', err => console.error('REGISTRY DB error:', err.message));
+
+export default appPool;

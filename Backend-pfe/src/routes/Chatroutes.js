@@ -1,5 +1,7 @@
 import express from 'express';
 import pool from '../db.js';
+import { supabase } from '../supabaseClient.js';
+
 
 const router = express.Router();
 

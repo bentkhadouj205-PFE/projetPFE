@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
+import emailjs from '@emailjs/browser';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +19,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { WILAYA_NAMES, communesForWilaya } from '@/data/wilayasCommunes';
-import { CheckCircle, Mail, ArrowLeft, XCircle } from 'lucide-react';
+import { CheckCircle, Mail, ArrowLeft, XCircle, Loader2 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const POSITION_OPTIONS_FR = [
   { value: '', label: '—' },
@@ -27,6 +31,8 @@ const POSITION_OPTIONS_FR = [
   { value: 'copie_litterale', label: 'Copie littérale' },
   { value: 'mention_marginal', label: 'Mention marginale' },
 ];
+
+
 
 export interface BirthActCitizenShape {
   firstName?: string;
@@ -89,33 +95,48 @@ function DemandePreview({
         <p className="text-slate-300 text-xs mt-1">Birth Certificate Request</p>
       </div>
 
-      {/* Fields */}
-      <div className="px-1">
-        <Field label="Wilaya" value={wilaya} />
-        <Field label="Commune" value={commune} />
-        <Field label="Année de l'acte (Year)" value={actYear} />
-        <Field label="N° de l'acte (Act Number)" value={actNumber} />
-        <Field label="Position" value={position} />
-        <Field label="Nombre de Copies" value={copiesCount} />
-      </div>
+      {/* Unified Information Card */}
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-4">
+        <div>
+          <p className="text-center font-semibold text-slate-700 mb-3 text-sm">
+            {language === 'fr' ? 'Informations de la Demande' : 'Request Information'}
+          </p>
+          <div className="space-y-2 text-sm">
+            {[
+              { label: 'Wilaya', value: wilaya },
+              { label: 'Commune / Municipality', value: commune },
+              { label: "Année de l'acte / Year", value: actYear },
+              { label: "N° de l'acte / Act Number", value: actNumber },
+              { label: 'Position', value: position },
+              { label: 'Nombre de Copies / Copies', value: copiesCount },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex justify-between border-b border-slate-100 pb-1 last:border-0">
+                <span className="text-slate-500">{label}:</span>
+                <span className="font-medium text-slate-800">{value || '—'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      {/* Requester Information */}
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-        <p className="text-center font-semibold text-slate-700 mb-3 text-sm">Requester Information</p>
-        <div className="space-y-2 text-sm">
-          {[
-            { label: 'First Name', value: citizen.firstName },
-            { label: 'Last Name', value: citizen.lastName },
-            { label: 'Email', value: citizen.email },
-            { label: 'NIN', value: citizen.nin },
-          ].map(({ label, value }) => (
-            <div key={label} className="flex justify-between">
-              <span className="text-slate-500">{label}:</span>
-              <span className={`font-medium ${label === 'Email' ? 'text-blue-600' : 'text-slate-800'} font-${label === 'NIN' ? 'mono' : 'normal'}`}>
-                {value || '—'}
-              </span>
-            </div>
-          ))}
+        <div className="pt-2 border-t border-slate-200">
+          <p className="text-center font-semibold text-slate-700 mb-3 text-sm">
+            {language === 'fr' ? 'Informations du Citoyen' : 'Requester Information'}
+          </p>
+          <div className="space-y-2 text-sm">
+            {[
+              { label: 'First Name', value: citizen.firstName },
+              { label: 'Last Name', value: citizen.lastName },
+              { label: 'Email', value: citizen.email },
+              { label: 'NIN', value: citizen.nin },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex justify-between border-b border-slate-100 pb-1 last:border-0">
+                <span className="text-slate-500">{label}:</span>
+                <span className={`font-medium ${label === 'Email' ? 'text-blue-600' : 'text-slate-800'} font-${label === 'NIN' ? 'mono' : 'normal'}`}>
+                  {value || '—'}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -138,63 +159,114 @@ function DemandePreview({
   );
 }
 
-// ─── Step 3: Arabic Birth Certificate ────────────────────────────────────────
 function BirthCertificatePreview({
-  citizen, wilaya, commune, actYear, actNumber, language, onSendEmail, onBack,
+  citizen, wilaya, commune, actYear, actNumber, language, onSendEmail, onBack, sending
 }: {
   citizen: BirthActCitizenShape;
   wilaya: string; commune: string; actYear: string; actNumber: string;
   language: 'fr' | 'en'; onSendEmail: () => void; onBack: () => void;
+  sending: boolean;
 }) {
-  const today = new Date().toLocaleDateString('fr-FR');
+  const now = new Date();
+  // Format: YYYY/MM/DD (Algerian official format)
+  const todayAr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
 
   return (
     <div className="flex flex-col gap-4">
-      <div dir="rtl" className="border border-slate-300 rounded-lg p-5 bg-white text-right"
+      <div dir="rtl" id="birth-certificate" className="border border-slate-300 rounded-lg p-5 bg-white text-right"
         style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', lineHeight: '2' }}>
-        <div className="text-center mb-2">
-          <p className="font-bold text-sm">الجمهورية الجزائرية الديموقراطية الشعبية</p>
-          <p className="text-xs">وزارة الداخلية والجماعات المحلية</p>
+
+        {/* Top Header Row */}
+        <div className="flex justify-between items-start mb-1 text-xs">
+          {/* Left: National Registry label */}
+          <div className="text-right">
+            <p>وزارة الداخلية والجماعات المحلية</p>
+            <p className="font-bold">السجل الوطني للحالة المدنية</p>
+          </div>
+          {/* Right: Republic header centered */}
+          <div className="text-center flex-1">
+            <p className="font-bold text-sm">الجمهورية الجزائرية الديموقراطية الشعبية</p>
+          </div>
         </div>
-        <div className="text-xs mb-3 space-y-0.5">
-          <p>ولاية <span className="font-bold underline">{wilaya || 'مستقانم'}</span></p>
-          <p>دائرة <span className="font-bold underline">{commune || 'مستقانم'}</span></p>
-          <p>بلدية <span className="font-bold underline">{commune || 'مستقانم'}</span></p>
-        </div>
+
+        {/* Main Title */}
         <div className="text-center my-3">
-          <h2 className="text-lg font-bold">شهادة الميلاد</h2>
+          <h2 className="text-xl font-bold">شهادة الميلاد</h2>
+          <p className="text-xs text-slate-500">نسخة إلكترونية</p>
         </div>
-        <div className="flex justify-between text-xs mb-3">
-          <span>رقم الشهادة: <span className="font-bold">{actNumber || '............'}</span></span>
+
+        {/* Certificate Number and Date row */}
+        <div className="flex justify-between text-xs mb-2">
           <span>{actYear || '..../.../...'}</span>
+          <span>رقم الشهادة: <span className="font-bold">{actNumber || '..........'}</span></span>
         </div>
-        <div className="text-xs space-y-2">
-          <p>في يوم <span className="border-b border-dotted border-slate-400 inline-block w-28">............</span>
-            &nbsp;على الساعة <span className="border-b border-dotted border-slate-400 inline-block w-16">......</span></p>
-          <p>ولد(ت)ب <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
-            &nbsp;ولاية <span className="font-bold">{wilaya || '............'}</span></p>
-          <p>المسمى(ة) <span className="font-bold">{citizen.firstName} {citizen.lastName}</span></p>
+
+        {/* Certificate Body */}
+        <div className="text-xs space-y-1.5">
+          <p>
+            في يوم <span className="border-b border-dotted border-slate-400 inline-block w-28">............</span>
+            &nbsp;على الساعة <span className="border-b border-dotted border-slate-400 inline-block w-16">......</span>
+          </p>
+          <p>
+            ولد(ت)ب <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
+            &nbsp;ولاية <span className="font-bold">{wilaya || '............'}</span>
+          </p>
+          <p>
+            &nbsp;.../.../&nbsp;<span className="font-bold">{actYear || '....'}</span>
+            &nbsp;المسمى(ة): <span className="font-bold">{citizen.firstName} {citizen.lastName}</span>
+          </p>
           <p>الجنس <span className="border-b border-dotted border-slate-400 inline-block w-24">............</span></p>
-          <p>ابن(ة) <span className="border-b border-dotted border-slate-400 inline-block w-24">............</span>
+          <p>
+            ابن(ة) <span className="border-b border-dotted border-slate-400 inline-block w-24">............</span>
             &nbsp;عمره <span className="border-b border-dotted border-slate-400 inline-block w-12">......</span>
-            &nbsp;مهنته <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span></p>
-          <p>و <span className="border-b border-dotted border-slate-400 inline-block w-24">............</span>
-            &nbsp;عمرها <span className="border-b border-dotted border-slate-400 inline-block w-12">.././././.</span>
-            &nbsp;مهنتها <span className="border-b border-dotted border-slate-400 inline-block w-20">././././..</span></p>
-          <p>الساكنين <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
+            &nbsp;مهنته <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
+          </p>
+          <p>
+            و <span className="border-b border-dotted border-slate-400 inline-block w-24">............</span>
+            &nbsp;عمرها <span className="border-b border-dotted border-slate-400 inline-block w-12">......</span>
+            &nbsp;مهنتها <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
+          </p>
+          <p>
+            الساكنين <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
             &nbsp;بلدية <span className="font-bold">{commune || '............'}</span>
-            &nbsp;ولاية <span className="font-bold">{wilaya || '............'}</span></p>
-          <p>حرر في <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
-            &nbsp;على الساعة <span className="border-b border-dotted border-slate-400 inline-block w-16">......</span></p>
+            &nbsp;ولاية <span className="font-bold">{wilaya || '............'}</span>
+          </p>
+          <p>
+            حرر في <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
+            &nbsp;على الساعة <span className="border-b border-dotted border-slate-400 inline-block w-16">......</span>
+          </p>
+          <p>
+            يُعلان به السيد(ة) <span className="border-b border-dotted border-slate-400 inline-block w-40">................</span>
+          </p>
+          <p>
+            وبعد التلاوة وقّع معنا نحن <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
+            &nbsp;ضابط الحالة المدنية بالبلدية
+          </p>
           <p>البيانات الهامشية <span className="border-b border-dotted border-slate-400 inline-block w-40">................</span></p>
           {[...Array(3)].map((_, i) => <p key={i} className="border-b border-dotted border-slate-300 w-full">&nbsp;</p>)}
         </div>
+
+        {/* Issue Date — AUTO */}
         <div className="mt-3 text-xs">
-          <p>حررت ب <span className="font-bold">{commune || 'مستقانم'}</span> في {today}</p>
+          <p>حررت ب <span className="font-bold">{commune || 'مستقانم'}</span> ...في.... <span className="font-bold">{todayAr}</span></p>
         </div>
+
+        {/* Latin Name note */}
         <div className="mt-3 text-xs text-center border-t pt-2">
           <p className="text-red-600 font-bold">الكتابة السابقة للاسم واللقب بالأحرف اللاتينية</p>
           <p className="border-b border-dotted border-slate-400 inline-block w-56 mt-1">&nbsp;</p>
+        </div>
+
+        {/* Notes */}
+        <div className="mt-2 text-xs space-y-0.5 text-right">
+          <p>1- كامل الحروف</p>
+          <p>2- اسم وقب الأولاد</p>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-3 text-center border-t pt-2">
+          <p className="font-bold text-xs">مستخرج من السجل الوطني للحالة المدنية</p>
+          <p className="text-xs text-slate-500">المرجع: 7</p>
         </div>
       </div>
 
@@ -212,10 +284,19 @@ function BirthCertificatePreview({
           <ArrowLeft className="w-4 h-4" />
           {language === 'fr' ? 'Retour' : 'Back'}
         </Button>
-        <Button type="button" onClick={onSendEmail}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2">
-          <Mail className="w-4 h-4" />
-          {language === 'fr' ? 'Envoyer par Email' : 'Send by Email'}
+        <Button type="button" onClick={onSendEmail} disabled={sending}
+          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 disabled:opacity-50">
+          {sending ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {language === 'fr' ? 'Envoi...' : 'Sending...'}
+            </>
+          ) : (
+            <>
+              <Mail className="w-4 h-4" />
+              {language === 'fr' ? 'Envoyer par Email' : 'Send by Email'}
+            </>
+          )}
         </Button>
       </div>
     </div>
@@ -276,13 +357,68 @@ export function BirthActTraitmentDialog({
     </div>
   );
 
-  const handleSendEmail = () => {
-    const email = citizen?.email || '';
-    const subject = encodeURIComponent('شهادة الميلاد - Acte de Naissance');
-    const body = encodeURIComponent(
-      `Bonjour ${citizen?.firstName || ''} ${citizen?.lastName || ''},\n\nVeuillez trouver ci-joint votre acte de naissance.\n\nCordialement,\nService d'état civil`
-    );
-    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${subject}&body=${body}`, '_blank');
+  const [sending, setSending] = useState(false);
+
+  const handleSendEmail = async () => {
+    if (!citizen?.email) {
+      alert(language === 'fr' ? 'Aucun email disponible pour ce citoyen' : 'No email available for this citizen');
+      return;
+    }
+
+    setSending(true);
+    try {
+      // 1. Get the High-Quality PDF from the backend as base64
+      const pdfResponse = await fetch('http://localhost:5000/api/email/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: `${citizen.firstName} ${citizen.lastName || ''}`,
+          wilaya,
+          commune,
+          actYear,
+          actNumber,
+        }),
+      });
+
+      if (!pdfResponse.ok) throw new Error('Failed to generate PDF on server');
+      const { pdfBase64 } = await pdfResponse.json();
+
+      // 2. Send via EmailJS (Notification Only - Free Plan doesn't support attachments)
+      await emailjs.send(
+        'service_mkkgy5p',
+        'template_adw38dw',
+        {
+          to_email: citizen.email,
+          user_name: `${citizen.firstName} ${citizen.lastName || ''}`.trim(),
+          date: new Date().toLocaleDateString('fr-FR'),
+        },
+        'iXE66zW89bTXOdiwQ'
+      );
+
+      // 3. Auto-download PDF for the Municipal Agent
+      const link = document.createElement('a');
+      link.href = `data:application/pdf;base64,${pdfBase64}`;
+      link.download = `acte-naissance-${citizen.firstName}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      alert(
+        language === 'fr'
+          ? `Email envoyé (Notification) et PDF téléchargé localement !`
+          : `Email sent (Notification) and PDF downloaded locally!`
+      );
+
+    } catch (error: any) {
+      console.error('EmailJS error:', error);
+      alert(
+        language === 'fr'
+          ? ` Erreur d'envoi: ${error.message}`
+          : ` Send error: ${error.message}`
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -360,15 +496,19 @@ export function BirthActTraitmentDialog({
         )}
 
         {step === 'demande' && citizen && (
-          <DemandePreview
-            citizen={citizen} wilaya={wilaya} commune={commune}
-            actYear={actYear} actNumber={actNumber}
-            position={POSITION_OPTIONS_FR.find(o => o.value === position)?.label || position}
-            copiesCount={copiesCount} language={language}
-            onApprove={() => setStep('certificate')}
-            onReject={() => onOpenChange(false)}
-            onBack={() => setStep('form')}
-          />
+          <>
+            <DialogTitle className="sr-only">{tr.title}</DialogTitle>
+            <DialogDescription className="sr-only">{tr.subtitle}</DialogDescription>
+            <DemandePreview
+              citizen={citizen} wilaya={wilaya} commune={commune}
+              actYear={actYear} actNumber={actNumber}
+              position={POSITION_OPTIONS_FR.find(o => o.value === position)?.label || position}
+              copiesCount={copiesCount} language={language}
+              onApprove={() => setStep('certificate')}
+              onReject={() => onOpenChange(false)}
+              onBack={() => setStep('form')}
+            />
+          </>
         )}
 
         {step === 'certificate' && citizen && (
@@ -385,6 +525,7 @@ export function BirthActTraitmentDialog({
               actYear={actYear} actNumber={actNumber} language={language}
               onSendEmail={handleSendEmail}
               onBack={() => setStep('demande')}
+              sending={sending}
             />
           </>
         )}

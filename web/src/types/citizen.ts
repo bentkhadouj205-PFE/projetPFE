@@ -4,7 +4,6 @@ export interface Citizen {
   lastName: string;
   nin: string;
   email: string;
-  phone: string;
   wilaya?: string;
   commune?: string;
   actYear?: string;

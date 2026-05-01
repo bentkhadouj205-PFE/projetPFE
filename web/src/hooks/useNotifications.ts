@@ -22,42 +22,42 @@ export interface EmployeeNotification {
   link?: string;
 }
 
-export function useNotifications(position: string, service?: string) {
+export function useNotifications(employeeId: string, service?: string) {
   const [notifications, setNotifications] = useState<EmployeeNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchNotifications = useCallback(async () => {
-    if (!position) return;
+    if (!employeeId) return;
     try {
       setLoading(true);
-      const url = `${API_BASE_URL}/notifications/position/${position}${service ? `?service=${encodeURIComponent(service)}` : ''}`;
+      const url = `${API_BASE_URL}/requests?service=${service}`;
       const res = await fetch(url);
-      
-      if (res.ok) {
-        const data = await res.json();
-        
-        const mapped = data.map((n: any) => ({
-          id: n.id,
-          title: n.title,
-          message: n.message,
-          type: n.service || 'general',
-          read: n.isRead,
-          createdAt: n.createdAt,
-          position: n.position,
-          link: '#'
-        }));
-        
-        setNotifications(mapped);
-        console.log('Notifications fetched:', mapped);
-      } else {
-        console.error('Failed to fetch:', res.status);
-      }
+      const data = await res.json();
+      console.log('API RAW:', data);
+
+      const rawItems = data.requests || [];
+      console.log('REQUESTS BEFORE SET:', rawItems);
+
+      const mapped = rawItems.map((n: any) => ({
+        id: n.id,
+        title: n.title || `Demande de ${n.type_document}`,
+        message: n.message || `Nouvelle demande de ${n.prenom} ${n.nom}`,
+        type: n.service || n.type_document || 'general',
+        read: n.is_read ?? false,
+        createdAt: n.created_at ?? n.date_demande ?? new Date().toISOString(),
+        position: n.position || '',
+        link: '#'
+      }));
+
+      setNotifications([...mapped]);
+      console.log('TABLE DATA SOURCE (Notifications):', mapped);
     } catch (err) {
-      console.error('Failed to fetch notifications', err);
+      console.error('FETCH ERROR:', err);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
-  }, [position, service]);
+  }, [employeeId, service]);
 
   useEffect(() => {
     fetchNotifications();
@@ -65,25 +65,25 @@ export function useNotifications(position: string, service?: string) {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  const markNotificationAsRead = async (id: string) => {
+  const markNotificationAsRead = async (notificationId: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/notifications/${id}/read`, { 
-        method: 'PUT' 
+      const res = await fetch(`${API_BASE_URL}/requests/${notificationId}/read`, {
+        method: 'PUT',
       });
       if (res.ok) {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+        );
       }
     } catch (err) {
-      console.error('Failed to mark notification as read', err);
+      console.error('Failed to mark as read', err);
     }
   };
 
   const markAllAsRead = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/notifications/position/${position}/read-all`, {
+      const res = await fetch(`${API_BASE_URL}/notifications/employee/${employeeId}/read-all`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ service })
       });
       if (res.ok) {
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));

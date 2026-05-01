@@ -11,7 +11,6 @@ export function CitizenRequestForm() {
     lastName: '',
     email: '',
     nin: '',
-    phone: '',
     subject: 'Fiche de Résidence',
     description: '',
     wilaya: '',
@@ -36,7 +35,6 @@ export function CitizenRequestForm() {
             lastName: formData.lastName,
             email: formData.email,
             nin: formData.nin,
-            phone: formData.phone,
             ...(isBirthAct
               ? {
                   wilaya: formData.wilaya,
@@ -62,7 +60,6 @@ export function CitizenRequestForm() {
           lastName: '',
           email: '',
           nin: '',
-          phone: '',
           subject: 'Fiche de Résidence',
           description: '',
           wilaya: '',
@@ -122,14 +119,6 @@ export function CitizenRequestForm() {
         />
       </div>
       
-      <div>
-        <Label>Téléphone</Label>
-        <Input 
-          value={formData.phone}
-          onChange={(e) => setFormData({...formData, phone: e.target.value})}
-          required 
-        />
-      </div>
       <div>
         <Label>Type de demande</Label>
         <select 

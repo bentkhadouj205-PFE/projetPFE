@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { API_BASE_URL } from '@/lib/apiBase';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 export interface Request {
   _id: string;
@@ -9,7 +10,6 @@ export interface Request {
     lastName: string;
     email: string;
     nin: string;
-    phone: string;
     address: string;
     wilaya?: string;
     commune?: string;
@@ -29,8 +29,8 @@ export function useRealRequests(employeeId: string) {
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchRequests = useCallback(async () => {
-    if (!employeeId) {
+  const fetchRequests = useCallback(async (service?: string) => {
+    if (!employeeId && !service) {
       setRequests([]);
       setLoading(false);
       return;
@@ -38,34 +38,47 @@ export function useRealRequests(employeeId: string) {
     
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/requests/my-requests/${employeeId}`);
+      const url = service 
+        ? `${API_BASE_URL}/requests?service=${service}`
+        : `${API_BASE_URL}/requests/my-requests/${employeeId}`;
+        
+      const response = await fetch(url);
       const data = await response.json();
+      console.log('API RESPONSE RAW:', data);
       
       if (response.ok) {
         const transformedRequests = data.requests?.map((req: any) => {
-          const st = req.status === 'in_progress' ? 'in-progress' : req.status;
+          const st = req.status === 'en_attente' ? 'pending'
+            : req.status === 'en_traitement' ? 'in-progress'
+            : req.status === 'approuve' ? 'completed'
+            : req.status === 'rejete' ? 'rejected'
+            : req.status;
+
           return {
-            id: req._id,
-            _id: req._id,
-            citizen: req.citizen,
-            subject: req.subject,
-            description: req.description,
+            id: req.id,
+            _id: req.id,
+            citizen: {
+              firstName: req.prenom,
+              lastName: req.nom,
+              nin: req.nin,
+              email: req.email || '',
+              commune: req.commune || '',
+              wilaya: req.wilaya_naissance || '',
+            },
+            subject: req.type_document,
+            title: req.type_document,
+            serviceType: req.type_document,
+            requestType: req.type_document,
+            description: `Demande de ${req.type_document}`,
             status: st,
-            documentStatus:
-              req.documentStatus === 'valid'
-                ? 'verified'
-                : req.documentStatus === 'missing'
-                  ? 'missing'
-                  : req.documentStatus || 'pending',
-            serviceType: req.serviceType || req.subject,
-            createdAt: req.createdAt,
-            assignedTo: req.assignedTo,
-            title: req.subject,
-            requestType: req.serviceType || req.subject,
+            createdAt: req.date_demande,
+            assignedTo: req.user_id,
+            documentStatus: 'pending',
           };
         }) || [];
         
         setRequests(transformedRequests);
+        console.log('TABLE DATA SOURCE:', transformedRequests);
       }
     } catch (error) {
       toast.error('Erreur de connexion au serveur');
@@ -73,10 +86,6 @@ export function useRealRequests(employeeId: string) {
       setLoading(false);
     }
   }, [employeeId]);
-
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
 
   const getTasksByEmployee = (id: string) => requests.filter(r => r.assignedTo === id);
 

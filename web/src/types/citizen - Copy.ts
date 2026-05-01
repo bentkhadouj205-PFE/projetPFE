@@ -4,7 +4,7 @@ export interface Citizen {
   lastName: string;
   nin: string; // National Identification Number
   email: string;
-  phone: string;
+ 
   
 }
 

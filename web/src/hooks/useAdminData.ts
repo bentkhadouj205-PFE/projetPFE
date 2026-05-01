@@ -11,7 +11,6 @@ export interface Employee {
   role: string;
   service: string;
   position: string;
-  phone: string;
   joinDate: string;
   status: string;
 }
@@ -26,7 +25,7 @@ export function useAdminData(enabled = false) {
     if (!enabled) return;
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/municipal_agent/employees`);
+      const response = await fetch(`${API_BASE_URL}/admin/employees`);
       const data = await response.json();
       if (response.ok) setEmployees(data.employees || []);
     } catch (error) {
@@ -40,7 +39,7 @@ export function useAdminData(enabled = false) {
     if (!enabled) return;
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/municipal_agent/all-requests`);
+      const response = await fetch(`${API_BASE_URL}/admin/all-requests`);
       const data = await response.json();
       if (response.ok) setRequests(data.requests || []);
     } catch (error) {
@@ -53,7 +52,7 @@ export function useAdminData(enabled = false) {
   const fetchStats = useCallback(async () => {
     if (!enabled) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/municipal_agent/stats`);
+      const response = await fetch(`${API_BASE_URL}/admin/stats`);
       const data = await response.json();
       if (response.ok) setStats(data);
     } catch (error) {
