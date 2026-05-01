@@ -10,6 +10,9 @@ export const getSocket = (): Socket => {
     socket = io(SERVER_URL, {
       autoConnect: false,
       transports: ['polling', 'websocket'], // polling first fixes ngrok WS issues
+      extraHeaders: {
+        "ngrok-skip-browser-warning": "true"
+      }
     });
   }
   return socket;
