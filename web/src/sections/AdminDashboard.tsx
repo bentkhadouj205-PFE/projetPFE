@@ -653,20 +653,28 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const RequestStatusBadge = ({ status }: { status: any }) => {
     const styles: Record<string, string> = {
       en_attente: 'bg-amber-100 text-amber-800 border-amber-200',
-      termine:    'bg-green-100 text-green-800 border-green-200',
-      rejete:     'bg-red-100 text-red-800 border-red-200',
       pending:    'bg-amber-100 text-amber-800 border-amber-200',
-      validated:  'bg-green-100 text-green-800 border-green-200',
-      rejected:   'bg-red-100 text-red-800 border-red-200',
+      approved:   'bg-green-100 text-green-800 border-green-200',
+      verified:   'bg-green-100 text-green-800 border-green-200',
+      termine:    'bg-green-100 text-green-800 border-green-200',
+      refuse:     'bg-red-100   text-red-800   border-red-200',
+      denied:     'bg-red-100   text-red-800   border-red-200',
+      rejected:   'bg-red-100   text-red-800   border-red-200',
+      expired:    'bg-gray-100  text-gray-800  border-gray-200',
+      en_cours:   'bg-blue-100  text-blue-800  border-blue-200',
     };
 
     const labels: Record<string, { fr: string; en: string }> = {
       en_attente: { fr: 'En attente', en: 'Pending' },
-      termine:    { fr: 'Validé',     en: 'Validated' },
-      rejete:     { fr: 'Rejeté',     en: 'Rejected' },
       pending:    { fr: 'En attente', en: 'Pending' },
-      validated:  { fr: 'Validé',     en: 'Validated' },
+      approved:   { fr: 'Approuvé',   en: 'Approved' },
+      verified:   { fr: 'Vérifié',    en: 'Verified' },
+      termine:    { fr: 'Terminé',    en: 'Completed' },
+      refuse:     { fr: 'Refusé',     en: 'Refused' },
+      denied:     { fr: 'Refusé',     en: 'Denied' },
       rejected:   { fr: 'Rejeté',     en: 'Rejected' },
+      expired:    { fr: 'Expiré',     en: 'Expired' },
+      en_cours:   { fr: 'En cours',   en: 'In progress' },
     };
 
     const style = styles[status] || 'bg-gray-100 text-gray-800 border-gray-200';
