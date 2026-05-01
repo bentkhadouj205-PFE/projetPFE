@@ -43,6 +43,16 @@ const allowedOrigins = [
   process.env.FRONTEND_URL?.replace(/\/$/, ''), // Strip trailing slash for CORS safety
 ].filter(Boolean);
 
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
+}));
+
+// Handle preflight requests manually
+app.options('*', cors());
+
 // ───────────── Socket.IO ─────────────
 const io = new Server(server, {
   cors: {
@@ -52,7 +62,7 @@ const io = new Server(server, {
   },
 });
 
-// 🛡️ Bulletproof CORS: Manual header injection for Socket.IO engine
+//  Bulletproof CORS: Manual header injection for Socket.IO engine
 io.engine.on("headers", (headers, req) => {
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
@@ -235,10 +245,6 @@ io.on('connection', (socket) => {
     console.log('Socket déconnecté:', socket.id);
   });
 });
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
