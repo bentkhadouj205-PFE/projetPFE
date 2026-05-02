@@ -260,29 +260,11 @@ router.post('/activate', async (req, res) => {
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou non validée' });
     }
 
-    // 3. Create the citizen account in the citizens table (IN REGISTER SCHEMA)
-    const { error: insertError } = await supabase
-      .schema('register')
-      .from('citizens')
-      .insert([{
-        email: data.email,
-        prenom: data.prenom,
-        nom: data.nom,
-        password_hash: data.password,
-        status: 'active',
-        created_at: new Date().toISOString(),
-      }]);
-
-    if (insertError) {
-      console.error(' Insert citizens error:', insertError);
-      throw insertError;
-    }
-
-    // 4. Invalidate token and mark request as fully activated
+    // 3. Invalidate token and mark request as fully activated
     await supabase
       .from('demandes_inscription')
       .update({
-        status: 'activated',
+        status: 'active',
         activation_token: null,
       })
       .eq('id', data.id);
