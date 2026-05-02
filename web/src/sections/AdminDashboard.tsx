@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSocket, connectSocket, disconnectSocket } from '@/services/socket';
 import { API_BASE_URL, BACKEND_URL } from '@/lib/apiBase';
 import { toast } from 'sonner';
@@ -464,7 +464,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       const token = localStorage.getItem('token');
       const response = await fetch(`${BACKEND_URL}/api/validations/${id}/validate`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`
@@ -493,7 +493,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
 
   // Ã¢â€â‚¬Ã¢â€â‚¬ Reject Ã¢â€ â€™ sends rejection email via backend Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
   const handleReject = async (id: string) => {
-    const reason = rejectReason.trim() || 
+    const reason = rejectReason.trim() ||
       "Vos informations ne correspondent pas au registre. Veuillez refaire votre demande en vous assurant que toutes les donnÃ©es sont correctes et lisibles.";
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) {
@@ -507,7 +507,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       const token = localStorage.getItem('token');
       const response = await fetch(`${BACKEND_URL}/api/validations/${id}/reject`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`
@@ -651,28 +651,28 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const RequestStatusBadge = ({ status }: { status: any }) => {
     const styles: Record<string, string> = {
       en_attente: 'bg-amber-100 text-amber-800 border-amber-200',
-      pending:    'bg-amber-100 text-amber-800 border-amber-200',
-      approved:   'bg-green-100 text-green-800 border-green-200',
-      verified:   'bg-green-100 text-green-800 border-green-200',
-      termine:    'bg-green-100 text-green-800 border-green-200',
-      refuse:     'bg-red-100   text-red-800   border-red-200',
-      denied:     'bg-red-100   text-red-800   border-red-200',
-      rejected:   'bg-red-100   text-red-800   border-red-200',
-      expired:    'bg-gray-100  text-gray-800  border-gray-200',
-      en_cours:   'bg-blue-100  text-blue-800  border-blue-200',
+      pending: 'bg-amber-100 text-amber-800 border-amber-200',
+      approved: 'bg-green-100 text-green-800 border-green-200',
+      verified: 'bg-green-100 text-green-800 border-green-200',
+      termine: 'bg-green-100 text-green-800 border-green-200',
+      refuse: 'bg-red-100   text-red-800   border-red-200',
+      denied: 'bg-red-100   text-red-800   border-red-200',
+      rejected: 'bg-red-100   text-red-800   border-red-200',
+      expired: 'bg-gray-100  text-gray-800  border-gray-200',
+      en_cours: 'bg-blue-100  text-blue-800  border-blue-200',
     };
 
     const labels: Record<string, { fr: string; en: string }> = {
       en_attente: { fr: 'En attente', en: 'Pending' },
-      pending:    { fr: 'En attente', en: 'Pending' },
-      approved:   { fr: 'ApprouvÃƒÂ©',   en: 'Approved' },
-      verified:   { fr: 'VÃƒÂ©rifiÃƒÂ©',    en: 'Verified' },
-      termine:    { fr: 'TerminÃƒÂ©',    en: 'Completed' },
-      refuse:     { fr: 'RefusÃƒÂ©',     en: 'Refused' },
-      denied:     { fr: 'RefusÃƒÂ©',     en: 'Denied' },
-      rejected:   { fr: 'RejetÃƒÂ©',     en: 'Rejected' },
-      expired:    { fr: 'ExpirÃƒÂ©',     en: 'Expired' },
-      en_cours:   { fr: 'En cours',   en: 'In progress' },
+      pending: { fr: 'En attente', en: 'Pending' },
+      approved: { fr: 'Approuve', en: 'Approved' },
+      verified: { fr: 'Verifie', en: 'Verified' },
+      termine: { fr: 'Termine', en: 'Completed' },
+      refuse: { fr: 'Refuse', en: 'Refused' },
+      denied: { fr: 'Refuse', en: 'Denied' },
+      rejected: { fr: 'Rejete', en: 'Rejected' },
+      expired: { fr: 'Expire', en: 'Expired' },
+      en_cours: { fr: 'En cours', en: 'In progress' },
     };
 
     const style = styles[status] || 'bg-gray-100 text-gray-800 border-gray-200';
@@ -1056,8 +1056,6 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
               </div>
             </div>
           )}
-
-          {/* Ã¢â€â‚¬Ã¢â€â‚¬ Validations Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
           {activeTab === 'validations' && (
             <div className="space-y-6">
 
@@ -1077,7 +1075,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                     {(['en_attente', 'termine', 'refuse'] as const).map((s) => {
                       const count = requests.filter((r) => r.status === s).length;
                       const colors = { en_attente: 'text-amber-700 dark:text-amber-400', termine: 'text-green-700 dark:text-green-400', refuse: 'text-red-700 dark:text-red-400' };
-                      const labels = { en_attente: language === 'fr' ? 'En attente' : 'Pending', termine: language === 'fr' ? 'ValidÃƒÂ©s' : 'Validated', refuse: language === 'fr' ? 'RejetÃƒÂ©s' : 'Rejected' };
+                      const labels = { en_attente: language === 'fr' ? 'En attente' : 'Pending', termine: language === 'fr' ? 'ValidÃƒÂ©s' : 'Validated', refuse: language === 'fr' ? 'Rejetés' : 'Rejected' };
                       return (
                         <Card
                           key={s}
@@ -1131,7 +1129,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                                   <TableRow key={req.id} className="dark:border-slate-700">
                                     <TableCell className="font-medium dark:text-white whitespace-nowrap">{req.lastName} {req.firstName}</TableCell>
                                     <TableCell className="font-mono text-xs dark:text-slate-300 whitespace-nowrap">
-                                      {req.nin ? `${String(req.nin).substring(0, 9)}...` : '-'}
+                                      {req.nin ? ${String(req.nin).substring(0, 9)}... : '-'}
                                     </TableCell>
                                     <TableCell className="text-blue-600 dark:text-blue-400 text-xs whitespace-nowrap">{req.email}</TableCell>
                                     <TableCell className="dark:text-slate-300 text-xs max-w-[150px] truncate" title={req.address}>{req.address}</TableCell>
@@ -1296,12 +1294,12 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                           </button>
                           <div className="flex flex-col gap-2">
                             <textarea
-                            value={rejectReason}
-                            onChange={(e) => setRejectReason(e.target.value)}
-                            placeholder="Entrez le motif du refus..."
-                            className="w-full p-3 border border-red-300 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
-                            rows={3}
-                          />  
+                              value={rejectReason}
+                              onChange={(e) => setRejectReason(e.target.value)}
+                              placeholder="Entrez le motif du refus..."
+                              className="w-full p-3 border border-red-300 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
+                              rows={3}
+                            />
                             <button
                               type="button"
                               onClick={() => handleReject(selectedRequest.id)}
