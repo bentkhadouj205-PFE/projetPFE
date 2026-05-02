@@ -101,9 +101,9 @@ router.post('/:id/validate', async (req, res) => {
     const { error: updateError } = await supabase
       .from('demandes_inscription')
       .update({
-        status:           'termine',
+        status: 'termine',
         activation_token: token,
-        date_traitement:  new Date().toISOString(),
+        date_traitement: new Date().toISOString(),
       })
       .eq('id', id);
 
@@ -119,9 +119,9 @@ router.post('/:id/validate', async (req, res) => {
     } catch (emailErr) {
       console.error(' [VALIDATE] Email error:', emailErr.message);
       // DB already updated — just warn about email
-      res.json({ 
-        success: true, 
-        warning: 'Validated but email failed: ' + emailErr.message 
+      res.json({
+        success: true,
+        warning: 'Validated but email failed: ' + emailErr.message
       });
     }
   } catch (err) {
@@ -260,20 +260,21 @@ router.post('/activate', async (req, res) => {
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou non validée' });
     }
 
-    // 3. Create the citizen account in the citizens table
+    // 3. Create the citizen account in the citizens table (IN REGISTER SCHEMA)
     const { error: insertError } = await supabase
+      .schema('register')
       .from('citizens')
       .insert([{
         email: data.email,
         prenom: data.prenom,
         nom: data.nom,
-        password: data.password,
+        password_hash: data.password,
         status: 'active',
         created_at: new Date().toISOString(),
       }]);
 
     if (insertError) {
-      console.error('❌ Insert citizens error:', insertError);
+      console.error(' Insert citizens error:', insertError);
       throw insertError;
     }
 
@@ -286,11 +287,11 @@ router.post('/activate', async (req, res) => {
       })
       .eq('id', data.id);
 
-    console.log('✅ Citizen activated:', data.email);
+    console.log(' Citizen activated:', data.email);
     res.json({ valid: true, email: data.email, name: data.prenom });
 
   } catch (err) {
-    console.error('🔥 Activate error:', err.message);
+    console.error('Activate error:', err.message);
     res.status(500).json({ valid: false, error: err.message });
   }
 });
