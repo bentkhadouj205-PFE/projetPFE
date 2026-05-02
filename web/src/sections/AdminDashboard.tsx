@@ -541,6 +541,66 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     setValidationView('detail');
   };
 
+  // ── Derived variables ─────────────────────────────────────────────────────
+  const normText = (s: string | null | undefined) => String(s ?? '').trim().toLowerCase();
+  const isMatch = (citizen: string, registry: string | null) => {
+    if (registry == null || String(registry).trim() === '') return false;
+    const c = String(citizen ?? '').trim();
+    const r = String(registry).trim();
+    const c10 = c.slice(0, 10);
+    const r10 = r.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(c10) && /^\d{4}-\d{2}-\d{2}$/.test(r10)) return c10 === r10;
+    return normText(c) === normText(r);
+  };
+
+  const isRealEmployee = (e: any) => e.role !== 'Municipal_Agent';
+  const totalEmployees = employees.employees.filter(isRealEmployee).length;
+  const activeEmployees = employees.employees.filter((e) => isRealEmployee(e) && e.status === 'active').length;
+  const totalTasks = tasks.tasks.length;
+  const completedTasks = tasks.tasks.filter((t) => t.status === 'completed').length;
+
+  const filteredEmployees = employees.employees.filter((emp) => {
+    if (!isRealEmployee(emp)) return false;
+    const { first, last } = getEmpName(emp);
+    const q = searchQuery.toLowerCase();
+    return first.toLowerCase().includes(q) || last.toLowerCase().includes(q) ||
+      emp.email?.toLowerCase().includes(q) || emp.service?.toLowerCase().includes(q);
+  });
+
+  const allRealEmployees = employees.employees.filter(isRealEmployee);
+  const employeesByService = SERVICES.map((s) => ({
+    ...s, employees: allRealEmployees.filter((emp) => {
+      const sv = emp.service?.toLowerCase() ?? '';
+      const po = emp.position?.toLowerCase() ?? '';
+      return s.keywords.some((kw) => sv.includes(kw) || po.includes(kw));
+    }),
+  }));
+
+  const filteredRequests = requests.filter((r) => {
+    const q = (requestSearch || '').toLowerCase();
+    return (
+      r.firstName?.toLowerCase().includes(q) ||
+      r.lastName?.toLowerCase().includes(q) ||
+      r.email?.toLowerCase().includes(q) ||
+      r.nin?.toLowerCase().includes(q)
+    );
+  });
+
+  const translateService = (raw: string) => { const e = SERVICE_LABELS[raw?.toLowerCase()]; return e ? e[language] : raw; };
+  const translatePosition = (raw: string) => { const e = POSITION_LABELS[raw?.toLowerCase()]; return e ? e[language] : raw; };
+
+  const getTabTitle = () => {
+    const titles: Record<string, { fr: string; en: string }> = {
+      dashboard: { fr: 'Aperçu du tableau de bord', en: 'Dashboard Overview' },
+      employees: { fr: 'Gestion des employés', en: 'Employee Management' },
+      tasks: { fr: 'Gestion des tâches', en: 'Task Management' },
+      validations: { fr: 'Validation des inscriptions', en: 'Registration Validations' },
+      messages: { fr: 'Messages citoyens', en: 'Citizen Messages' },
+      settings: { fr: 'Paramètres', en: 'Settings' },
+    };
+    return titles[activeTab]?.[language] ?? activeTab;
+  };
+
   const handleAddEmployee = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); const fd = new FormData(e.currentTarget);
     employees.addEmployee({ email: fd.get('email') as string, password: 'employee123', firstName: fd.get('firstName') as string, lastName: fd.get('lastName') as string, role: 'employee' as const, service: newEmployeeService, position: newEmployeePosition, joinDate: new Date().toISOString().split('T')[0], status: 'active' as const });
