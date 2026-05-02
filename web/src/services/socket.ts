@@ -1,9 +1,9 @@
-import { io, Socket } from 'socket.io-client';
+﻿import { io, Socket } from 'socket.io-client';
 import { BACKEND_URL } from '@/lib/apiBase';
 
-let socket: Socket | null = null;
+const SERVER_URL = BACKEND_URL || 'https://projetpfe-6zg2.onrender.com';
 
-const SERVER_URL = BACKEND_URL;
+let socket: Socket | null = null;
 
 export const getSocket = (): Socket => {
   if (!socket) {
@@ -17,23 +17,19 @@ export const getSocket = (): Socket => {
       reconnectionDelay: 1000,
       timeout: 20000
     });
-
     socket.on('connect', () => {
-      console.log('✅ Socket.IO connected successfully!', socket?.id);
+      console.log('Socket.IO connected successfully!', socket?.id);
     });
-
     socket.on('connect_error', (error) => {
-      console.error('❌ Socket.IO connection error:', error.message);
+      console.error('Socket.IO connection error:', error.message);
     });
-
     socket.on('disconnect', (reason) => {
-      console.log('⚠️ Socket.IO disconnected:', reason);
+      console.log('Socket.IO disconnected:', reason);
     });
   }
   return socket;
 };
 
-// Call this once when the agent logs in
 export const connectSocket = (): Socket => {
   const s = getSocket();
   if (!s.connected) s.connect();
