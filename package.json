@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "@sendgrid/mail": "^8.1.6"
+  },
+  "scripts": {
+    "update-ngrok": "node update-ngrok-url.js"
   }
 }
