@@ -1,0 +1,73 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
+import cors from 'cors';
+import bcrypt from 'bcrypt';
+import { supabase } from './supabaseClient.js';
+
+// ───────────── Import Routes ─────────────
+import notificationRoutes from './routes/notification.js';
+import authRoutes from './routes/authRoutes.js';
+import adminRoutes from './routes/admin.js';
+import demandeRoutes from './routes/demandeRoutes.js';
+import employeeRoutes from './routes/employee.js';
+import requestRoutes from './routes/request.js';
+import chatRoutes from './routes/chatRoutes.js';
+import pdfRoutes from './routes/pdfRoutes.js';
+import emailCertificateRoutes from './routes/emailCertificate.js';
+import validationRoutes from './routes/validation.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env from project root
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+const server = http.createServer(app);
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://192.168.1.6:5173',
+  'https://cane-canopener-glove.ngrok-free.app',
+  'https://cane-canopener-glove.ngrok-free.dev',
+  process.env.FRONTEND_URL?.replace(/\/$/, ''), // Strip trailing slash for CORS safety
+].filter(Boolean);
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
+}));
+
+// Handle preflight requests manually (Express 5 syntax)
+app.options('(.*)', cors());
+
+// ───────────── Socket.IO ─────────────
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
+
+//Bulletproof CORS: Manual header injection for Socket.IO engine
+io.engine.on("headers", (headers, req) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  headers["Access-Control-Allow-Credentials"] = "true";
+  headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
+  headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, ngrok-skip-browser-warning";
+});
+
+export { io };

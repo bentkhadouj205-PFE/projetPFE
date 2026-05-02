@@ -1,40 +1,63 @@
-import sgMail from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
-dotenv.config();
+import { fileURLToPath } from 'url';
+import path from 'path';
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const sendActivationEmail = async (to, firstName, token) => {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const verificationLink = `${frontendUrl}/verification-success?token=${token}`;
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
-  const msg = {
-    to,
-    from: 'noreply@resend.dev', // Replace with your verified sender
-    subject: 'Vérification de votre compte - Baladiya',
+export const sendActivationEmail = async (toEmail, prenom, token) => {
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+  const activationLink = `${frontendUrl}/?token=${token}`;
+
+  console.log(' [EMAIL] Generating Activation Link...');
+  console.log(` Link: ${activationLink}`);
+
+  const mailOptions = {
+    from: `"Baladiya Digital" <${process.env.SMTP_USER}>`,
+    to: toEmail,
+    subject: 'Activation de votre compte Baladiya Digital',
     html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-        <h2 style="color: #10b981;">Baladiya Digital</h2>
-        <p>Bonjour <strong>${firstName}</strong>,</p>
-        <p>Félicitations ! Votre demande d'inscription a été validée par nos services.</p>
+      <div style="font-family: sans-serif; max-width: 520px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+        <h2 style="color: #1D9E75;">Baladiya Digital</h2>
+        <p>Bonjour <strong>${prenom}</strong>,</p>
+        <p>Votre demande d'inscription a été <strong>validée</strong> par nos services.</p>
         <p>Cliquez sur le bouton ci-dessous pour activer votre compte :</p>
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${verificationLink}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Activer mon compte</a>
+          <a href="${activationLink}" style="
+            display: inline-block;
+            background: #1D9E75; color: white; padding: 12px 28px;
+            border-radius: 8px; text-decoration: none; font-weight: 600;
+            font-size: 15px;
+          ">Activer mon compte</a>
         </div>
-        <p style="color: #666; font-size: 14px;">Si le bouton ne fonctionne pas, copiez ce lien :<br>${verificationLink}</p>
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
-        <p style="color: #999; font-size: 12px; text-align: center;">© 2026 Baladiya - Support Municipal</p>
+        <p style="margin-top: 24px; color: #888; font-size: 12px;">
+          Si le bouton ne fonctionne pas, copiez ce lien :<br/>
+          <a href="${activationLink}" style="color: #1D9E75;">${activationLink}</a>
+        </p>
+        <hr style="margin-top: 32px; border: none; border-top: 1px solid #eee;"/>
+        <p style="color: #aaa; font-size: 11px; text-align: center;">
+          © 2026 Baladiya - Support Municipal
+        </p>
       </div>
     `,
   };
 
   try {
-    await sgMail.send(msg);
-    console.log(`✅ Activation email sent to ${to}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(` Activation email sent to ${toEmail} (ID: ${info.messageId})`);
   } catch (error) {
-    console.error('❌ SendGrid Error (Activation):', error.message);
-    if (error.response) console.error(error.response.body);
+    console.error(' Email Error (Activation):', error.message);
     throw error;
   }
 };

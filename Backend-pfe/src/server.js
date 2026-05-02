@@ -1,21 +1,12 @@
-// Force restart at 12:24
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import express from 'express';
 import http from 'http';
-import path from 'path';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
 import { supabase } from './supabaseClient.js';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-//  Force load check
-console.log(" FORCE ENV LOAD - SMTP_USER is:", process.env.SMTP_USER);
-console.log(" DEBUG - SMTP_USER length:", process.env.SMTP_USER?.length);
-console.log(" DEBUG - SMTP_PASS length:", process.env.SMTP_PASS?.length);
 
 // ───────────── Import Routes ─────────────
 import notificationRoutes from './routes/notification.js';
@@ -29,6 +20,12 @@ import pdfRoutes from './routes/pdfRoutes.js';
 import emailCertificateRoutes from './routes/emailCertificate.js';
 import validationRoutes from './routes/validation.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env from project root
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -37,9 +34,12 @@ const server = http.createServer(app);
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
   'http://192.168.1.6:5173',
-  'https://cane-canopener-glove.ngrok-free.app',
-  'https://cane-canopener-glove.ngrok-free.dev',
+  'https://cane-canopener-glove.ngrok-free.dev', // Explicit ngrok allowance
+  /\.ngrok-free\.app$/, // Allow any ngrok-free.app subdomain
+  /\.ngrok-free\.dev$/, // Allow any ngrok-free.dev subdomain
   process.env.FRONTEND_URL?.replace(/\/$/, ''), // Strip trailing slash for CORS safety
 ].filter(Boolean);
 
@@ -50,11 +50,48 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
 }));
 
-// Handle preflight requests manually
-app.options('*', cors());
+// 🛡️ Global Ngrok Bypass & CORS Hardening
+app.use((req, res, next) => {
+  res.setHeader('ngrok-skip-browser-warning', 'true');
+
+  // Handle manual preflight for problematic proxies
+  if (req.method === 'OPTIONS') {
+    const origin = req.headers.origin;
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) return allowed.test(origin);
+      return allowed === origin;
+    });
+
+    if (origin && isAllowed) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-requested-with, ngrok-skip-browser-warning');
+      return res.sendStatus(204);
+    }
+  }
+  next();
+});
+
+//  Dedicated /socket.io CORS handler (Bypasses engine issues)
+app.use('/socket.io', (req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.some(allowed => allowed instanceof RegExp ? allowed.test(origin) : allowed === origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-requested-with, ngrok-skip-browser-warning');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 
 // ───────────── Socket.IO ─────────────
 const io = new Server(server, {
+  allowEIO3: true,
+  allowUpgrades: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
   cors: {
     origin: allowedOrigins,
     methods: ['GET', 'POST'],
@@ -62,12 +99,19 @@ const io = new Server(server, {
   },
 });
 
-//  Bulletproof CORS: Manual header injection for Socket.IO engine
+// Bulletproof & Secure CORS: Validate origin before reflecting
 io.engine.on("headers", (headers, req) => {
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
+
+  const isAllowed = allowedOrigins.some(allowed => {
+    if (allowed instanceof RegExp) return allowed.test(origin);
+    return allowed === origin;
+  });
+
+  if (origin && isAllowed) {
     headers["Access-Control-Allow-Origin"] = origin;
   }
+
   headers["Access-Control-Allow-Credentials"] = "true";
   headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
   headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, ngrok-skip-browser-warning";
@@ -81,10 +125,11 @@ io.on('connection', (socket) => {
   console.log('Handshake Query:', socket.handshake.query);
 
   if (userId) {
-    if (userRole === 'municipal_agent') {
+    const role = userRole?.toLowerCase();
+    if (role === 'municipal_agent' || role === 'municipal agent') {
       socket.join('agents_room');
-      console.log('Municipal Agent rejoint agents_room:', userId);
-    } else if (userRole === 'employee') {
+      console.log(' Municipal Agent rejoint agents_room:', userId);
+    } else if (role === 'employee') {
       socket.join(`employee_${userId}`);
       console.log('Employe rejoint room:', `employee_${userId}`);
     }
@@ -250,16 +295,20 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ───────────── Routes ─────────────
+app.use('/api/validations', (req, res, next) => {
+  console.log(' [ROUTE] /api/validations hit');
+  next();
+}, validationRoutes);
+
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api', demandeRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/email', emailCertificateRoutes);
-app.use('/api/validations', validationRoutes);
+app.use('/api', demandeRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Baladiya Digital API — Supabase + Socket.IO' });
@@ -267,10 +316,10 @@ app.get('/', (req, res) => {
 
 // ───────────── Start Server ─────────────
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Serveur démarré sur port ${PORT}`);
-  console.log(`✅ Socket.IO actif`);
+  console.log(`Serveur démarré sur port ${PORT}`);
+  console.log(` Socket.IO actif`);
 });
 
 server.on('error', (err) => {
-  console.error('💥 Server error:', err);
+  console.error(' Server error:', err);
 });
