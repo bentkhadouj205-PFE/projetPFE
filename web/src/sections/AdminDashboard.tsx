@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSocket, connectSocket, disconnectSocket } from '@/services/socket';
 import { API_BASE_URL, BACKEND_URL } from '@/lib/apiBase';
 import { toast } from 'sonner';
@@ -26,7 +26,7 @@ import {
   FileText, Clock, Shield, FileCheck, AlertTriangle
 } from 'lucide-react';
 import axios from 'axios';
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface RegistrationRequest {
   id: string;
   firstName: string;
@@ -38,8 +38,8 @@ interface RegistrationRequest {
   address: string;
   status: 'pending' | 'validated' | 'rejected' | 'en_attente' | 'validee' | 'rejetee' | 'termine' | 'refuse';
   rejectionReason?: string;
-  cniScanPath: string | null;   // ← CNI photo from citizen
-  selfiePath: string | null;    // ← Selfie from citizen
+  cniScanPath: string | null;   // â† CNI photo from citizen
+  selfiePath: string | null;    // â† Selfie from citizen
   reg: {
     firstName: string | null;
     lastName: string | null;
@@ -135,17 +135,17 @@ interface MunicipalAgentDashboardProps {
     completeTask: (id: string) => void;
   };
 }
-// ─── Constants ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SERVICES = [
   {
-    id: 'civil', name: 'Civil Status', nameFr: 'État Civil', color: 'bg-blue-500',
+    id: 'civil', name: 'Civil Status', nameFr: 'Ã‰tat Civil', color: 'bg-blue-500',
     documents: [
       { en: 'Birth Certificate', fr: 'Acte de naissance' },
       { en: 'Marriage Certificate', fr: 'Certificat de mariage' },
-      { en: 'Residence Form', fr: 'Fiche de résidence' },
-      { en: 'Residence Certificate', fr: 'Certificat de résidence' }
+      { en: 'Residence Form', fr: 'Fiche de rÃ©sidence' },
+      { en: 'Residence Certificate', fr: 'Certificat de rÃ©sidence' }
     ],
-    keywords: ['fiche_residence', 'fiche de residence', 'certificat_residence', 'certificat de residence', 'acte_naissance', 'acte de naissance', 'certificat_mariage', 'certificat de mariage', 'etat civil', 'état civil'],
+    keywords: ['fiche_residence', 'fiche de residence', 'certificat_residence', 'certificat de residence', 'acte_naissance', 'acte de naissance', 'certificat_mariage', 'certificat de mariage', 'etat civil', 'Ã©tat civil'],
   },
   {
     id: 'autorisation', name: 'Road Occupancy Permit', nameFr: 'Autorisation de voirie', color: 'bg-green-500',
@@ -157,22 +157,22 @@ const SERVICES = [
 ];
 
 const SERVICE_LABELS: Record<string, { en: string; fr: string }> = {
-  'fiche de residence': { en: 'Civil status', fr: 'État civil' },
-  'certificat de residence': { en: 'Civil status', fr: 'État civil' },
-  'acte de naissance': { en: 'Civil status', fr: 'État civil' },
-  'certificat de mariage': { en: 'Civil status', fr: 'État civil' },
+  'fiche de residence': { en: 'Civil status', fr: 'Ã‰tat civil' },
+  'certificat de residence': { en: 'Civil status', fr: 'Ã‰tat civil' },
+  'acte de naissance': { en: 'Civil status', fr: 'Ã‰tat civil' },
+  'certificat de mariage': { en: 'Civil status', fr: 'Ã‰tat civil' },
   'autorisation de voirie': { en: 'Autorisation de voirie', fr: 'Autorisation de voirie' },
 };
 
 const POSITION_LABELS: Record<string, { en: string; fr: string }> = {
-  'fiche_residence': { en: 'Residence Form', fr: 'Fiche de résidence' },
-  'certificat_residence': { en: 'Residence Certificate', fr: 'Certificat de résidence' },
+  'fiche_residence': { en: 'Residence Form', fr: 'Fiche de rÃ©sidence' },
+  'certificat_residence': { en: 'Residence Certificate', fr: 'Certificat de rÃ©sidence' },
   'acte_naissance': { en: 'Birth Certificate', fr: 'Acte de naissance' },
   'certificat_mariage': { en: 'Marriage Certificate', fr: 'Certificat de mariage' },
   'autorisation de voirie': { en: 'Road Occupancy Permit', fr: 'Autorisation de voirie' },
 };
 
-// ─── Helpers for Comparison Layout ──────────────────────────────────────────
+// â”€â”€â”€ Helpers for Comparison Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const CompareRow: React.FC<{ label: string; citizen: string; registry?: string | null }> = ({ label, citizen, registry }) => {
   const matches = registry && citizen.toLowerCase().trim() === registry.toLowerCase().trim();
@@ -181,13 +181,13 @@ const CompareRow: React.FC<{ label: string; citizen: string; registry?: string |
       <div className="p-4 border-r border-slate-100 bg-white">
         <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">{label}</p>
         <p className={`font-semibold ${!matches && registry ? 'text-red-500' : 'text-slate-700'}`}>
-          {citizen || '—'}
+          {citizen || 'â€”'}
         </p>
       </div>
       <div className="p-4 bg-slate-50/30">
         <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">{label}</p>
         <p className="font-semibold text-slate-500">
-          {registry || '—'}
+          {registry || 'â€”'}
         </p>
       </div>
     </div>
@@ -200,12 +200,12 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
-  const [newEmployeeService, setNewEmployeeService] = useState<string>('État civil');
-  const [newEmployeePosition, setNewEmployeePosition] = useState<string>('Fiche de résidence');
+  const [newEmployeeService, setNewEmployeeService] = useState<string>('Ã‰tat civil');
+  const [newEmployeePosition, setNewEmployeePosition] = useState<string>('Fiche de rÃ©sidence');
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const { t, language } = useLanguage();
 
-  // ── Validation state ──────────────────────────────────────────────────────
+  // â”€â”€ Validation state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [requests, setRequests] = useState<RegistrationRequest[]>([]);
   const [demandes, setDemandes] = useState<Demande[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
@@ -215,7 +215,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const [requestSearch, setRequestSearch] = useState('');
   const [validationStatusFilter, setValidationStatusFilter] = useState<'all' | 'en_attente' | 'termine' | 'refuse'>('all');
 
-  // ── Chat state with Socket.IO ────────────────────────────────────────────
+  // â”€â”€ Chat state with Socket.IO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [chats, setChats] = useState<CitizenChat[]>([]);
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
   const [chatMessage, setChatMessage] = useState('');
@@ -230,7 +230,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const isProcessed = currentRequestStatus === 'termine' || currentRequestStatus === 'refuse';
 
 
-  // ── Fetch registration requests from PostgreSQL ───────────────────────────
+  // â”€â”€ Fetch registration requests from PostgreSQL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const [citizens, setCitizens] = useState<any[]>([]);
 
@@ -242,7 +242,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   });
   if (citizens.length > 0) console.log('First citizen sample:', citizens[0]);
 
-  // ── Fetch registration requests - Real-time polling ───────────────────────
+  // â”€â”€ Fetch registration requests - Real-time polling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const fetchData = async () => {
     // Fetch validations from your Express backend
     try {
@@ -304,24 +304,24 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     }
   };
 
-  // Safe session logger — never logs you out automatically
+  // Safe session logger â€” never logs you out automatically
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Supabase session:', session ? session.user.email : 'No session (using app auth)');
     });
   }, []);
 
-  // Around line 328 — fetch block
+  // Around line 328 â€” fetch block
   useEffect(() => {
     // Fetch immediately on load
     fetchData();
 
-    // Refresh every 30s — not every second
+    // Refresh every 30s â€” not every second
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [language]);
 
-  // ── Initialize Socket.IO connection ───────────────────────────────────────
+  // â”€â”€ Initialize Socket.IO connection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const socket = connectSocket();
     socketRef.current = socket;
@@ -401,12 +401,12 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     };
   }, [user.id]);
 
-  // ── Scroll chat to bottom on new message ──────────────────────────────────
+  // â”€â”€ Scroll chat to bottom on new message â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeChat?.messages.length]);
 
-  // ── Mark messages read when opening chat ─────────────────────────────────
+  // â”€â”€ Mark messages read when opening chat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const openChat = useCallback((citizenId: number) => {
     setActiveChatId(citizenId);
     setChats((prev) =>
@@ -419,7 +419,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     socketRef.current?.emit('chat:mark-read', { citizenId });
   }, []);
 
-  // ── Send message via Socket.IO ───────────────────────────────────────────
+  // â”€â”€ Send message via Socket.IO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const sendAgentMessage = useCallback(() => {
     if (!chatMessage.trim() || !activeChatId || !socketRef.current) return;
 
@@ -447,7 +447,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     return matchesSearch && mapStatus(r.status) === validationStatusFilter;
   });
 
-  // ── Validate → sends activation email via backend ────────────────────────
+  // â”€â”€ Validate â†’ sends activation email via backend â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleValidate = async (id: string) => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) {
@@ -473,7 +473,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       });
 
       const data = await response.json();
-      console.log('⬅ Server Response:', data);
+      console.log('â¬… Server Response:', data);
 
       if (!response.ok) {
         console.error(' Server returned error:', data);
@@ -484,14 +484,14 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       setSelectedRequest((prev) => prev ? { ...prev, status: 'termine' } : prev);
       setShowRejectInput(false);
       await fetchData();
-      toast.success(language === 'fr' ? "Email d'activation envoyé" : 'Activation email sent');
+      toast.success(language === 'fr' ? "Email d'activation envoyÃ©" : 'Activation email sent');
     } catch (error) {
       console.error(' handleValidate Error:', error);
       toast.error(language === 'fr' ? 'Erreur de validation' : 'Validation failed');
     }
   };
 
-  // ── Reject → sends rejection email via backend ───────────────────────────
+  // â”€â”€ Reject â†’ sends rejection email via backend â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleReject = async (id: string) => {
     if (!rejectReason.trim()) {
       toast.error(language === 'fr' ? 'Veuillez entrer un motif' : 'Please enter a reason');
@@ -530,7 +530,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       setShowRejectInput(false);
       setRejectReason('');
       await fetchData();
-      toast.error(language === 'fr' ? 'Demande rejetée — email envoyé' : 'Rejected — email sent');
+      toast.error(language === 'fr' ? 'Demande rejetÃ©e â€” email envoyÃ©' : 'Rejected â€” email sent');
     } catch {
       toast.error(language === 'fr' ? 'Erreur de rejet' : 'Rejection failed');
     }
@@ -565,7 +565,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     if (citizenCommune && !isMatch(citizenCommune, req.reg.commune)) return false;
     return true;
   };
-  // ── Employee helpers ──────────────────────────────────────────────────────
+  // â”€â”€ Employee helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const getEmpName = (emp: any) => ({ first: emp.firstName || emp.name?.split(' ')[0] || '', last: emp.lastName || emp.name?.split(' ').slice(1).join(' ') || '' });
   const translateService = (raw: string) => { const e = SERVICE_LABELS[raw?.toLowerCase()]; return e ? e[language] : raw; };
   const translatePosition = (raw: string) => { const e = POSITION_LABELS[raw?.toLowerCase()]; return e ? e[language] : raw; };
@@ -594,14 +594,14 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const handleAddEmployee = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); const fd = new FormData(e.currentTarget);
     employees.addEmployee({ email: fd.get('email') as string, password: 'employee123', firstName: fd.get('firstName') as string, lastName: fd.get('lastName') as string, role: 'employee' as const, service: newEmployeeService, position: newEmployeePosition, joinDate: new Date().toISOString().split('T')[0], status: 'active' as const });
-    setIsAddEmployeeOpen(false); setNewEmployeeService('État civil'); setNewEmployeePosition('Fiche de résidence');
-    toast.success(language === 'fr' ? 'Employé ajouté' : 'Employee added');
+    setIsAddEmployeeOpen(false); setNewEmployeeService('Ã‰tat civil'); setNewEmployeePosition('Fiche de rÃ©sidence');
+    toast.success(language === 'fr' ? 'EmployÃ© ajoutÃ©' : 'Employee added');
   };
 
   const handleAddTask = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); const fd = new FormData(e.currentTarget);
     tasks.addTask({ title: fd.get('title') as string, assignedTo: fd.get('assignedTo') as string, assignedBy: user.id, status: 'pending' as const });
-    setIsAddTaskOpen(false); toast.success(language === 'fr' ? 'Tâche assignée' : 'Task assigned');
+    setIsAddTaskOpen(false); toast.success(language === 'fr' ? 'TÃ¢che assignÃ©e' : 'Task assigned');
   };
 
   const getStatusColor = (s: Task['status']) =>
@@ -611,17 +611,17 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
 
   const getTabTitle = () => {
     const titles: Record<string, { fr: string; en: string }> = {
-      dashboard: { fr: 'Aperçu du tableau de bord', en: 'Dashboard Overview' },
-      employees: { fr: 'Gestion des employés', en: 'Employee Management' },
-      tasks: { fr: 'Gestion des tâches', en: 'Task Management' },
+      dashboard: { fr: 'AperÃ§u du tableau de bord', en: 'Dashboard Overview' },
+      employees: { fr: 'Gestion des employÃ©s', en: 'Employee Management' },
+      tasks: { fr: 'Gestion des tÃ¢ches', en: 'Task Management' },
       validations: { fr: 'Validation des inscriptions', en: 'Registration Validations' },
       messages: { fr: 'Messages citoyens', en: 'Citizen Messages' },
-      settings: { fr: 'Paramètres', en: 'Settings' },
+      settings: { fr: 'ParamÃ¨tres', en: 'Settings' },
     };
     return titles[activeTab]?.[language] ?? activeTab;
   };
 
-  // ── Sub-components ────────────────────────────────────────────────────────
+  // â”€â”€ Sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const CompactEmployeeCard = ({ employee }: { employee: any }) => {
     const { first, last } = getEmpName(employee);
@@ -667,13 +667,13 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     const labels: Record<string, { fr: string; en: string }> = {
       en_attente: { fr: 'En attente', en: 'Pending' },
       pending:    { fr: 'En attente', en: 'Pending' },
-      approved:   { fr: 'Approuvé',   en: 'Approved' },
-      verified:   { fr: 'Vérifié',    en: 'Verified' },
-      termine:    { fr: 'Terminé',    en: 'Completed' },
-      refuse:     { fr: 'Refusé',     en: 'Refused' },
-      denied:     { fr: 'Refusé',     en: 'Denied' },
-      rejected:   { fr: 'Rejeté',     en: 'Rejected' },
-      expired:    { fr: 'Expiré',     en: 'Expired' },
+      approved:   { fr: 'ApprouvÃ©',   en: 'Approved' },
+      verified:   { fr: 'VÃ©rifiÃ©',    en: 'Verified' },
+      termine:    { fr: 'TerminÃ©',    en: 'Completed' },
+      refuse:     { fr: 'RefusÃ©',     en: 'Refused' },
+      denied:     { fr: 'RefusÃ©',     en: 'Denied' },
+      rejected:   { fr: 'RejetÃ©',     en: 'Rejected' },
+      expired:    { fr: 'ExpirÃ©',     en: 'Expired' },
       en_cours:   { fr: 'En cours',   en: 'In progress' },
     };
 
@@ -696,18 +696,18 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
         <div>
           <p className="text-xs text-slate-400 mb-0.5">{label}</p>
           <p className={`text-sm font-medium ${color}`}>
-            {registry ?? <span className="italic text-slate-400">{language === 'fr' ? 'Non trouvé dans le registre' : 'Not found in registry'}</span>}
+            {registry ?? <span className="italic text-slate-400">{language === 'fr' ? 'Non trouvÃ© dans le registre' : 'Not found in registry'}</span>}
           </p>
         </div>
       </div>
     );
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
 
-      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
+      {/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <aside className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col">
         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
@@ -726,7 +726,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
             <SidebarItem icon={LayoutDashboard} label={t('dashboard')} value="dashboard" />
             <SidebarItem icon={Users} label={t('employees')} value="employees" />
             <SidebarItem icon={ShieldCheck} label={language === 'fr' ? 'Demandes des inscriptions' : 'Registration Requests'} value="validations" badge={pendingCount} />
-            <SidebarItem icon={MessageSquare} label={language === 'fr' ? 'Messagerie assistée' : 'Assisted messaging'} value="messages" badge={unreadCount} />
+            <SidebarItem icon={MessageSquare} label={language === 'fr' ? 'Messagerie assistÃ©e' : 'Assisted messaging'} value="messages" badge={unreadCount} />
             <SidebarItem icon={Settings} label={t('settings')} value="settings" />
           </div>
         </ScrollArea>
@@ -778,7 +778,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
 
         <div className="p-8">
 
-          {/* ── Dashboard ──────────────────────────────────────────────── */}
+          {/* â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
 
@@ -786,7 +786,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="dark:bg-slate-800 dark:border-slate-700">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">{language === 'fr' ? 'Total des employés' : 'Total Employees'}</CardTitle>
+                    <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">{language === 'fr' ? 'Total des employÃ©s' : 'Total Employees'}</CardTitle>
                     <Users className="w-4 h-4 text-slate-400" />
                   </CardHeader>
                   <CardContent>
@@ -796,12 +796,12 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                 </Card>
                 <Card className="dark:bg-slate-800 dark:border-slate-700">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">{language === 'fr' ? 'Total des tâches' : 'Total Tasks'}</CardTitle>
+                    <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">{language === 'fr' ? 'Total des tÃ¢ches' : 'Total Tasks'}</CardTitle>
                     <CheckSquare className="w-4 h-4 text-slate-400" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold dark:text-white">{totalTasks}</div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{language === 'fr' ? 'Pour tous les employés' : 'For all employees'}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{language === 'fr' ? 'Pour tous les employÃ©s' : 'For all employees'}</p>
                   </CardContent>
                 </Card>
                 <Card className="dark:bg-slate-800 dark:border-slate-700">
@@ -811,14 +811,14 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold dark:text-white">{completedTasks}</div>
-                    <p className="text-xs text-green-600 mt-1">{Math.round((completedTasks / totalTasks) * 100) || 0}% {language === 'fr' ? "taux d'achèvement" : 'completion rate'}</p>
+                    <p className="text-xs text-green-600 mt-1">{Math.round((completedTasks / totalTasks) * 100) || 0}% {language === 'fr' ? "taux d'achÃ¨vement" : 'completion rate'}</p>
                   </CardContent>
                 </Card>
               </div>
 
 
 
-              {/* ── Pending requests alert card ── */}
+              {/* â”€â”€ Pending requests alert card â”€â”€ */}
               {pendingCount > 0 && (
                 <Card
                   className="cursor-pointer hover:shadow-md transition-shadow border-amber-200 dark:border-amber-800 dark:bg-slate-800 mb-6"
@@ -859,7 +859,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                       </CardHeader>
                       <CardContent className="p-4 pt-0">
                         <div className="flex justify-between items-center mb-3">
-                          <p className="text-xs text-slate-500">{service.employees.length} {language === 'en' ? 'employees' : 'employés'}</p>
+                          <p className="text-xs text-slate-500">{service.employees.length} {language === 'en' ? 'employees' : 'employÃ©s'}</p>
                           <Badge variant="outline" className="text-[10px] py-0 h-4">{service.documents?.length || 0} {language === 'fr' ? 'Types' : 'Types'}</Badge>
                         </div>
 
@@ -889,7 +889,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
             </div>
           )}
 
-          {/* ── Employees ──────────────────────────────────────────────── */}
+          {/* â”€â”€ Employees â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'employees' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -900,7 +900,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                 <Dialog open={isAddEmployeeOpen} onOpenChange={setIsAddEmployeeOpen}>
                   <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />{t('addEmployee')}</Button></DialogTrigger>
                   <DialogContent className="max-w-lg dark:bg-slate-800">
-                    <DialogHeader><DialogTitle className="dark:text-white">{language === 'fr' ? 'Ajouter un employé' : 'Add New Employee'}</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle className="dark:text-white">{language === 'fr' ? 'Ajouter un employÃ©' : 'Add New Employee'}</DialogTitle></DialogHeader>
                     <form onSubmit={handleAddEmployee} className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2"><Label>{t('firstName')}</Label><Input name="firstName" required /></div>
@@ -912,7 +912,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                         <Select name="service" required value={newEmployeeService} onValueChange={setNewEmployeeService}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="État civil">État civil</SelectItem>
+                            <SelectItem value="Ã‰tat civil">Ã‰tat civil</SelectItem>
                             <SelectItem value="Autorisation de voirie">Autorisation de voirie</SelectItem>
                           </SelectContent>
                         </Select>
@@ -923,15 +923,15 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Acte de naissance">Acte de naissance</SelectItem>
-                            <SelectItem value="Fiche de résidence">Fiche de résidence</SelectItem>
-                            <SelectItem value="Certificat de résidence">Certificat de résidence</SelectItem>
+                            <SelectItem value="Fiche de rÃ©sidence">Fiche de rÃ©sidence</SelectItem>
+                            <SelectItem value="Certificat de rÃ©sidence">Certificat de rÃ©sidence</SelectItem>
                             <SelectItem value="Certificat de mariage">Certificat de mariage</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <DialogFooter>
                         <DialogClose asChild><Button type="button" variant="outline">{t('cancel')}</Button></DialogClose>
-                        <Button type="submit">{language === 'fr' ? "Ajouter l'employé" : 'Add Employee'}</Button>
+                        <Button type="submit">{language === 'fr' ? "Ajouter l'employÃ©" : 'Add Employee'}</Button>
                       </DialogFooter>
                     </form>
                   </DialogContent>
@@ -942,11 +942,11 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                   <Table>
                     <TableHeader>
                       <TableRow className="dark:border-slate-700">
-                        <TableHead className="dark:text-slate-400">{language === 'fr' ? 'Employé' : 'Employee'}</TableHead>
+                        <TableHead className="dark:text-slate-400">{language === 'fr' ? 'EmployÃ©' : 'Employee'}</TableHead>
                         <TableHead className="dark:text-slate-400">{t('service')}</TableHead>
                         <TableHead className="dark:text-slate-400">{language === 'fr' ? 'Poste' : 'Position'}</TableHead>
                         <TableHead className="dark:text-slate-400">{t('status')}</TableHead>
-                        <TableHead className="dark:text-slate-400">{language === 'fr' ? "Date d'adhésion" : 'Join Date'}</TableHead>
+                        <TableHead className="dark:text-slate-400">{language === 'fr' ? "Date d'adhÃ©sion" : 'Join Date'}</TableHead>
                         <TableHead className="w-12" />
                       </TableRow>
                     </TableHeader>
@@ -961,7 +961,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                                 <div><p className="font-medium dark:text-white">{first} {last}</p><p className="text-sm text-slate-500">{emp.email}</p></div>
                               </div>
                             </TableCell>
-                            <TableCell className="dark:text-slate-300">{translateService(emp.service) ?? '—'}</TableCell>
+                            <TableCell className="dark:text-slate-300">{translateService(emp.service) ?? 'â€”'}</TableCell>
                             <TableCell className="dark:text-slate-300">{translatePosition(emp.position)}</TableCell>
                             <TableCell>
                               <Badge variant={emp.status === 'active' ? 'default' : 'secondary'}>
@@ -975,7 +975,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem onClick={() => { employees.toggleEmployeeStatus(emp.id); toast.success('Status updated'); }}>
                                     {emp.status === 'active'
-                                      ? <><UserX className="w-4 h-4 mr-2" />{language === 'fr' ? 'Désactiver' : 'Deactivate'}</>
+                                      ? <><UserX className="w-4 h-4 mr-2" />{language === 'fr' ? 'DÃ©sactiver' : 'Deactivate'}</>
                                       : <><UserCheck className="w-4 h-4 mr-2" />{language === 'fr' ? 'Activer' : 'Activate'}</>}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => { employees.deleteEmployee(emp.id); toast.success('Deleted'); }} className="text-red-600">
@@ -994,20 +994,20 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
             </div>
           )}
 
-          {/* ── Tasks ──────────────────────────────────────────────────── */}
+          {/* â”€â”€ Tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'tasks' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold dark:text-white">{t('allRequests')}</h2>
                 <Dialog open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
-                  <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />{language === 'fr' ? 'Assigner une tâche' : 'Assign Task'}</Button></DialogTrigger>
+                  <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />{language === 'fr' ? 'Assigner une tÃ¢che' : 'Assign Task'}</Button></DialogTrigger>
                   <DialogContent className="max-w-lg dark:bg-slate-800">
-                    <DialogHeader><DialogTitle className="dark:text-white">{language === 'fr' ? 'Nouvelle tâche' : 'Assign New Task'}</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle className="dark:text-white">{language === 'fr' ? 'Nouvelle tÃ¢che' : 'Assign New Task'}</DialogTitle></DialogHeader>
                     <form onSubmit={handleAddTask} className="space-y-4">
                       <div className="space-y-2"><Label>{language === 'fr' ? 'Titre' : 'Title'}</Label><Input name="title" required /></div>
-                      <div className="space-y-2"><Label>{language === 'fr' ? 'Assigné à' : 'Assigned To'}</Label>
+                      <div className="space-y-2"><Label>{language === 'fr' ? 'AssignÃ© Ã ' : 'Assigned To'}</Label>
                         <Select name="assignedTo" required>
-                          <SelectTrigger><SelectValue placeholder={language === 'fr' ? 'Sélectionner un employé' : 'Select employee'} /></SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder={language === 'fr' ? 'SÃ©lectionner un employÃ©' : 'Select employee'} /></SelectTrigger>
                           <SelectContent>
                             {allRealEmployees.map((emp) => {
                               const { first, last } = getEmpName(emp);
@@ -1039,7 +1039,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                               </Badge>
                             </div>
                             <div className="flex items-center gap-4 text-sm text-slate-500">
-                              <span className="flex items-center gap-1"><Users className="w-4 h-4" />{language === 'fr' ? 'Assigné à :' : 'Assigned to:'} {emp?.firstName} {emp?.lastName}</span>
+                              <span className="flex items-center gap-1"><Users className="w-4 h-4" />{language === 'fr' ? 'AssignÃ© Ã  :' : 'Assigned to:'} {emp?.firstName} {emp?.lastName}</span>
                               <span className="flex items-center gap-1"><Calendar className="w-4 h-4" />{task.createdAt ? new Date(task.createdAt).toLocaleDateString() : ''}</span>
                             </div>
                           </div>
@@ -1059,7 +1059,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
             </div>
           )}
 
-          {/* ── Validations ────────────────────────────────────────────── */}
+          {/* â”€â”€ Validations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'validations' && (
             <div className="space-y-6">
 
@@ -1079,7 +1079,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                     {(['en_attente', 'termine', 'refuse'] as const).map((s) => {
                       const count = requests.filter((r) => r.status === s).length;
                       const colors = { en_attente: 'text-amber-700 dark:text-amber-400', termine: 'text-green-700 dark:text-green-400', refuse: 'text-red-700 dark:text-red-400' };
-                      const labels = { en_attente: language === 'fr' ? 'En attente' : 'Pending', termine: language === 'fr' ? 'Validés' : 'Validated', refuse: language === 'fr' ? 'Rejetés' : 'Rejected' };
+                      const labels = { en_attente: language === 'fr' ? 'En attente' : 'Pending', termine: language === 'fr' ? 'ValidÃ©s' : 'Validated', refuse: language === 'fr' ? 'RejetÃ©s' : 'Rejected' };
                       return (
                         <Card
                           key={s}
@@ -1123,7 +1123,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                             {filteredRequests.length === 0 ? (
                               <TableRow>
                                 <TableCell colSpan={8} className="text-center py-8 text-slate-500 italic">
-                                  {language === 'fr' ? 'Aucune demande trouvée' : 'No requests found'}
+                                  {language === 'fr' ? 'Aucune demande trouvÃ©e' : 'No requests found'}
                                 </TableCell>
                               </TableRow>
                             ) : (
@@ -1133,7 +1133,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                                   <TableRow key={req.id} className="dark:border-slate-700">
                                     <TableCell className="font-medium dark:text-white whitespace-nowrap">{req.lastName} {req.firstName}</TableCell>
                                     <TableCell className="font-mono text-xs dark:text-slate-300 whitespace-nowrap">
-                                      {req.nin ? `${String(req.nin).substring(0, 9)}…` : '—'}
+                                      {req.nin ? `${String(req.nin).substring(0, 9)}â€¦` : 'â€”'}
                                     </TableCell>
                                     <TableCell className="text-blue-600 dark:text-blue-400 text-xs whitespace-nowrap">{req.email}</TableCell>
                                     <TableCell className="dark:text-slate-300 text-xs max-w-[150px] truncate" title={req.address}>{req.address}</TableCell>
@@ -1162,7 +1162,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                                           />
                                         </a>
                                       ) : (
-                                        <span className="text-xs text-slate-400 italic">—</span>
+                                        <span className="text-xs text-slate-400 italic">â€”</span>
                                       )}
                                     </TableCell>
                                     <TableCell><RequestStatusBadge status={req.status} /></TableCell>
@@ -1220,13 +1220,13 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                         </div>
                       </CardContent>
                     </Card>
-                    {/* CNI scan vs Selfie — both uploaded by citizen */}
+                    {/* CNI scan vs Selfie â€” both uploaded by citizen */}
                     <div className="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-700 border-t border-slate-100 dark:border-slate-700">
 
-                      {/* Left — CNI scan */}
+                      {/* Left â€” CNI scan */}
                       <div className="px-6 py-4">
                         <p className="text-xs text-slate-400 mb-2">
-                          {language === 'fr' ? 'CNI — scan soumis' : 'CNI — submitted scan'}
+                          {language === 'fr' ? 'CNI â€” scan soumis' : 'CNI â€” submitted scan'}
                         </p>
                         {selectedRequest.cniScanPath ? (
                           <a
@@ -1253,7 +1253,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                         )}
                       </div>
 
-                      {/* Right — Selfie */}
+                      {/* Right â€” Selfie */}
                       <div className="px-6 py-4">
                         <p className="text-xs text-slate-400 mb-2">
                           {language === 'fr' ? 'Photo selfie du citoyen' : 'Citizen selfie photo'}
@@ -1284,7 +1284,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                       </div>
                     </div>
 
-                    {/* ACTIONS — Hide after action */}
+                    {/* ACTIONS â€” Hide after action */}
                     {selectedRequest.status === 'en_attente' && (
                       <div className="pt-6 border-t border-slate-100 mt-6">
                         <div className="grid grid-cols-2 gap-4">
@@ -1294,7 +1294,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                             className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
                           >
                             <ShieldCheck className="w-5 h-5" />
-                            Validate — send activation email
+                            Validate â€” send activation email
                           </button>
                           <div className="flex flex-col gap-2">
                             <textarea
@@ -1310,7 +1310,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                               className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
                             >
                               <XCircle className="w-5 h-5" />
-                              Reject — send rejection email
+                              Reject â€” send rejection email
                             </button>
                           </div>
                         </div>
@@ -1321,14 +1321,14 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                     {(selectedRequest.status === 'validated' || selectedRequest.status === 'termine') && (
                       <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-center gap-2 text-emerald-600 font-bold text-lg animate-in zoom-in duration-300">
                         <CheckCircle2 className="w-6 h-6" />
-                        Demande validée ✅
+                        Demande validÃ©e âœ…
                       </div>
                     )}
 
                     {(selectedRequest.status === 'rejected' || selectedRequest.status === 'refuse') && (
                       <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-center gap-2 text-red-500 font-bold text-lg animate-in zoom-in duration-300">
                         <XCircle className="w-6 h-6" />
-                        Demande rejetée ❌
+                        Demande rejetÃ©e âŒ
                       </div>
                     )}
                   </div>
@@ -1337,7 +1337,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
             </div>
           )}
 
-          {/* ── Messages / Chat with Socket.IO ────────────────────────────────── */}
+          {/* â”€â”€ Messages / Chat with Socket.IO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'messages' && (
             <div className="flex gap-6 h-[calc(100vh-180px)]">
 
@@ -1406,7 +1406,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                     <div className="text-center text-slate-400">
                       <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-40" />
                       <p className="text-sm">
-                        {language === 'fr' ? 'Sélectionnez une conversation' : 'Select a conversation'}
+                        {language === 'fr' ? 'SÃ©lectionnez une conversation' : 'Select a conversation'}
                       </p>
                       {!isSocketConnected && (
                         <p className="text-xs text-red-400 mt-2">
@@ -1460,7 +1460,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                     <div className="px-5 py-4 border-t border-slate-100 dark:border-slate-700">
                       <div className="flex gap-3">
                         <Input
-                          placeholder={language === 'fr' ? 'Écrire un message...' : 'Type a message...'}
+                          placeholder={language === 'fr' ? 'Ã‰crire un message...' : 'Type a message...'}
                           value={chatMessage}
                           onChange={(e) => setChatMessage(e.target.value)}
                           onKeyDown={(e) => {
@@ -1487,13 +1487,13 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
             </div>
           )}
 
-          {/* ── Settings ───────────────────────────────────────────────── */}
+          {/* â”€â”€ Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'settings' && (
             <div className="max-w-2xl">
               <Card className="dark:bg-slate-800 dark:border-slate-700">
                 <CardHeader>
-                  <CardTitle className="dark:text-white">{language === 'fr' ? 'Paramètres Agent Municipal' : 'Municipal Agent Settings'}</CardTitle>
-                  <CardDescription>{language === 'fr' ? 'Gérer les paramètres de votre compte' : 'Manage your account settings'}</CardDescription>
+                  <CardTitle className="dark:text-white">{language === 'fr' ? 'ParamÃ¨tres Agent Municipal' : 'Municipal Agent Settings'}</CardTitle>
+                  <CardDescription>{language === 'fr' ? 'GÃ©rer les paramÃ¨tres de votre compte' : 'Manage your account settings'}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2"><Label>{t('email')}</Label><Input value={user.email} disabled /></div>
@@ -1504,7 +1504,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium dark:text-white">{t('logout')}</p>
-                      <p className="text-sm text-slate-500">{language === 'fr' ? 'Se déconnecter' : 'Sign out of your account'}</p>
+                      <p className="text-sm text-slate-500">{language === 'fr' ? 'Se dÃ©connecter' : 'Sign out of your account'}</p>
                     </div>
                     <Button variant="outline" onClick={onLogout}><LogOut className="w-4 h-4 mr-2" />{t('logout')}</Button>
                   </div>
