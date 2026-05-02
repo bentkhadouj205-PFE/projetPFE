@@ -528,8 +528,8 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       setShowRejectInput(false);
       setRejectReason('');
       await fetchData();
-                        Demande rejetée ❌
-      toast.error(language === 'fr' ? 'Demande rejetée — email envoyé' : 'Rejected — email sent');
+      toast.error(language === 'fr' ? 'Demande rejetÃ©e â€” email envoyÃ©' : 'Rejected â€” email sent');
+    } catch {
       toast.error(language === 'fr' ? 'Erreur de rejet' : 'Rejection failed');
     }
   };
@@ -1326,7 +1326,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                     {(selectedRequest.status === 'rejected' || selectedRequest.status === 'refuse') && (
                       <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-center gap-2 text-red-500 font-bold text-lg animate-in zoom-in duration-300">
                         <XCircle className="w-6 h-6" />
-                        Demande rejetée ❌
+                        Demande rejetÃƒÂ©e Ã¢ÂÅ’
                       </div>
                     )}
                   </div>
@@ -1516,4 +1516,5 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     </div>
   );
 }
+
 
