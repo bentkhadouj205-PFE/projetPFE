@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSocket, connectSocket, disconnectSocket } from '@/services/socket';
 import { API_BASE_URL, BACKEND_URL } from '@/lib/apiBase';
 import { toast } from 'sonner';
@@ -533,6 +533,14 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       toast.error(language === 'fr' ? 'Erreur de rejet' : 'Rejection failed');
     }
   };
+
+  const openDetail = (req: RegistrationRequest) => {
+    setSelectedRequest(req);
+    setShowRejectInput(false);
+    setRejectReason('');
+    setValidationView('detail');
+  };
+
   const handleAddEmployee = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); const fd = new FormData(e.currentTarget);
     employees.addEmployee({ email: fd.get('email') as string, password: 'employee123', firstName: fd.get('firstName') as string, lastName: fd.get('lastName') as string, role: 'employee' as const, service: newEmployeeService, position: newEmployeePosition, joinDate: new Date().toISOString().split('T')[0], status: 'active' as const });
