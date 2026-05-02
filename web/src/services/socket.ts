@@ -3,7 +3,7 @@ import { BACKEND_URL } from '@/lib/apiBase';
 
 let socket: Socket | null = null;
 
-const SERVER_URL = 'http://localhost:5000';
+const SERVER_URL = BACKEND_URL;
 
 export const getSocket = (): Socket => {
   if (!socket) {
