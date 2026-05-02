@@ -40,7 +40,8 @@ router.get('/', async (req, res) => {
     const enriched = await Promise.all(requests.map(async (r) => {
       // Find matching citizen in register.citizens by NIN
       const { data: citizen } = await supabase
-        .from('citizens_safe')
+        .schema('register')
+        .from('citizens')
         .select('nom, prenom, nin, date_naissance, commune')
         .eq('nin', r.nin)
         .maybeSingle();
@@ -237,43 +238,62 @@ router.get('/activate/:token', async (req, res) => {
 // ─── POST /activate — Called by VerificationSuccess.tsx ────────────────────
 router.post('/activate', async (req, res) => {
   const { token } = req.body;
-  console.log('🔍 [ACTIVATE] Token received in body:', token);
 
   if (!token) {
     return res.status(400).json({ valid: false, error: 'No token provided' });
   }
 
   try {
+    // 1. Find the request using the token
     const { data, error } = await supabase
       .from('demandes_inscription')
-      .select('id, email, prenom, nom, status, activation_token')
+      .select('*')
       .eq('activation_token', token)
       .maybeSingle();
 
-    console.log('📦 [ACTIVATE] DB result:', data ? { email: data.email, status: data.status } : 'No record found');
-    if (error) console.log('❌ [ACTIVATE] DB error:', error);
-
     if (error || !data) {
-      console.log('❌ [ACTIVATE] Token not found or invalid');
       return res.status(404).json({ valid: false, error: 'Lien invalide ou expiré' });
     }
 
+    // 2. Make sure the agent has validated this request
     if (data.status !== 'termine') {
-      console.log(`❌ [ACTIVATE] Status mismatch. Found: ${data.status}, Expected: termine`);
-      return res.status(400).json({ valid: false, error: 'Compte déjà activé ou demande non validée' });
+      return res.status(400).json({ valid: false, error: 'Compte déjà activé ou non validée' });
     }
 
-    console.log('✅ [ACTIVATE] Token valid for:', data.email);
-    res.json({ 
-      valid: true, 
-      email: data.email, 
-      name: data.prenom 
-    });
+    // 3. Create the citizen account in the citizens table
+    const { error: insertError } = await supabase
+      .from('citizens')
+      .insert([{
+        email: data.email,
+        prenom: data.prenom,
+        nom: data.nom,
+        password: data.password,
+        status: 'active',
+        created_at: new Date().toISOString(),
+      }]);
+
+    if (insertError) {
+      console.error('❌ Insert citizens error:', insertError);
+      throw insertError;
+    }
+
+    // 4. Invalidate token and mark request as fully activated
+    await supabase
+      .from('demandes_inscription')
+      .update({
+        status: 'activated',
+        activation_token: null,
+      })
+      .eq('id', data.id);
+
+    console.log('✅ Citizen activated:', data.email);
+    res.json({ valid: true, email: data.email, name: data.prenom });
 
   } catch (err) {
-    console.error('🔥 [ACTIVATE] Server error:', err.message);
-    res.status(500).json({ valid: false, error: 'Internal server error' });
+    console.error('🔥 Activate error:', err.message);
+    res.status(500).json({ valid: false, error: err.message });
   }
 });
+
 
 export default router;
