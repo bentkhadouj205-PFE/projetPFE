@@ -528,11 +528,16 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       setShowRejectInput(false);
       setRejectReason('');
       await fetchData();
-      toast.error(language === 'fr' ? 'Demande rejetée ❌<HTMLFormElement>) => {
+      toast.error(language === 'fr' ? 'Demande rejetee' : 'Request rejected');
+    } catch {
+      toast.error(language === 'fr' ? 'Erreur de rejet' : 'Rejection failed');
+    }
+  };
+  const handleAddEmployee = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); const fd = new FormData(e.currentTarget);
     employees.addEmployee({ email: fd.get('email') as string, password: 'employee123', firstName: fd.get('firstName') as string, lastName: fd.get('lastName') as string, role: 'employee' as const, service: newEmployeeService, position: newEmployeePosition, joinDate: new Date().toISOString().split('T')[0], status: 'active' as const });
-    setIsAddEmployeeOpen(false); setNewEmployeeService('Ãƒâ€°tat civil'); setNewEmployeePosition('Fiche de rÃƒÂ©sidence');
-    toast.success(language === 'fr' ? 'EmployÃƒÂ© ajoutÃƒÂ©' : 'Employee added');
+    setIsAddEmployeeOpen(false); setNewEmployeeService('Etat civil'); setNewEmployeePosition('Fiche de residence');
+    toast.success(language === 'fr' ? 'Employe ajoute' : 'Employee added');
   };
 
   const handleAddTask = (e: React.FormEvent<HTMLFormElement>) => {
@@ -1451,6 +1456,8 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     </div>
   );
 }
+
+
 
 
 
