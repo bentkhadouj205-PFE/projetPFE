@@ -528,68 +528,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       setShowRejectInput(false);
       setRejectReason('');
       await fetchData();
-      toast.error(language === 'fr' ? 'Demande rejetée — email envoyé' : 'Rejected — email sent');
-    } catch {
-      toast.error(language === 'fr' ? 'Erreur de rejet' : 'Rejection failed');
-    }
-  };
-
-  const openDetail = (req: RegistrationRequest) => {
-    setSelectedRequest(req); setShowRejectInput(false); setRejectReason(''); setValidationView('detail');
-  };
-
-  const normText = (s: string | null | undefined) => String(s ?? '').trim().toLowerCase();
-  const isMatch = (citizen: string, registry: string | null) => {
-    if (registry == null || String(registry).trim() === '') return false;
-    const c = String(citizen ?? '').trim();
-    const r = String(registry).trim();
-    const c10 = c.slice(0, 10);
-    const r10 = r.slice(0, 10);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(c10) && /^\d{4}-\d{2}-\d{2}$/.test(r10)) return c10 === r10;
-    return normText(c) === normText(r);
-  };
-
-  const allMatchRegistry = (req: RegistrationRequest) => {
-    if (!req.reg?.nin) return false;
-    const citizenFirstName = req.firstName || '';
-    const citizenLastName = req.lastName || '';
-    const citizenDob = req.dob || '';
-    const citizenCommune = req.commune || '';
-
-    if (!isMatch(citizenFirstName, req.reg.firstName)) return false;
-    if (!isMatch(citizenLastName, req.reg.lastName)) return false;
-    if (!isMatch(req.nin, req.reg.nin)) return false;
-    if (citizenDob && !isMatch(citizenDob, req.reg.dob != null ? String(req.reg.dob) : null)) return false;
-    if (citizenCommune && !isMatch(citizenCommune, req.reg.commune)) return false;
-    return true;
-  };
-  // Ã¢â€â‚¬Ã¢â€â‚¬ Employee helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-  const getEmpName = (emp: any) => ({ first: emp.firstName || emp.name?.split(' ')[0] || '', last: emp.lastName || emp.name?.split(' ').slice(1).join(' ') || '' });
-  const translateService = (raw: string) => { const e = SERVICE_LABELS[raw?.toLowerCase()]; return e ? e[language] : raw; };
-  const translatePosition = (raw: string) => { const e = POSITION_LABELS[raw?.toLowerCase()]; return e ? e[language] : raw; };
-  const isRealEmployee = (e: any) => e.role !== 'Municipal_Agent';
-
-  const totalEmployees = employees.employees.filter(isRealEmployee).length;
-  const activeEmployees = employees.employees.filter((e) => isRealEmployee(e) && e.status === 'active').length;
-  const totalTasks = tasks.tasks.length;
-  const completedTasks = tasks.tasks.filter((t) => t.status === 'completed').length;
-
-  const filteredEmployees = employees.employees.filter((emp) => {
-    if (!isRealEmployee(emp)) return false;
-    const { first, last } = getEmpName(emp); const q = searchQuery.toLowerCase();
-    return first.toLowerCase().includes(q) || last.toLowerCase().includes(q) ||
-      emp.email?.toLowerCase().includes(q) || emp.service?.toLowerCase().includes(q);
-  });
-
-  const allRealEmployees = employees.employees.filter(isRealEmployee);
-  const employeesByService = SERVICES.map((s) => ({
-    ...s, employees: allRealEmployees.filter((emp) => {
-      const sv = emp.service?.toLowerCase() ?? ''; const po = emp.position?.toLowerCase() ?? '';
-      return s.keywords.some((kw) => sv.includes(kw) || po.includes(kw));
-    }),
-  }));
-
-  const handleAddEmployee = (e: React.FormEvent<HTMLFormElement>) => {
+      toast.error(language === 'fr' ? 'Demande rejetée ❌<HTMLFormElement>) => {
     e.preventDefault(); const fd = new FormData(e.currentTarget);
     employees.addEmployee({ email: fd.get('email') as string, password: 'employee123', firstName: fd.get('firstName') as string, lastName: fd.get('lastName') as string, role: 'employee' as const, service: newEmployeeService, position: newEmployeePosition, joinDate: new Date().toISOString().split('T')[0], status: 'active' as const });
     setIsAddEmployeeOpen(false); setNewEmployeeService('Ãƒâ€°tat civil'); setNewEmployeePosition('Fiche de rÃƒÂ©sidence');
@@ -1317,15 +1256,13 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                     {(selectedRequest.status === 'validated' || selectedRequest.status === 'termine') && (
                       <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-center gap-2 text-emerald-600 font-bold text-lg animate-in zoom-in duration-300">
                         <CheckCircle2 className="w-6 h-6" />
-                        Demande validÃ©e âœ…
-                      </div>
+                        Demande validée ✅</div>
                     )}
 
                     {(selectedRequest.status === 'rejected' || selectedRequest.status === 'refuse') && (
                       <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-center gap-2 text-red-500 font-bold text-lg animate-in zoom-in duration-300">
                         <XCircle className="w-6 h-6" />
-                        Demande rejetÃƒÂ©e Ã¢ÂÅ’
-                      </div>
+                        Demande rejetée ❌</div>
                     )}
                   </div>
                 </div>
@@ -1514,5 +1451,6 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     </div>
   );
 }
+
 
 
