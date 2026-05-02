@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
     const enriched = await Promise.all(requests.map(async (r) => {
       // Find matching citizen in register.citizens by NIN
       const { data: citizen } = await supabase
-        .from('citizens')
+        .from('citizens_safe')
         .select('nom, prenom, nin, date_naissance, commune')
         .eq('nin', r.nin)
         .maybeSingle();
