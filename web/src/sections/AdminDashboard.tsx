@@ -1298,12 +1298,12 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                           </button>
                           <div className="flex flex-col gap-2">
                             <textarea
-                              value={rejectReason}
-                              onChange={(e) => setRejectReason(e.target.value)}
-                              placeholder="Entrez le motif du refus..."
-                              className="w-full p-3 border border-red-300 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
-                              rows={3}
-                            />
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            placeholder="Entrez le motif du refus..."
+                            className="w-full p-3 border border-red-300 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
+                            rows={3}
+                          />  
                             <button
                               type="button"
                               onClick={() => handleReject(selectedRequest.id)}
