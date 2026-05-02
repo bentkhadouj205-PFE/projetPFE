@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { API_BASE_URL } from '@/lib/apiBase';
 
-const socketBaseUrl = 'http://192.168.1.6:5000';
+const socketBaseUrl = 'http://localhost:5000';
 
 export const useSocket = (userId: string, userRole: string) => {
   const [notifications, setNotifications] = useState<any[]>([]);
