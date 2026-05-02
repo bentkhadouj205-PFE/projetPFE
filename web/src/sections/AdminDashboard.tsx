@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSocket, connectSocket, disconnectSocket } from '@/services/socket';
 import { API_BASE_URL, BACKEND_URL } from '@/lib/apiBase';
 import { toast } from 'sonner';
@@ -528,7 +528,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       setShowRejectInput(false);
       setRejectReason('');
       await fetchData();
-      toast.error(language === 'fr' ? 'Demande rejetÃ©e â€” email envoyÃ©' : 'Rejected â€” email sent');
+      toast.error(language === 'fr' ? 'Demande rejetée — email envoyé' : 'Rejected — email sent');
     } catch {
       toast.error(language === 'fr' ? 'Erreur de rejet' : 'Rejection failed');
     }
