@@ -1296,14 +1296,23 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                             <ShieldCheck className="w-5 h-5" />
                             Validate — send activation email
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleReject(selectedRequest.id)}
-                            className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
-                          >
-                            <XCircle className="w-5 h-5" />
-                            Reject — send rejection email
-                          </button>
+                          <div className="flex flex-col gap-2">
+                            <textarea
+                              value={rejectReason}
+                              onChange={(e) => setRejectReason(e.target.value)}
+                              placeholder="Entrez le motif du refus..."
+                              className="w-full p-3 border border-red-300 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
+                              rows={3}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleReject(selectedRequest.id)}
+                              className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
+                            >
+                              <XCircle className="w-5 h-5" />
+                              Reject — send rejection email
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
