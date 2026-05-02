@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSocket, connectSocket, disconnectSocket } from '@/services/socket';
 import { API_BASE_URL, BACKEND_URL } from '@/lib/apiBase';
 import { toast } from 'sonner';
@@ -1129,7 +1129,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                                   <TableRow key={req.id} className="dark:border-slate-700">
                                     <TableCell className="font-medium dark:text-white whitespace-nowrap">{req.lastName} {req.firstName}</TableCell>
                                     <TableCell className="font-mono text-xs dark:text-slate-300 whitespace-nowrap">
-                                      {req.nin ? ${String(req.nin).substring(0, 9)}... : '-'}
+                                      {req.nin ? `${String(req.nin).substring(0, 9)}...` : '-'}
                                     </TableCell>
                                     <TableCell className="text-blue-600 dark:text-blue-400 text-xs whitespace-nowrap">{req.email}</TableCell>
                                     <TableCell className="dark:text-slate-300 text-xs max-w-[150px] truncate" title={req.address}>{req.address}</TableCell>
