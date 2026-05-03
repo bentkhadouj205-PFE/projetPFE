@@ -845,7 +845,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                                 <div><p className="font-medium dark:text-white">{first} {last}</p><p className="text-sm text-slate-500">{emp.email}</p></div>
                               </div>
                             </TableCell>
-                            <TableCell className="dark:text-slate-300">{translateService(emp.service) ?? '—'}</TableCell>
+                            <TableCell className="dark:text-slate-300">{translateService(emp.service) ?? '-'}</TableCell>
                             <TableCell className="dark:text-slate-300">{translatePosition(emp.position)}</TableCell>
                             <TableCell>
                               <Badge variant={emp.status === 'active' ? 'default' : 'secondary'}>
@@ -1082,7 +1082,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                     {/* CNI & Selfie */}
                     <div className="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-700 border border-slate-100 dark:border-slate-700 rounded-lg overflow-hidden">
                       <div className="px-6 py-4">
-                        <p className="text-xs text-slate-400 mb-2">{language === 'fr' ? 'CNI — scan soumis' : 'CNI — submitted scan'}</p>
+                        <p className="text-xs text-slate-400 mb-2">{language === 'fr' ? 'CNI - scan soumis' : 'CNI - submitted scan'}</p>
                         {selectedRequest.cniScanPath ? (
                           <a href={selectedRequest.cniScanPath} target="_blank" rel="noopener noreferrer">
                             <img src={selectedRequest.cniScanPath} alt="CNI scan" className="w-full h-40 object-cover rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:opacity-90 transition-opacity" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -1120,18 +1120,12 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                             className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
                           >
                             <ShieldCheck className="w-5 h-5" />
-                            {language === 'fr' ? 'Valider — envoyer email activation' : 'Validate — send activation email'}
+                            {language === 'fr' ? 'Valider - envoyer email activation' : 'Validate - send activation email'}
                           </button>
 
-                          {/* Reject section — textarea is optional, button always visible */}
+                          {/* Reject section - textarea is optional, button always visible */}
                           <div className="flex flex-col gap-2">
-                            <textarea
-                              value={rejectReason}
-                              onChange={(e) => setRejectReason(e.target.value)}
-                              placeholder={language === 'fr' ? 'Motif du refus (optionnel)...' : 'Rejection reason (optional)...'}
-                              className="w-full p-3 border border-red-300 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
-                              rows={3}
-                            />
+
                             <button
                               type="button"
                               onClick={async () => {
@@ -1141,7 +1135,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                               className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
                             >
                               <XCircle className="w-5 h-5" />
-                              {language === 'fr' ? 'Rejeter — envoyer email refus' : 'Reject — send rejection email'}
+                              {language === 'fr' ? 'Rejeter - envoyer email refus' : 'Reject - send rejection email'}
                             </button>
                           </div>
                         </div>
