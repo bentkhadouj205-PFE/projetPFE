@@ -134,10 +134,10 @@ router.post('/:id/validate', async (req, res) => {
 router.post('/:id/reject', async (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
+  const rejectionReason = (reason && reason.trim())
+    ? reason.trim()
+    : 'Your request has been rejected.';
 
-  if (!reason || !reason.trim()) {
-    return res.status(400).json({ error: 'Rejection reason is required' });
-  }
 
   try {
     const { data: request, error } = await supabase
@@ -155,7 +155,7 @@ router.post('/:id/reject', async (req, res) => {
       .from('demandes_inscription')
       .update({
         status: 'refuse',
-        commentaire: reason,
+        commentaire: rejectionReason,
         date_traitement: new Date().toISOString(),
       })
       .eq('id', id);
@@ -166,7 +166,7 @@ router.post('/:id/reject', async (req, res) => {
     }
 
     // Send rejection email
-    await sendRejectionEmail(request.email, request.prenom, reason);
+    await sendRejectionEmail(request.email, request.prenom, rejectionReason);
 
     res.json({ success: true, message: 'Rejection email sent' });
   } catch (err) {
@@ -178,7 +178,7 @@ router.post('/:id/reject', async (req, res) => {
 // ── GET verify-token — called by frontend/mobile after clicking link ──────
 router.get('/verify-token', async (req, res) => {
   const { token } = req.query;
-  console.log('🔍 [VERIFY-TOKEN] Received token:', token);
+  console.log(' [VERIFY-TOKEN] Received token:', token);
 
   if (!token) {
     return res.status(400).json({ valid: false, error: 'No token provided' });

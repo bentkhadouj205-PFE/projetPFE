@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSocket, connectSocket, disconnectSocket } from '@/services/socket';
 import { API_BASE_URL, BACKEND_URL } from '@/lib/apiBase';
 import { toast } from 'sonner';
@@ -1134,7 +1134,10 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                             />
                             <button
                               type="button"
-                              onClick={() => handleReject(selectedRequest.id)}
+                              onClick={async () => {
+                                await handleReject(selectedRequest.id);
+                                setRejectReason('');
+                              }}
                               className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
                             >
                               <XCircle className="w-5 h-5" />

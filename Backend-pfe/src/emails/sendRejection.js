@@ -1,4 +1,4 @@
-﻿import fetch from 'node-fetch';
+import fetch from 'node-fetch';
 
 export const sendRejectionEmail = async (toEmail, prenom, reason) => {
   console.log('[EMAIL] Generating Rejection Email...');
@@ -16,6 +16,7 @@ export const sendRejectionEmail = async (toEmail, prenom, reason) => {
       subject: "Refus de votre demande d'inscription - Baladiya Digital",
       htmlContent: `
         <div style="font-family: sans-serif; max-width: 520px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+          <meta charset="UTF-8">
           <h2 style="color: #E53E3E;">Baladiya Digital</h2>
           <p>Bonjour <strong>${prenom}</strong>,</p>
           <p>Nous sommes desoles de vous informer que votre demande d'inscription a ete <strong>refusee</strong> par nos services.</p>
