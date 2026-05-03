@@ -96,8 +96,8 @@ router.post('/:id/validate', async (req, res) => {
 
     const token = crypto.randomBytes(32).toString('hex');
 
-    // ✅ Save token to DB FIRST
-    console.log(`📡 [VALIDATE] Saving token to DB for ID: ${id}`);
+    // Save token to DB FIRST
+    console.log(` [VALIDATE] Saving token to DB for ID: ${id}`);
     const { error: updateError } = await supabase
       .from('demandes_inscription')
       .update({
@@ -112,7 +112,7 @@ router.post('/:id/validate', async (req, res) => {
       return res.status(500).json({ error: updateError.message });
     }
 
-    // ✅ Then try to send email — don't fail if email fails
+    // Then try to send email — don't fail if email fails
     try {
       await sendActivationEmail(request.email, request.prenom, token);
       res.json({ success: true, message: 'Validated and activation email sent' });
@@ -191,16 +191,16 @@ router.get('/verify-token', async (req, res) => {
       .eq('activation_token', token)
       .maybeSingle();
 
-    console.log('📦 [VERIFY-TOKEN] DB result:', data ? { ...data, activation_token: '***' } : 'No record found');
-    if (error) console.log('❌ [VERIFY-TOKEN] DB error:', error);
+    console.log('[VERIFY-TOKEN] DB result:', data ? { ...data, activation_token: '***' } : 'No record found');
+    if (error) console.log(' [VERIFY-TOKEN] DB error:', error);
 
     if (error || !data) {
-      console.log('❌ [VERIFY-TOKEN] Token not found or invalid');
+      console.log('[VERIFY-TOKEN] Token not found or invalid');
       return res.status(404).json({ valid: false, error: 'Lien invalide ou expiré' });
     }
 
     if (data.status !== 'termine') {
-      console.log(`❌ [VERIFY-TOKEN] Status mismatch. Found: ${data.status}, Expected: termine`);
+      console.log(` [VERIFY-TOKEN] Status mismatch. Found: ${data.status}, Expected: termine`);
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou demande non validée' });
     }
 
@@ -260,11 +260,27 @@ router.post('/activate', async (req, res) => {
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou non validée' });
     }
 
-    // 3. Invalidate token and mark request as fully activated
+    // نقل البيانات إلى جدول citizens
+    const { error: insertError } = await supabase
+      .from('citizens')
+      .insert([{
+        email: data.email,
+        prenom: data.prenom,
+        nom: data.nom,
+        password_hash: data.password_hash,
+        status: 'active',
+      }]);
+
+    if (insertError) {
+      console.error(' Insert citizens error:', insertError);
+      throw insertError;
+    }
+
+    //  تحديث status
     await supabase
       .from('demandes_inscription')
       .update({
-        status: 'active',
+        status: 'activated',
         activation_token: null,
       })
       .eq('id', data.id);

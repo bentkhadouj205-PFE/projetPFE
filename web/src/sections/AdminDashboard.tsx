@@ -942,7 +942,6 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
               </div>
             </div>
           )}
-
           {/* ── Validations ── */}
           {activeTab === 'validations' && (
             <div className="space-y-6">
@@ -1149,14 +1148,14 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                     {(selectedRequest.status === 'validated' || selectedRequest.status === 'termine') && (
                       <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-center gap-2 text-emerald-600 font-bold text-lg">
                         <CheckCircle2 className="w-6 h-6" />
-                        {language === 'fr' ? 'Demande validée ✅' : 'Request validated ✅'}
+                        {language === 'fr' ? 'Demande validée ' : 'Request validated '}
                       </div>
                     )}
 
                     {(selectedRequest.status === 'rejected' || selectedRequest.status === 'refuse') && (
                       <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-center gap-2 text-red-500 font-bold text-lg">
                         <XCircle className="w-6 h-6" />
-                        {language === 'fr' ? 'Demande rejetée ❌' : 'Request rejected ❌'}
+                        {language === 'fr' ? 'Demande rejetée ' : 'Request rejected '}
                       </div>
                     )}
                   </div>
