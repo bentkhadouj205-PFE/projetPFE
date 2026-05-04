@@ -30,7 +30,6 @@ export const sendRejectionEmail = async (toEmail, prenom, reason) => {
             <li>Vous assurer que vos documents (CNI, photo) sont lisibles et valides</li>
             <li>Corriger les erreurs mentionnees ci-dessus</li>
           </ul>
-          <p style="color: #4A5568;">Pour toute question, contactez le support municipal.</p>
           <hr style="margin-top: 32px; border: none; border-top: 1px solid #eee;"/>
           <p style="color: #aaa; font-size: 11px; text-align: center;">© 2026 Baladiya - Support Municipal</p>
         </div>
