@@ -260,30 +260,44 @@ router.post('/activate', async (req, res) => {
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou non validée' });
     }
 
-    // نقل البيانات إلى جدول citizens
-    const { error: insertError } = await supabase
+    // 3. تحقق إذا كان المواطن موجود مسبقاً (بواسطة NIN لتجنب التكرار)
+    const { data: existing } = await supabase
       .from('citizens')
-      .insert([{
-        email: data.email,
-        first_name: data.prenom,
-        last_name: data.nom,
-        nin: data.nin,
-        adresse: data.adresse,
-      }]);
+      .select('id')
+      .eq('nin', data.nin)
+      .maybeSingle();
 
-    if (insertError) {
-      console.error(' Insert citizens error:', insertError);
-      throw insertError;
+    if (!existing) {
+      // المواطن غير موجود -> أنشئه في جدول citizens
+      const { error: insertError } = await supabase
+        .from('citizens')
+        .insert([{
+          email: data.email,
+          first_name: data.prenom,
+          last_name: data.nom,
+          nin: data.nin,
+          adresse: data.adresse,
+        }]);
+
+      if (insertError) {
+        console.error(' Insert citizens error:', insertError);
+        throw insertError;
+      }
     }
 
-    //  تحديث status
-    await supabase
+    // 4. تحديث حالة الطلب إلى activated
+    const { error: updateError } = await supabase
       .from('demandes_inscription')
       .update({
         status: 'activated',
         activation_token: null,
       })
       .eq('id', data.id);
+
+    if (updateError) {
+      console.error(' Update status error:', updateError);
+      throw updateError;
+    }
 
     console.log(' Citizen activated:', data.email);
     res.json({ valid: true, email: data.email, name: data.prenom });
