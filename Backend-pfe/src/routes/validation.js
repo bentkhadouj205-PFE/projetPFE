@@ -265,10 +265,10 @@ router.post('/activate', async (req, res) => {
       .from('citizens')
       .insert([{
         email: data.email,
-        prenom: data.prenom,
-        nom: data.nom,
-        password_hash: data.password_hash,
-        status: 'active',
+        first_name: data.prenom,
+        last_name: data.nom,
+        nin: data.nin,
+        adresse: data.adresse,
       }]);
 
     if (insertError) {

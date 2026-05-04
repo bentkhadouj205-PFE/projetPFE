@@ -323,12 +323,7 @@ export function EmployeeDashboard({
                 )}
                 <td className="px-4 py-3 whitespace-nowrap text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="sm"
-                      className="h-8 px-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                      onClick={() => handleViewTask(task)}>
-                      <Eye className="w-4 h-4 mr-1" />
-                      {language === 'fr' ? 'Voir' : 'View'}
-                    </Button>
+
                     {(task.status === 'pending' || task.status === 'in-progress') && (
                       <Button size="sm" onClick={() => handleProcessTask(task)} className="h-8 bg-blue-600 hover:bg-blue-700">
                         <CheckCircle2 className="w-4 h-4 mr-1" />
