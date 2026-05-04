@@ -1,288 +1,142 @@
 import nodemailer from 'nodemailer';
-import puppeteer from 'puppeteer';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 /**
- * Generates a high-quality PDF using Puppeteer
+ * Génère un PDF via pdf-lib (serverless-compatible, sans Puppeteer/Chrome)
  */
 export async function generateCertificatePDF(data) {
-  console.log("-> [Puppeteer] Launching browser...");
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-  const page = await browser.newPage();
+  console.log("-> [pdf-lib] Generating PDF...");
 
   const now = new Date();
-  const todayAr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+  const todayFr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
-  // البيانات الهامشية
-  let marginalText = 'لا شيء';
-  if (data.marginal_status === 'married') marginalText = `تزوج(ت) بـ ${data.marginal_spouse || ''}`;
-  if (data.marginal_status === 'divorced') marginalText = `طُلِّق(ت) من ${data.marginal_spouse || ''}`;
+  // Données marginales
+  let marginalText = 'لا شيء / Néant';
+  if (data.marginal_status === 'married') marginalText = `Marié(e) avec ${data.marginal_spouse || ''}`;
+  if (data.marginal_status === 'divorced') marginalText = `Divorcé(e) de ${data.marginal_spouse || ''}`;
 
-  const htmlContent = `
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Amiri', serif;
-      direction: rtl;
-      text-align: right;
-      font-size: 14px;
-      color: #000;
+  // Créer un nouveau document PDF A4
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595.28, 841.89]); // A4 en points
+  const { width, height } = page.getSize();
+
+  // Polices intégrées (pas besoin de réseau)
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  const margin = 50;
+  let y = height - 60;
+
+  // ── Helpers ────────────────────────────────────────────────────────────
+  const drawText = (text, x, yPos, font, size, color = rgb(0, 0, 0)) => {
+    page.drawText(text || '', { x, y: yPos, font, size, color });
+  };
+
+  const drawLine = (x1, y1, x2, y2, thickness = 0.5) => {
+    page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness, color: rgb(0.4, 0.4, 0.4) });
+  };
+
+  const drawRow = (label, value, yPos) => {
+    drawText(label, margin, yPos, fontRegular, 11);
+    // Ligne pointillée
+    const labelWidth = fontRegular.widthOfTextAtSize(label, 11);
+    for (let x = margin + labelWidth + 8; x < width - margin - 150; x += 6) {
+      page.drawLine({ start: { x, y: yPos + 2 }, end: { x: x + 3, y: yPos + 2 }, thickness: 0.5, color: rgb(0.6, 0.6, 0.6) });
     }
-    .page {
-      width: 210mm;
-      min-height: 297mm;
-      padding: 15mm 20mm;
-      position: relative;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 10px;
-    }
-    .header-left { font-size: 13px; text-align: right; }
-    .header-center { text-align: center; flex: 1; }
-    h1 { font-size: 28px; text-align: center; margin: 15px 0 5px; }
-    .subtitle { text-align: center; font-size: 14px; margin-bottom: 15px; }
-    .divider { border-top: 1.5px solid #000; margin: 8px 0; }
-    .row {
-      display: flex;
-      align-items: baseline;
-      margin: 6px 0;
-      font-size: 14px;
-      line-height: 1.8;
-    }
-    .label { white-space: nowrap; margin-left: 6px; }
-    .dots {
-      flex: 1;
-      border-bottom: 1px dotted #555;
-      margin: 0 6px;
-      min-width: 40px;
-    }
-    .value {
-      font-weight: bold;
-      white-space: nowrap;
-    }
-    .marginal-box {
-      border: 1px solid #999;
-      padding: 8px 12px;
-      margin: 10px 0;
-      min-height: 80px;
-      font-size: 13px;
-      line-height: 2;
-    }
-    .footer {
-      margin-top: 20px;
-      font-size: 13px;
-      line-height: 2;
-    }
-    .latin-section {
-      margin-top: 15px;
-      border-top: 1px solid #000;
-      padding-top: 8px;
-      font-size: 13px;
-      color: #c00;
-      font-weight: bold;
-    }
-    .official-footer {
-      text-align: center;
-      margin-top: 20px;
-      font-weight: bold;
-      font-size: 13px;
-      border-top: 1.5px solid #000;
-      padding-top: 8px;
-    }
-  </style>
-</head>
-<body>
-<div class="page">
+    drawText(value || '—', width - margin - 145, yPos, fontBold, 11, rgb(0.1, 0.1, 0.6));
+  };
 
-  <!-- الترويسة -->
-  <div class="header">
-    <div class="header-center">
-      <div style="font-size:16px; font-weight:bold;">الجمهورية الجزائرية الديموقراطية الشعبية</div>
-    </div>
-    <div class="header-left">
-      <div>وزارة الداخلية والجماعات المحلية</div>
-      <div style="font-weight:bold;">السجل الوطني للحالة المدنية</div>
-    </div>
-  </div>
+  // ── EN-TÊTE ────────────────────────────────────────────────────────────
+  // Bande supérieure verte (couleur officielle algérienne)
+  page.drawRectangle({ x: 0, y: height - 80, width, height: 80, color: rgb(0.0, 0.47, 0.25) });
 
-  <div class="divider"></div>
+  drawText('RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE', margin, height - 30, fontBold, 11, rgb(1, 1, 1));
+  drawText('الجمهورية الجزائرية الديمقراطية الشعبية', margin, height - 50, fontRegular, 10, rgb(0.9, 0.9, 0.9));
+  drawText(`Wilaya: ${(data.wilaya || '').toUpperCase()}   |   Commune: ${(data.municipality || data.commune || '').toUpperCase()}`, margin, height - 68, fontRegular, 9, rgb(0.85, 0.85, 0.85));
 
-  <!-- العنوان -->
-  <h1>شهادة الميلاد</h1>
-  <div class="subtitle">نسخة إلكترونية</div>
+  y = height - 110;
 
-  <div class="divider"></div>
+  // Titre principal
+  drawText('ACTE DE NAISSANCE', margin, y, fontBold, 20, rgb(0.0, 0.47, 0.25));
+  drawText('شهادة الميلاد', width - margin - 120, y, fontBold, 16, rgb(0.0, 0.47, 0.25));
+  drawLine(margin, y - 8, width - margin, y - 8, 1.5);
 
-  <!-- رقم الشهادة + اليوم -->
-  <div class="row">
-    <span class="label">رقم الشهادة</span>
-    <span class="dots"></span>
-    <span class="value">${data.actNumber || ''}</span>
-    <span class="label" style="margin-right:20px;">في يوم</span>
-    <span class="dots"></span>
-    <span class="value">${data.birth_day || ''}</span>
-  </div>
+  y -= 35;
 
-  <!-- على الساعة + ولد(ت) ب -->
-  <div class="row">
-    <span class="label">على الساعة</span>
-    <span class="dots"></span>
-    <span class="value">${data.birth_time || ''}</span>
-    <span class="label" style="margin-right:20px;">ولد(ت) ب</span>
-    <span class="dots"></span>
-    <span class="value">${data.birth_commune || data.commune || ''}</span>
-  </div>
+  // ── SECTION : INFOS DE L'ACTE ─────────────────────────────────────────
+  drawText('INFORMATIONS DE L\'ACTE', margin, y, fontBold, 12, rgb(0.15, 0.15, 0.15));
+  page.drawRectangle({ x: margin, y: y - 4, width: width - 2 * margin, height: 1, color: rgb(0.0, 0.47, 0.25) });
+  y -= 22;
 
-  <!-- بلدية + ولاية -->
-  <div class="row">
-    <span class="label">بلدية</span>
-    <span class="dots"></span>
-    <span class="value">${data.birth_commune || data.commune || ''}</span>
-    <span class="label" style="margin-right:20px;">ولاية</span>
-    <span class="dots"></span>
-    <span class="value">${data.wilaya || ''}</span>
-  </div>
+  drawRow("Numéro de l'acte :", data.actNumber, y); y -= 22;
+  drawRow("Année de l'acte :", data.actYear, y); y -= 22;
+  drawRow("Position :", data.position, y); y -= 22;
+  drawRow("Nombre de copies :", String(data.numberOfCopies || 1), y); y -= 30;
 
-  <!-- المسمى + تاريخ الميلاد -->
-  <div class="row">
-    <span class="label">المسمى(ة)</span>
-    <span class="dots"></span>
-    <span class="value" style="font-size:16px;">${data.fullName || ''}</span>
-    <span class="label" style="margin-right:20px;">${data.birth_date_nums || data.actYear || ''}</span>
-  </div>
+  // ── SECTION : IDENTITÉ ────────────────────────────────────────────────
+  drawLine(margin, y, width - margin, y, 0.5);
+  y -= 20;
+  drawText('IDENTITÉ DU DÉCLARÉ', margin, y, fontBold, 12, rgb(0.15, 0.15, 0.15));
+  page.drawRectangle({ x: margin, y: y - 4, width: width - 2 * margin, height: 1, color: rgb(0.0, 0.47, 0.25) });
+  y -= 22;
 
-  <!-- الجنس -->
-  <div class="row">
-    <span class="label">الجنس</span>
-    <span class="dots"></span>
-    <span class="value">${data.gender || ''}</span>
-  </div>
+  const fullName = `${data.firstName || data.first_name || ''} ${data.lastName || data.last_name || ''}`.trim();
+  drawRow("Nom et Prénom :", fullName, y); y -= 22;
+  drawRow("Date de naissance :", data.birthDate || data.birth_date, y); y -= 22;
+  drawRow("Lieu de naissance :", data.birthPlace || data.birth_place, y); y -= 22;
+  drawRow("Sexe :", data.gender === 'male' ? 'Masculin' : data.gender === 'female' ? 'Féminin' : (data.gender || ''), y); y -= 30;
 
-  <!-- ابن(ة) الأب -->
-  <div class="row">
-    <span class="label">ابن(ة)</span>
-    <span class="dots"></span>
-    <span class="value">${data.father_name || ''}</span>
-    <span class="label" style="margin-right:10px;">عمره</span>
-    <span class="dots"></span>
-    <span class="value">${data.father_age || ''}</span>
-    <span class="label" style="margin-right:10px;">مهنته</span>
-    <span class="dots"></span>
-    <span class="value">${data.father_job || ''}</span>
-  </div>
+  // ── SECTION : PARENTS ────────────────────────────────────────────────
+  drawLine(margin, y, width - margin, y, 0.5);
+  y -= 20;
+  drawText('INFORMATIONS DES PARENTS', margin, y, fontBold, 12, rgb(0.15, 0.15, 0.15));
+  page.drawRectangle({ x: margin, y: y - 4, width: width - 2 * margin, height: 1, color: rgb(0.0, 0.47, 0.25) });
+  y -= 22;
 
-  <!-- الأم -->
-  <div class="row">
-    <span class="label">و</span>
-    <span class="dots"></span>
-    <span class="value">${data.mother_name || ''}</span>
-    <span class="label" style="margin-right:10px;">عمرها</span>
-    <span class="dots"></span>
-    <span class="value">${data.mother_age || ''}</span>
-    <span class="label" style="margin-right:10px;">مهنتها</span>
-    <span class="dots"></span>
-    <span class="value">${data.mother_job || ''}</span>
-  </div>
+  drawRow("Nom et Prénom du Père :", data.fatherName || data.father_name, y); y -= 22;
+  drawRow("Nom et Prénom de la Mère :", data.motherName || data.mother_name, y); y -= 30;
 
-  <!-- الساكنين -->
-  <div class="row">
-    <span class="label">الساكنين</span>
-    <span class="dots"></span>
-    <span class="label">بلدية</span>
-    <span class="dots"></span>
-    <span class="value">${data.family_commune || data.commune || ''}</span>
-    <span class="label" style="margin-right:10px;">ولاية</span>
-    <span class="dots"></span>
-    <span class="value">${data.family_wilaya || data.wilaya || ''}</span>
-  </div>
+  // ── SECTION : MENTIONS MARGINALES ────────────────────────────────────
+  drawLine(margin, y, width - margin, y, 0.5);
+  y -= 20;
+  drawText('MENTIONS MARGINALES', margin, y, fontBold, 12, rgb(0.15, 0.15, 0.15));
+  page.drawRectangle({ x: margin, y: y - 4, width: width - 2 * margin, height: 1, color: rgb(0.0, 0.47, 0.25) });
+  y -= 22;
+  drawRow("Statut :", marginalText, y); y -= 30;
 
-  <!-- حرر في -->
-  <div class="row">
-    <span class="label">حرر في</span>
-    <span class="dots"></span>
-    <span class="value">${data.issued_city || data.commune || ''}</span>
-    <span class="label" style="margin-right:20px;">على الساعة</span>
-    <span class="dots"></span>
-    <span class="value">${data.issued_time || ''}</span>
-  </div>
+  // ── SECTION : DEMANDEUR ───────────────────────────────────────────────
+  drawLine(margin, y, width - margin, y, 0.5);
+  y -= 20;
+  drawText('INFORMATIONS DU DEMANDEUR', margin, y, fontBold, 12, rgb(0.15, 0.15, 0.15));
+  page.drawRectangle({ x: margin, y: y - 4, width: width - 2 * margin, height: 1, color: rgb(0.0, 0.47, 0.25) });
+  y -= 22;
 
-  <!-- إبعلان أدلى به -->
-  <div class="row">
-    <span class="label">إبعلان أدلى به السيد(ة)</span>
-    <span class="dots"></span>
-    <span class="value">${data.declarant || ''}</span>
-  </div>
+  const requesterName = `${data.citizenFirstName || ''} ${data.citizenLastName || ''}`.trim();
+  drawRow("Nom du demandeur :", requesterName || fullName, y); y -= 22;
+  drawRow("Email :", data.citizenEmail, y); y -= 22;
+  drawRow("NIN :", data.nin, y); y -= 40;
 
-  <!-- وبعد التلاوة -->
-  <div class="row">
-    <span class="label">وبعد التلاوة وقع معنا نحن</span>
-    <span class="dots"></span>
-    <span class="value">${data.officer_name || ''}</span>
-    <span class="label" style="margin-right:10px;">ضابط الحالة المدنية بالبلدية</span>
-  </div>
+  // ── PIED DE PAGE ──────────────────────────────────────────────────────
+  drawLine(margin, y, width - margin, y, 1);
+  y -= 15;
+  drawText(`Date d'émission : ${todayFr}`, margin, y, fontRegular, 9, rgb(0.4, 0.4, 0.4));
+  drawText('Cachet et Signature de l\'APC', width - margin - 180, y, fontRegular, 9, rgb(0.4, 0.4, 0.4));
 
-  <!-- البيانات الهامشية -->
-  <div style="margin-top:10px;">
-    <div style="font-weight:bold; margin-bottom:5px;">البيانات الهامشية</div>
-    <div class="marginal-box">
-      ${marginalText}
-    </div>
-  </div>
+  // Zone signature
+  y -= 50;
+  page.drawRectangle({ x: width - margin - 160, y: y, width: 140, height: 45, borderColor: rgb(0.6, 0.6, 0.6), borderWidth: 0.5 });
+  drawText('Signature officielle', width - margin - 145, y + 15, fontRegular, 8, rgb(0.7, 0.7, 0.7));
 
-  <!-- التوقيع والتاريخ -->
-  <div class="footer">
-    <div class="row">
-      <span class="label">حررت بـ</span>
-      <span class="dots"></span>
-      <span class="value">${data.issued_city || data.commune || 'مستغانم'}</span>
-      <span class="label" style="margin-right:20px;">في</span>
-      <span class="dots"></span>
-      <span class="value">${data.issued_date || todayAr}</span>
-    </div>
-  </div>
+  // Bande verte basse
+  page.drawRectangle({ x: 0, y: 0, width, height: 20, color: rgb(0.0, 0.47, 0.25) });
+  drawText('Baladiya Digital — Service État Civil Numérique', margin, 5, fontRegular, 7, rgb(1, 1, 1));
 
-  <!-- الكتابة بالأحرف اللاتينية -->
-  <div class="latin-section">
-    <div>الكتابة السابقة للاسم واللقب بالأحرف اللاتينية</div>
-    <div style="margin-top:5px; font-family: Arial; color:#000; font-weight:normal;">
-      ${data.latin_name || ''}
-    </div>
-    <div style="margin-top:5px; font-size:12px; color:#000; font-weight:normal;">
-      1- باكمل الحروف<br/>
-      2- اسم ولقب الولد: ${data.child_name_latin || ''}
-    </div>
-  </div>
-
-  <!-- المرجع الرسمي -->
-  <div class="official-footer">
-    مستخرج من السجل الوطني للحالة المدنية
-    <div style="font-size:12px; margin-top:4px;">المرجع ج م 7</div>
-  </div>
-
-</div>
-</body>
-</html>`;
-
-  await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-  const pdfBuffer = await page.pdf({
-    format: 'A4',
-    printBackground: true,
-    margin: { top: 0, right: 0, bottom: 0, left: 0 }
-  });
-  await browser.close();
-  return pdfBuffer;
+  // ── SÉRIALISATION ─────────────────────────────────────────────────────
+  const pdfBytes = await pdfDoc.save();
+  return Buffer.from(pdfBytes);
 }
 
+// ── SMTP (inchangé) ───────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -291,60 +145,40 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-export async function initializeEmail() {
-  try {
-    await transporter.verify();
-    console.log(' Gmail SMTP connected successfully:', process.env.SMTP_USER);
-  } catch (error) {
-    console.error('SMTP connection error:', error);
-  }
-}
-
 export const emailService = {
   async sendValidationEmailWithPDF(citizenEmail, citizenFirstName, requestSubject, status, employeeName, comment, pdfBuffer) {
-    const subject = `Votre document est prêt 📄`;
-    const text = `Bonjour ${citizenFirstName},\n\nNous vous informons que votre extrait d'acte de naissance est prêt.\n\nService: État Civil\nDate: ${new Date().toLocaleDateString('fr-FR')}\n\nCordialement,\nL'équipe Baladiya Digital`;
-
+    const subject = `Votre document est prêt 📄 — ${requestSubject || 'Acte de Naissance'}`;
     const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-          <h2 style="color: #1a3c8f; margin-bottom: 5px;">Baladiya Digital</h2>
-          <p style="color: #666; margin-top: 0; font-size: 14px;">Service National de l'État Civil</p>
-          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-          <p>Bonjour <strong>${citizenFirstName}</strong>,</p>
-          <p>Votre demande d'<strong>extrait d'acte de naissance</strong> a été traitée avec succès.</p>
-          <div style="background: #f0f4ff; border-left: 4px solid #1a3c8f; padding: 15px; border-radius: 4px; margin: 20px 0;">
-            <strong style="color: #1a3c8f;">Détails du document :</strong><br/>
-            <span style="color: #1a3c8f;">Service : État Civil</span><br/>
-            <span style="color: #1a3c8f;">Date : ${new Date().toLocaleDateString('fr-FR')}</span>
-          </div>
-          <p>Le document officiel (PDF) est joint à ce message électronique.</p>
-          <p style="color: #666; font-size: 12px; margin-top: 30px;">Ceci est un message automatique, merci de ne pas y répondre.</p>
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden">
+        <div style="background:#00782B;padding:20px;text-align:center">
+          <h1 style="color:#fff;margin:0;font-size:22px">🏛️ Baladiya Digital</h1>
+          <p style="color:#c8f5d8;margin:4px 0 0">Service État Civil Numérique</p>
         </div>
-      `;
+        <div style="padding:24px">
+          <p style="font-size:16px">Bonjour <strong>${citizenFirstName || ''}</strong>,</p>
+          <p>Votre demande d'<strong>${requestSubject || 'Acte de Naissance'}</strong> a été <span style="color:#00782B;font-weight:bold">approuvée ✅</span>.</p>
+          <p>Votre document officiel est joint à cet email en format PDF.</p>
+          ${comment ? `<p style="background:#f5f5f5;padding:12px;border-radius:6px;font-style:italic">Note : ${comment}</p>` : ''}
+          <p style="color:#888;font-size:13px;margin-top:20px">Traité par : <strong>${employeeName || 'Service État Civil'}</strong></p>
+        </div>
+        <div style="background:#f9f9f9;padding:12px;text-align:center;font-size:11px;color:#aaa">
+          Baladiya Digital — Ce document est généré automatiquement, merci de ne pas répondre.
+        </div>
+      </div>
+    `;
 
-    // Gmail SMTP sending
     const info = await transporter.sendMail({
       from: `"Baladiya Digital" <${(process.env.SMTP_USER || '').trim()}>`,
-      replyTo: (process.env.SMTP_USER || '').trim(),
       to: (citizenEmail || '').trim(),
       subject,
-      text,
       html,
-      attachments: [
-        {
-          filename: 'certificat_naissance.pdf',
-          content: pdfBuffer,
-          contentType: 'application/pdf'
-        }
-      ]
+      attachments: [{
+        filename: 'acte_naissance.pdf',
+        content: pdfBuffer,
+        contentType: 'application/pdf'
+      }]
     });
-
-    console.log('Email avec PDF envoyé (Gmail) à:', citizenEmail, '| ID:', info.messageId);
     return info;
-  },
-
-  async sendNotificationByPosition(position, title, message, serviceType) {
-    // Basic notification logic
   }
 };
 
