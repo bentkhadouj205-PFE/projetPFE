@@ -590,7 +590,11 @@ export function EmployeeDashboard({
         citizen={birthActTask?.citizen ?? null}
         language={language}
         onCancel={() => setBirthActTask(null)}
-        onValidate={() => { }}
+        onValidate={() => {
+          if (birthActTask) {
+            tasks.completeTask(birthActTask.id);
+          }
+        }}
       />
 
       {/* Fatima — Carte de séjour */}

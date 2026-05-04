@@ -341,7 +341,7 @@ export function BirthActTraitmentDialog({
     setActNumber(citizen.actNumber?.trim() || '');
     setPosition('');
     setCopiesCount('1');
-    setStep('form');
+    setStep('demande');
   }, [open, citizen]);
 
   const wilayaOptions = useMemo(() => ensureWilayaOption(wilaya, [...WILAYA_NAMES]), [wilaya]);
@@ -393,11 +393,15 @@ export function BirthActTraitmentDialog({
       link.click();
       document.body.removeChild(link);
 
-      alert(
+      toast.success(
         language === 'fr'
-          ? `Email envoyé (Notification) et PDF téléchargé localement !`
-          : `Email sent (Notification) and PDF downloaded locally!`
+          ? `Email envoyé avec succès !`
+          : `Email sent successfully!`
       );
+      
+      // Close modal
+      onOpenChange(false);
+      onValidate();
 
     } catch (error: any) {
       console.error('Send error:', error);
@@ -494,9 +498,9 @@ export function BirthActTraitmentDialog({
               actYear={actYear} actNumber={actNumber}
               position={POSITION_OPTIONS_FR.find(o => o.value === position)?.label || position}
               copiesCount={copiesCount} language={language}
-              onApprove={() => setStep('certificate')}
+              onApprove={handleSendEmail}
               onReject={() => onOpenChange(false)}
-              onBack={() => setStep('form')}
+              onBack={() => onOpenChange(false)}
             />
           </>
         )}

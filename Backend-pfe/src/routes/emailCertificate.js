@@ -6,15 +6,14 @@ import { supabase } from '../supabaseClient.js';
 
 const router = express.Router();
 
+// ── POST /api/email/generate-pdf ──────────────────────────────────────────
 router.post('/generate-pdf', async (req, res) => {
-  console.log(" PDF REQUEST RECEIVED");
   try {
-    const data = req.body;
-    const pdfBuffer = await generateCertificatePDF(data);
-    const base64PDF = Buffer.from(pdfBuffer).toString('base64');
-    res.json({ success: true, pdfBase64: base64PDF });
+    const pdfBuffer = await generateCertificatePDF(req.body);
+    const pdfBase64 = pdfBuffer.toString('base64');
+    res.json({ pdfBase64 });
   } catch (err) {
-    console.error(" PDF GENERATION FAILED:", err.message);
+    console.error(' generate-pdf error:', err);
     res.status(500).json({ error: err.message });
   }
 });

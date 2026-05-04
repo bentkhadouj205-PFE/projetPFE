@@ -5,163 +5,280 @@ import puppeteer from 'puppeteer';
  * Generates a high-quality PDF using Puppeteer
  */
 export async function generateCertificatePDF(data) {
-  console.log("  -> [Puppeteer] Launching browser...");
+  console.log("-> [Puppeteer] Launching browser...");
   const browser = await puppeteer.launch({
     headless: "new",
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
-
-  console.log("  -> [Puppeteer] Opening new page...");
   const page = await browser.newPage();
 
   const now = new Date();
   const todayAr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
 
+  // البيانات الهامشية
+  let marginalText = 'لا شيء';
+  if (data.marginal_status === 'married') marginalText = `تزوج(ت) بـ ${data.marginal_spouse || ''}`;
+  if (data.marginal_status === 'divorced') marginalText = `طُلِّق(ت) من ${data.marginal_spouse || ''}`;
+
   const htmlContent = `
-    <!DOCTYPE html>
-    <html dir="rtl" lang="ar">
-    <head>
-      <meta charset="UTF-8">
-      <style>
-        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
-        body {
-          font-family: 'Amiri', serif;
-          margin: 0;
-          padding: 0;
-          background-color: #fff;
-          color: #111;
-          direction: rtl;
-          text-align: right;
-        }
-        .certificate-container {
-          width: 210mm;
-          height: 297mm;
-          padding: 20mm;
-          box-sizing: border-box;
-          position: relative;
-        }
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 20px;
-        }
-        .republic-header {
-          text-align: center;
-          flex: 1;
-        }
-        .ministry-header {
-          font-size: 14px;
-          line-height: 1.4;
-        }
-        .title-section {
-          text-align: center;
-          margin: 30px 0 20px;
-        }
-        .title-section h1 {
-          font-size: 32px;
-          margin: 0;
-        }
-        .title-section p {
-          font-size: 14px;
-          color: #555;
-          margin: 5px 0;
-        }
-        .cert-info {
-          display: flex;
-          justify-content: space-between;
-          font-size: 16px;
-          margin-bottom: 20px;
-        }
-        .dotted-line {
-          border-bottom: 1px dotted #333;
-          display: inline-block;
-          min-width: 100px;
-        }
-        .body-content {
-          font-size: 16px;
-          line-height: 2.2;
-        }
-        .field-label {
-          font-weight: normal;
-        }
-        .field-value {
-          font-weight: bold;
-        }
-        .footer-section {
-          margin-top: 50px;
-          border-top: 1px solid #eee;
-          padding-top: 20px;
-          text-align: center;
-        }
-        .latin-note {
-          color: #d32f2f;
-          font-weight: bold;
-          margin-top: 20px;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="certificate-container">
-        <div class="header">
-          <div class="republic-header">
-            <h2 style="margin:0;">الجمهورية الجزائرية الديموقراطية الشعبية</h2>
-          </div>
-          <div class="ministry-header">
-            <p style="margin:0;">وزارة الداخلية والجماعات المحلية</p>
-            <p style="margin:0; font-weight:bold;">السجل الوطني للحالة المدنية</p>
-          </div>
-        </div>
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Amiri', serif;
+      direction: rtl;
+      text-align: right;
+      font-size: 14px;
+      color: #000;
+    }
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 15mm 20mm;
+      position: relative;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .header-left { font-size: 13px; text-align: right; }
+    .header-center { text-align: center; flex: 1; }
+    h1 { font-size: 28px; text-align: center; margin: 15px 0 5px; }
+    .subtitle { text-align: center; font-size: 14px; margin-bottom: 15px; }
+    .divider { border-top: 1.5px solid #000; margin: 8px 0; }
+    .row {
+      display: flex;
+      align-items: baseline;
+      margin: 6px 0;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+    .label { white-space: nowrap; margin-left: 6px; }
+    .dots {
+      flex: 1;
+      border-bottom: 1px dotted #555;
+      margin: 0 6px;
+      min-width: 40px;
+    }
+    .value {
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .marginal-box {
+      border: 1px solid #999;
+      padding: 8px 12px;
+      margin: 10px 0;
+      min-height: 80px;
+      font-size: 13px;
+      line-height: 2;
+    }
+    .footer {
+      margin-top: 20px;
+      font-size: 13px;
+      line-height: 2;
+    }
+    .latin-section {
+      margin-top: 15px;
+      border-top: 1px solid #000;
+      padding-top: 8px;
+      font-size: 13px;
+      color: #c00;
+      font-weight: bold;
+    }
+    .official-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 13px;
+      border-top: 1.5px solid #000;
+      padding-top: 8px;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
 
-        <div class="title-section">
-          <h1>شهادة الميلاد</h1>
-          <p>نسخة إلكترونية</p>
-        </div>
+  <!-- الترويسة -->
+  <div class="header">
+    <div class="header-center">
+      <div style="font-size:16px; font-weight:bold;">الجمهورية الجزائرية الديموقراطية الشعبية</div>
+    </div>
+    <div class="header-left">
+      <div>وزارة الداخلية والجماعات المحلية</div>
+      <div style="font-weight:bold;">السجل الوطني للحالة المدنية</div>
+    </div>
+  </div>
 
-        <div class="cert-info">
-          <span>السنة: <span class="field-value">${data.actYear || '....'}</span></span>
-          <span>رقم الشهادة: <span class="field-value">${data.actNumber || '..........'}</span></span>
-        </div>
+  <div class="divider"></div>
 
-        <div class="body-content">
-          <p>في يوم <span class="dotted-line" style="width:150px;"></span> على الساعة <span class="dotted-line" style="width:100px;"></span></p>
-          <p>ولد(ت) ب <span class="dotted-line" style="width:120px;"></span> ولاية <span class="field-value">${data.wilaya || '............'}</span></p>
-          <p>المسمى(ة): <span class="field-value" style="font-size:20px;">${data.fullName}</span></p>
-          <p>الجنس: <span class="dotted-line" style="width:150px;"></span></p>
-          <p>ابن(ة) <span class="dotted-line" style="width:150px;"></span> عمره <span class="dotted-line" style="width:50px;"></span> مهنته <span class="dotted-line" style="width:120px;"></span></p>
-          <p>و <span class="dotted-line" style="width:150px;"></span> عمرها <span class="dotted-line" style="width:50px;"></span> مهنتها <span class="dotted-line" style="width:120px;"></span></p>
-          <p>الساكنين ب بلدية <span class="field-value">${data.commune || '............'}</span> ولاية <span class="field-value">${data.wilaya || '............'}</span></p>
-          <p>حرر في <span class="dotted-line" style="width:150px;"></span> على الساعة <span class="dotted-line" style="width:80px;"></span></p>
-          <p>يُعلان به السيد(ة) <span class="dotted-line" style="width:250px;"></span></p>
-          <p style="font-weight:bold;">وبعد التلاوة وقّع معنا نحن <span class="dotted-line" style="width:150px;"></span> ضابط الحالة المدنية بالبلدية</p>
-          <p>البيانات الهامشية: <span class="dotted-line" style="width:300px;"></span></p>
-        </div>
+  <!-- العنوان -->
+  <h1>شهادة الميلاد</h1>
+  <div class="subtitle">نسخة إلكترونية</div>
 
-        <div style="margin-top:40px; font-size:16px;">
-          <p>حررت ب <span class="field-value">${data.commune || 'مستقانم'}</span> في <span class="field-value">${todayAr}</span></p>
-        </div>
+  <div class="divider"></div>
 
-        <div class="footer-section">
-          <div class="latin-note">الكتابة السابقة للاسم واللقب بالأحرف اللاتينية</div>
-          <p style="margin-top:30px; font-weight:bold; font-size:18px;">مستخرج من السجل الوطني للحالة المدنية</p>
-          <p style="color:#666; font-size:12px;">المرجع: 7</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
+  <!-- رقم الشهادة + اليوم -->
+  <div class="row">
+    <span class="label">رقم الشهادة</span>
+    <span class="dots"></span>
+    <span class="value">${data.actNumber || ''}</span>
+    <span class="label" style="margin-right:20px;">في يوم</span>
+    <span class="dots"></span>
+    <span class="value">${data.birth_day || ''}</span>
+  </div>
 
-  console.log("  -> [Puppeteer] Setting content...");
+  <!-- على الساعة + ولد(ت) ب -->
+  <div class="row">
+    <span class="label">على الساعة</span>
+    <span class="dots"></span>
+    <span class="value">${data.birth_time || ''}</span>
+    <span class="label" style="margin-right:20px;">ولد(ت) ب</span>
+    <span class="dots"></span>
+    <span class="value">${data.birth_commune || data.commune || ''}</span>
+  </div>
+
+  <!-- بلدية + ولاية -->
+  <div class="row">
+    <span class="label">بلدية</span>
+    <span class="dots"></span>
+    <span class="value">${data.birth_commune || data.commune || ''}</span>
+    <span class="label" style="margin-right:20px;">ولاية</span>
+    <span class="dots"></span>
+    <span class="value">${data.wilaya || ''}</span>
+  </div>
+
+  <!-- المسمى + تاريخ الميلاد -->
+  <div class="row">
+    <span class="label">المسمى(ة)</span>
+    <span class="dots"></span>
+    <span class="value" style="font-size:16px;">${data.fullName || ''}</span>
+    <span class="label" style="margin-right:20px;">${data.birth_date_nums || data.actYear || ''}</span>
+  </div>
+
+  <!-- الجنس -->
+  <div class="row">
+    <span class="label">الجنس</span>
+    <span class="dots"></span>
+    <span class="value">${data.gender || ''}</span>
+  </div>
+
+  <!-- ابن(ة) الأب -->
+  <div class="row">
+    <span class="label">ابن(ة)</span>
+    <span class="dots"></span>
+    <span class="value">${data.father_name || ''}</span>
+    <span class="label" style="margin-right:10px;">عمره</span>
+    <span class="dots"></span>
+    <span class="value">${data.father_age || ''}</span>
+    <span class="label" style="margin-right:10px;">مهنته</span>
+    <span class="dots"></span>
+    <span class="value">${data.father_job || ''}</span>
+  </div>
+
+  <!-- الأم -->
+  <div class="row">
+    <span class="label">و</span>
+    <span class="dots"></span>
+    <span class="value">${data.mother_name || ''}</span>
+    <span class="label" style="margin-right:10px;">عمرها</span>
+    <span class="dots"></span>
+    <span class="value">${data.mother_age || ''}</span>
+    <span class="label" style="margin-right:10px;">مهنتها</span>
+    <span class="dots"></span>
+    <span class="value">${data.mother_job || ''}</span>
+  </div>
+
+  <!-- الساكنين -->
+  <div class="row">
+    <span class="label">الساكنين</span>
+    <span class="dots"></span>
+    <span class="label">بلدية</span>
+    <span class="dots"></span>
+    <span class="value">${data.family_commune || data.commune || ''}</span>
+    <span class="label" style="margin-right:10px;">ولاية</span>
+    <span class="dots"></span>
+    <span class="value">${data.family_wilaya || data.wilaya || ''}</span>
+  </div>
+
+  <!-- حرر في -->
+  <div class="row">
+    <span class="label">حرر في</span>
+    <span class="dots"></span>
+    <span class="value">${data.issued_city || data.commune || ''}</span>
+    <span class="label" style="margin-right:20px;">على الساعة</span>
+    <span class="dots"></span>
+    <span class="value">${data.issued_time || ''}</span>
+  </div>
+
+  <!-- إبعلان أدلى به -->
+  <div class="row">
+    <span class="label">إبعلان أدلى به السيد(ة)</span>
+    <span class="dots"></span>
+    <span class="value">${data.declarant || ''}</span>
+  </div>
+
+  <!-- وبعد التلاوة -->
+  <div class="row">
+    <span class="label">وبعد التلاوة وقع معنا نحن</span>
+    <span class="dots"></span>
+    <span class="value">${data.officer_name || ''}</span>
+    <span class="label" style="margin-right:10px;">ضابط الحالة المدنية بالبلدية</span>
+  </div>
+
+  <!-- البيانات الهامشية -->
+  <div style="margin-top:10px;">
+    <div style="font-weight:bold; margin-bottom:5px;">البيانات الهامشية</div>
+    <div class="marginal-box">
+      ${marginalText}
+    </div>
+  </div>
+
+  <!-- التوقيع والتاريخ -->
+  <div class="footer">
+    <div class="row">
+      <span class="label">حررت بـ</span>
+      <span class="dots"></span>
+      <span class="value">${data.issued_city || data.commune || 'مستغانم'}</span>
+      <span class="label" style="margin-right:20px;">في</span>
+      <span class="dots"></span>
+      <span class="value">${data.issued_date || todayAr}</span>
+    </div>
+  </div>
+
+  <!-- الكتابة بالأحرف اللاتينية -->
+  <div class="latin-section">
+    <div>الكتابة السابقة للاسم واللقب بالأحرف اللاتينية</div>
+    <div style="margin-top:5px; font-family: Arial; color:#000; font-weight:normal;">
+      ${data.latin_name || ''}
+    </div>
+    <div style="margin-top:5px; font-size:12px; color:#000; font-weight:normal;">
+      1- باكمل الحروف<br/>
+      2- اسم ولقب الولد: ${data.child_name_latin || ''}
+    </div>
+  </div>
+
+  <!-- المرجع الرسمي -->
+  <div class="official-footer">
+    مستخرج من السجل الوطني للحالة المدنية
+    <div style="font-size:12px; margin-top:4px;">المرجع ج م 7</div>
+  </div>
+
+</div>
+</body>
+</html>`;
+
   await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-
-  console.log("  -> [Puppeteer] Generating PDF...");
   const pdfBuffer = await page.pdf({
     format: 'A4',
     printBackground: true,
     margin: { top: 0, right: 0, bottom: 0, left: 0 }
   });
-
-  console.log("  -> [Puppeteer] Closing browser...");
   await browser.close();
   return pdfBuffer;
 }
