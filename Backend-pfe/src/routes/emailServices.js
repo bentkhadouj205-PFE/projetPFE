@@ -128,7 +128,7 @@ export const emailService = {
   async sendValidationEmailWithPDF(citizenEmail, citizenFirstName, requestSubject, employeeName, comment, pdfBuffer) {
     const { data, error } = await resend.emails.send({
       from: 'Baladiya Digital <onboarding@resend.dev>',
-      to: 'bentalebkhadouj39@gmail.com', // ← always send to your own email for demo
+      to: citizenEmail, // ← always send to your own email for demo
       subject: `Votre document est pret - ${requestSubject || 'Acte de Naissance'}`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden">

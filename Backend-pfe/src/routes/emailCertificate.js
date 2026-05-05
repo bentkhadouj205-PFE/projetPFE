@@ -30,6 +30,7 @@ router.post('/generate-and-send', async (req, res) => {
       requestSubject,
       employeeName,
       comment,
+      requestId,
       ...data
     } = req.body;
 
@@ -51,6 +52,21 @@ router.post('/generate-and-send', async (req, res) => {
       comment || 'Votre document est prêt.',
       pdfBuffer
     );
+
+    // ✅ Mettre à jour le statut dans Supabase
+    if (requestId) {
+      console.log(`📡 Updating status to completed for request: ${requestId}`);
+      const { error } = await supabase
+        .from('requests')
+        .update({ status: 'completed' })
+        .eq('id', requestId);
+      
+      if (error) {
+        console.error('❌ Supabase update error:', error);
+      } else {
+        console.log('✅ Status updated successfully in Supabase');
+      }
+    }
 
     res.json({ success: true, messageId: info?.messageId || 'sent' });
   } catch (err) {

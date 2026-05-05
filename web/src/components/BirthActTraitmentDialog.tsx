@@ -36,6 +36,7 @@ const POSITION_OPTIONS_FR = [
 
 
 export interface BirthActCitizenShape {
+  id?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -364,6 +365,7 @@ export function BirthActTraitmentDialog({
           requestSubject:   'Acte de Naissance',
           employeeName:     'Service État Civil',
           comment:          '',
+          requestId:        citizen?.id,
           wilaya,
           commune,
           actYear,
