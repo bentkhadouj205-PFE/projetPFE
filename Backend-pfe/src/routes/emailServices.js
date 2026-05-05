@@ -1,18 +1,24 @@
 import nodemailer from 'nodemailer';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import dns from 'dns';
+
+dns.setDefaultResultOrder('ipv4first'); // 🔥 Force IPv4 GLOBALLY
 
 // ── SMTP Transporter ──────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // use SSL
+  port: 587,        // ← change from 465 to 587
+  secure: false,    // ← change from true to false
   auth: {
     user: (process.env.SMTP_USER || '').trim(),
     pass: (process.env.SMTP_PASS || '').trim(),
   },
-  // Force IPv4 for Render compatibility
-  connectionTimeout: 10000,
-  family: 4
+  tls: {
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 15000,
 });
 
 // ── initializeEmail — required by request.js ──────────────────────────────────
