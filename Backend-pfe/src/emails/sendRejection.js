@@ -1,4 +1,5 @@
-import fetch from 'node-fetch';
+// Using global fetch (Node 18+)
+
 
 export const sendRejectionEmail = async (toEmail, prenom, reason) => {
   console.log('[EMAIL] Generating Rejection Email...');

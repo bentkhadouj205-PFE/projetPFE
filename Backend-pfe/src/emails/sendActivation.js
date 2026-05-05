@@ -1,4 +1,5 @@
-﻿import fetch from 'node-fetch';
+// Using global fetch (Node 18+)
+
 
 export const sendActivationEmail = async (toEmail, prenom, token) => {
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
