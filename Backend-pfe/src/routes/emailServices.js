@@ -173,17 +173,25 @@ export const emailService = {
       </div>
     `;
 
-    const info = await transporter.sendMail({
-      from: `"Baladiya Digital" <${(process.env.SMTP_USER || '').trim()}>`,
-      to: (citizenEmail || '').trim(),
-      subject,
-      html,
-      attachments: [{
-        filename: 'acte_naissance.pdf',
-        content: pdfBuffer,
-        contentType: 'application/pdf'
-      }]
-    });
+    let info;
+    try {
+      info = await transporter.sendMail({
+        from: `"Baladiya Digital" <${(process.env.SMTP_USER || '').trim()}>`,
+        to: (citizenEmail || '').trim(),
+        subject,
+        html,
+        attachments: [{
+          filename: 'acte_naissance.pdf',
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }]
+      });
+      console.log('✅ Email sent successfully to:', citizenEmail);
+      console.log('📬 MessageId:', info?.messageId);
+    } catch (err) {
+      console.error('🔥 SMTP ERROR:', err);
+      throw new Error(`Email sending failed: ${err.message}`);
+    }
     return info;
   }
 };
