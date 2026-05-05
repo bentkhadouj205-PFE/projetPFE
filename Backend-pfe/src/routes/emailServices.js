@@ -45,8 +45,14 @@ export async function generateCertificatePDF(data) {
   const green    = rgb(0.0,0.47,0.25);
   const white    = rgb(1,1,1);
 
+  const sanitize = (str) => {
+    if (!str) return '';
+    // Replace non-WinAnsi characters with '?' to avoid PDF crashes
+    return String(str).replace(/[^\x00-\x7F]/g, '');
+  };
+
   const txt = (text, x, y, f=font, size=9, color=black) => {
-    const str = String(text || '');
+    const str = sanitize(text);
     if (!str) return;
     page.drawText(str, { x, y, font:f, size, color });
   };
@@ -173,7 +179,7 @@ export async function generateCertificatePDF(data) {
 
   // ── ROW 12 — officier ────────────────────────────────────────────────
   y -= 18;
-  txt("Wa ba'da al-tilawa waqa'a ma'انا nahnu:", 50, y, font, 8);
+  txt("Wa ba'da al-tilawa waqa'a ma'ana nahnu:", 50, y, font, 8);
   txt(data.officierEtatCivil || '..........', 265, y, fontBold, 9);
   dots(265 + fontBold.widthOfTextAtSize(data.officierEtatCivil||'', 9) + 5, width-200, y-1);
   txt('Dabitu al-hala al-madaniya', width-195, y, font, 7);
