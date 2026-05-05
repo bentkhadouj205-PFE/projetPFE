@@ -3,11 +3,16 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 // ── SMTP Transporter ──────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // use SSL
   auth: {
     user: (process.env.SMTP_USER || '').trim(),
     pass: (process.env.SMTP_PASS || '').trim(),
   },
+  // Force IPv4 for Render compatibility
+  connectionTimeout: 10000,
+  family: 4
 });
 
 // ── initializeEmail — required by request.js ──────────────────────────────────
