@@ -20,8 +20,8 @@ import {
 } from '@/components/ui/select';
 import { WILAYA_NAMES, communesForWilaya } from '@/data/wilayasCommunes';
 import { CheckCircle, Mail, ArrowLeft, XCircle, Loader2 } from 'lucide-react';
-import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+
 
 const POSITION_OPTIONS_FR = [
   { value: '', label: '—' },
@@ -31,6 +31,90 @@ const POSITION_OPTIONS_FR = [
   { value: 'copie_litterale', label: 'Copie littérale' },
   { value: 'mention_marginal', label: 'Mention marginale' },
 ];
+
+const generateBirthCertificatePDF = (citizen: BirthActCitizenShape, wilaya: string, commune: string, actYear: string, actNumber: string) => {
+  const doc = new jsPDF("p", "mm", "a4");
+
+  let y = 15;
+
+  // Header
+  doc.setFont("Helvetica", "normal");
+  doc.setFontSize(11);
+
+  doc.text("الجمهورية الجزائرية الديمقراطية الشعبية", 105, y, { align: "center" });
+  y += 6;
+  doc.text("وزارة الداخلية والجماعات المحلية", 105, y, { align: "center" });
+  y += 6;
+  doc.text("السجل الوطني للحالة المدنية", 105, y, { align: "center" });
+
+  y += 10;
+
+  // Title
+  doc.setFontSize(16);
+  doc.text("شهادة الميلاد", 105, y, { align: "center" });
+
+  y += 10;
+
+  doc.setFontSize(11);
+
+  // Enable dotted lines
+  doc.setLineDashPattern([1, 1], 0);
+
+  // Line 1
+  doc.text("في يوم", 10, y);
+  doc.line(30, y, 200, y);
+
+  y += 8;
+
+  // Line 2
+  doc.text("ولد(ت) ب", 10, y);
+  doc.line(40, y, 200, y);
+
+  y += 8;
+
+  // Wilaya / Commune
+  doc.text("ولاية", 10, y);
+  doc.text(wilaya || "........", 30, y);
+
+  doc.text("بلدية", 110, y);
+  doc.text(commune || "........", 130, y);
+
+  y += 8;
+
+  // Name
+  doc.text("المسمى(ة):", 10, y);
+  doc.text(`${citizen?.firstName || ''} ${citizen?.lastName || ''}`, 50, y);
+
+  y += 8;
+
+  // Act number
+  doc.text("رقم الشهادة:", 10, y);
+  doc.text(actNumber || "........", 50, y);
+
+  y += 8;
+
+  // Year
+  doc.text("السنة:", 10, y);
+  doc.text(actYear || "........", 50, y);
+
+  y += 10;
+
+  // Long dotted paragraph (like your PDF)
+  doc.line(10, y, 200, y);
+  y += 6;
+  doc.line(10, y, 200, y);
+  y += 6;
+  doc.line(10, y, 200, y);
+
+  // Disable dotted
+  doc.setLineDashPattern([], 0);
+
+  // Footer
+  y += 10;
+  doc.text("مستخرج من السجل الوطني للحالة المدنية", 105, y, { align: "center" });
+
+  return doc;
+};
 
 
 
@@ -352,53 +436,39 @@ export function BirthActTraitmentDialog({
 
     setSending(true);
     try {
-      // 1. Get the High-Quality PDF from the backend as base64
-      const pdfResponse = await fetch(`${BACKEND_URL}/api/email/generate-pdf`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName: `${citizen.firstName} ${citizen.lastName || ''}`,
-          wilaya,
-          commune,
-          actYear,
-          actNumber,
-        }),
-      });
+      const doc = generateBirthCertificatePDF(
+        citizen,
+        wilaya,
+        commune,
+        actYear,
+        actNumber
+      );
 
-      if (!pdfResponse.ok) throw new Error('Failed to generate PDF on server');
-      const { pdfBase64 } = await pdfResponse.json();
-
-      // Email notification handled by backend or removed per user request
-
-      // 3. Auto-download PDF for the Municipal Agent
-      const link = document.createElement('a');
-      link.href = `data:application/pdf;base64,${pdfBase64}`;
-      link.download = `acte-naissance-${citizen.firstName}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Download PDF
+      doc.save(`acte-naissance-${citizen.firstName}.pdf`);
 
       toast.success(
         language === 'fr'
-          ? `Email envoyé avec succès !`
-          : `Email sent successfully!`
+          ? `Document généré avec succès !`
+          : `Document generated successfully!`
       );
-
+      
       // Close modal
       onOpenChange(false);
       onValidate();
 
     } catch (error: any) {
-      console.error('Send error:', error);
+      console.error('Generation error:', error);
       alert(
         language === 'fr'
-          ? ` Erreur d'envoi: ${error.message}`
-          : ` Send error: ${error.message}`
+          ? ` Erreur de génération: ${error.message}`
+          : ` Generation error: ${error.message}`
       );
     } finally {
       setSending(false);
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
