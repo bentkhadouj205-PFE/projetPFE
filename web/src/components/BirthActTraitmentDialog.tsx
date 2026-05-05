@@ -360,12 +360,12 @@ export function BirthActTraitmentDialog({
         body: JSON.stringify({
           citizenEmail:     citizen?.email,
           citizenFirstName: citizen?.firstName,
-          fullName:         `${citizen?.firstName} ${citizen?.lastName}`,
-          nin:              citizen?.nin,
+          citizenLastName:  citizen?.lastName,
+          citizen_id:       citizen?.id,        // ← مهم لجلب البيانات من Supabase
+          requestId:        citizen?.id,        // In this UI context, id is the requestId
           requestSubject:   'Acte de Naissance',
           employeeName:     'Service État Civil',
           comment:          '',
-          requestId:        citizen?.id,
           wilaya,
           commune,
           actYear,

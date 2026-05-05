@@ -24,53 +24,76 @@ router.post('/generate-pdf', async (req, res) => {
 router.post('/generate-and-send', async (req, res) => {
   try {
     const {
-      citizenEmail,
-      citizenFirstName,
-      citizenLastName,
-      requestSubject,
-      employeeName,
-      comment,
-      requestId,
-      ...data
+      citizenEmail, citizenFirstName, requestSubject,
+      employeeName, comment, requestId, citizen_id,
+      wilaya, commune, actYear, actNumber,
     } = req.body;
 
-    // Passe toutes les infos à la génération PDF
-    const pdfBuffer = await generateCertificatePDF({
-      ...data,
-      citizenEmail,
-      citizenFirstName,
-      citizenLastName,
-    });
+    // ✅ جلب بيانات الأكت من Supabase
+    const { data: acte, error } = await supabase
+      .schema('register')
+      .from('actes_naissance')
+      .select('*')
+      .eq('citizen_id', citizen_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
 
-    // Envoie l'email avec le PDF en pièce jointe
-    const info = await emailService.sendValidationEmailWithPDF(
+    if (error) console.warn('⚠️ Acte not found, using request data:', error.message);
+
+    // دمج البيانات
+    const pdfData = {
       citizenEmail,
       citizenFirstName,
+      fullName:           acte?.nom_prenom        || `${citizenFirstName} ${req.body.citizenLastName || ''}`,
+      numeroChahada:      acte?.numero_chahada     || actNumber,
+      numeroActe:         acte?.numero_acte        || actNumber,
+      dateNaissance:      acte?.date_naissance     || '',
+      heureNaissance:     acte?.heure_naissance    || '',
+      wilayaNaissance:    acte?.wilaya_naissance   || wilaya,
+      communeNaissance:   acte?.commune_naissance  || commune,
+      sexe:               acte?.sexe               || '',
+      pereNomPrenom:      acte?.pere_nom_prenom    || '',
+      pereAge:            acte?.pere_age           || '',
+      pereMetier:         acte?.pere_metier        || '',
+      mereNomPrenom:      acte?.mere_nom_prenom    || '',
+      mereAge:            acte?.mere_age           || '',
+      mereMetier:         acte?.mere_metier        || '',
+      domicileCommune:    acte?.domicile_commune   || commune,
+      domicileWilaya:     acte?.domicile_wilaya    || wilaya,
+      heureRedaction:     acte?.heure_redaction    || '',
+      redigeA:            acte?.redige_a           || commune,
+      declarePar:         acte?.declare_par        || '',
+      officierEtatCivil:  acte?.officier_etat_civil|| '',
+      marginalNotes:      acte?.marginal_notes     || '',
+      wilayaDelivrance:   acte?.wilaya_delivrance  || wilaya,
+      dateDelivrance:     acte?.date_delivrance    || new Date().toISOString().split('T')[0],
+    };
+
+    // 1. Generate PDF
+    const pdfBuffer = await generateCertificatePDF(pdfData);
+
+    // 2. Send Email
+    await emailService.sendValidationEmailWithPDF(
+      citizenEmail, citizenFirstName,
       requestSubject || 'Acte de Naissance',
-      'completed',
       employeeName || 'Service État Civil',
-      comment || 'Votre document est prêt.',
+      comment || '',
       pdfBuffer
     );
 
-    // ✅ Mettre à jour le statut dans Supabase
+    // 3. Update status
     if (requestId) {
-      console.log(`📡 Updating status to completed for request: ${requestId}`);
-      const { error } = await supabase
+      await supabase
         .from('requests')
         .update({ status: 'completed' })
         .eq('id', requestId);
-      
-      if (error) {
-        console.error('❌ Supabase update error:', error);
-      } else {
-        console.log('✅ Status updated successfully in Supabase');
-      }
     }
 
-    res.json({ success: true, messageId: info?.messageId || 'sent' });
+    res.json({ success: true });
+
   } catch (err) {
-    console.error(' generate-and-send error:', err);
+    console.error('🔥 generate-and-send error:', err);
     res.status(500).json({ error: err.message });
   }
 });

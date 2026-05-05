@@ -9,116 +9,193 @@ export async function initializeEmail() {
 }
 
 export async function generateCertificatePDF(data) {
-  console.log('-> [pdf-lib] Generating PDF...');
-
   const now = new Date();
-  const todayFr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+  const today = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+
+  const formatDate = (d) => {
+    if (!d) return '../../..';
+    const dt = new Date(d);
+    return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
+  };
+
+  const formatTime = (t) => t ? t.substring(0,5) : '......';
 
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]);
   const { width, height } = page.getSize();
 
+  const font     = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const black    = rgb(0,0,0);
+  const grey     = rgb(0.5,0.5,0.5);
+  const green    = rgb(0.0,0.47,0.25);
+  const white    = rgb(1,1,1);
 
-  const black = rgb(0, 0, 0);
-  const white = rgb(1, 1, 1);
-  const green = rgb(0.0, 0.47, 0.25);
-  const grey = rgb(0.4, 0.4, 0.4);
-  const lightGrey = rgb(0.95, 0.95, 0.95);
-  const blue = rgb(0.1, 0.1, 0.6);
-
-  const txt = (text, x, y, font, size, color = black) => {
-    const str = String(text ?? '');
+  const txt = (text, x, y, f=font, size=9, color=black) => {
+    const str = String(text || '');
     if (!str) return;
-    page.drawText(str, { x, y, font, size, color });
+    page.drawText(str, { x, y, font:f, size, color });
   };
 
-  const line = (x1, y1, x2, y2, thickness = 0.5, color = black) => {
-    page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness, color });
-  };
-
-  const rect = (x, y, w, h, color) => {
-    page.drawRectangle({ x, y, width: w, height: h, color });
-  };
-
-  const dottedRow = (label, value, yPos) => {
-    txt(label, 50, yPos, fontRegular, 10);
-    const labelW = fontRegular.widthOfTextAtSize(label, 10);
-    for (let x = 50 + labelW + 6; x < width - 160; x += 5) {
-      page.drawLine({ start: { x, y: yPos + 2 }, end: { x: x + 2.5, y: yPos + 2 }, thickness: 0.4, color: rgb(0.6, 0.6, 0.6) });
+  const dots = (x1, x2, yPos) => {
+    for (let x = x1; x < x2; x += 4) {
+      page.drawLine({ 
+        start: { x: x, y: yPos }, 
+        end: { x: x + 2, y: yPos }, 
+        thickness: 0.5, 
+        color: grey 
+      });
     }
-    txt(value || '-', width - 155, yPos, fontBold, 10, blue);
   };
 
-  // Header
-  rect(0, height - 75, width, 75, green);
-  txt('REPUBLIQUE ALGERIENNE DEMOCRATIQUE ET POPULAIRE', 50, height - 25, fontBold, 10, white);
-  txt('Wilaya: ' + (data.wilaya || '').toUpperCase() + '   |   Commune: ' + (data.commune || '').toUpperCase(), 50, height - 55, fontRegular, 8, rgb(0.8, 0.9, 0.8));
+  const ln = (x1,y1,x2,y2,t=0.5,c=black) =>
+    page.drawLine({ start:{x:x1,y:y1}, end:{x:x2,y:y2}, thickness:t, color:c });
 
-  // Title
-  let y = height - 100;
-  txt('ACTE DE NAISSANCE', 50, y, fontBold, 18, green);
-  line(50, y - 6, width - 50, y - 6, 1.5, green);
+  // ── HEADER ──────────────────────────────────────────────────────────
+  page.drawRectangle({ x:0, y:height-60, width, height:60, color:green });
+  txt('REPUBLIQUE ALGERIENNE DEMOCRATIQUE ET POPULAIRE', 80, height-22, fontBold, 10, white);
+  txt('Ministere de l\'Interieur - Registre National de l\'Etat Civil', 110, height-38, font, 8, white);
+  txt(`Wilaya: ${(data.wilayaDelivrance||'').toUpperCase()}`, 50, height-52, font, 7, rgb(0.8,0.9,0.8));
 
-  // Demandeur
-  y -= 30;
-  rect(50, y - 3, width - 100, 16, lightGrey);
-  txt('INFORMATIONS DU DEMANDEUR', 55, y, fontBold, 10, rgb(0.2, 0.2, 0.2));
-  line(50, y - 4, width - 50, y - 4, 0.8, green);
-  y -= 22;
-  dottedRow('Nom et Prenom :', data.fullName || '', y); y -= 20;
-  dottedRow('Email :', data.citizenEmail || '', y); y -= 20;
-  dottedRow('NIN :', data.nin || '', y); y -= 28;
+  // ── TITLE ────────────────────────────────────────────────────────────
+  txt('ACTE DE NAISSANCE / Shahada Al Milad', 145, height-80, fontBold, 13);
+  txt('Copie electronique', 225, height-95, font, 8, grey);
+  ln(50, height-100, width-50, height-100, 1, green);
 
-  // Acte
-  line(50, y, width - 50, y, 0.5, grey);
-  y -= 18;
-  rect(50, y - 3, width - 100, 16, lightGrey);
-  txt("INFORMATIONS DE L'ACTE", 55, y, fontBold, 10, rgb(0.2, 0.2, 0.2));
-  line(50, y - 4, width - 50, y - 4, 0.8, green);
-  y -= 22;
-  dottedRow('Wilaya :', data.wilaya || '', y); y -= 20;
-  dottedRow('Commune :', data.commune || '', y); y -= 20;
-  dottedRow("Annee de l'acte :", data.actYear || '', y); y -= 20;
-  dottedRow("N de l'acte :", data.actNumber || '', y); y -= 28;
+  // ── Cert Number + Date ───────────────────────────────────────────────
+  let y = height - 118;
+  txt('N° Chahada:', 50, y, font, 9);
+  txt(data.numeroChahada || '..........', 125, y, fontBold, 9);
+  txt('N° Acte:', 280, y, font, 9);
+  txt(data.numeroActe || '..........', 325, y, fontBold, 9);
+  txt('fi yawm / le:', 420, y, font, 9);
+  dots(490, width-50, y-1);
 
-  // Corps officiel
-  line(50, y, width - 50, y, 0.5, grey);
-  y -= 18;
-  rect(50, y - 3, width - 100, 16, lightGrey);
-  txt('DOCUMENT OFFICIEL', 55, y, fontBold, 10, rgb(0.2, 0.2, 0.2));
-  line(50, y - 4, width - 50, y - 4, 0.8, green);
-  y -= 28;
-
-  const bodyLines = [
-    'En date de .............. a .............. heures',
-    'Ne(e) a ' + (data.commune || '..............') + ' Wilaya ' + (data.wilaya || '..............'),
-    'Nomme(e) : ' + (data.fullName || '..............'),
-    'N Acte : ' + (data.actNumber || '..........') + '   Annee : ' + (data.actYear || '....'),
-    'Fils(fille) de .............. age ......  profession ..............',
-    'Et de .............. age ......  profession ..............',
-    'Domicilies a .............. Commune ' + (data.commune || '..............'),
-    'Redige le .............. a .............. heures',
-    'Mentions marginales : .................................................................',
-  ];
-  for (const bl of bodyLines) {
-    txt(bl, 55, y, fontRegular, 9, black);
-    y -= 18;
-  }
-
-  // Signature
+  // ── ROW 1 — heure + lieu naissance ──────────────────────────────────
   y -= 20;
-  line(50, y, width - 50, y, 1, grey);
-  y -= 15;
-  txt("Date d'emission : " + todayFr, 50, y, fontRegular, 8, grey);
-  page.drawRectangle({ x: width - 200, y: y - 55, width: 150, height: 50, borderColor: grey, borderWidth: 0.5 });
-  txt('Cachet et Signature', width - 193, y - 20, fontRegular, 8, grey);
-  txt("de l'APC", width - 175, y - 35, fontRegular, 8, grey);
+  txt("'ala al-sa'a:", 50, y, font, 9);
+  txt(formatTime(data.heureNaissance), 125, y, fontBold, 9);
+  dots(160, 260, y-1);
+  txt("wulida(t) bi:", 265, y, font, 9);
+  dots(330, width-50, y-1);
 
-  // Footer
-  rect(0, 0, width, 22, green);
-  txt('Baladiya Digital - Service Etat Civil Numerique', 50, 6, fontRegular, 7, white);
+  // ── ROW 2 — baladiya + wilaya ────────────────────────────────────────
+  y -= 18;
+  txt('Baladiya:', 50, y, font, 9);
+  txt(data.communeNaissance || '..........', 100, y, fontBold, 9);
+  dots(100 + fontBold.widthOfTextAtSize(data.communeNaissance||'', 9) + 5, 310, y-1);
+  txt('Wilaya:', 315, y, font, 9);
+  txt(data.wilayaNaissance || '..........', 355, y, fontBold, 9);
+  dots(355 + fontBold.widthOfTextAtSize(data.wilayaNaissance||'', 9) + 5, width-50, y-1);
+
+  // ── ROW 3 — date + nom ──────────────────────────────────────────────
+  y -= 18;
+  txt(formatDate(data.dateNaissance), 50, y, fontBold, 9);
+  txt('Al-musamm(a/at):', 130, y, font, 9);
+  txt(data.fullName || '..........', 240, y, fontBold, 10);
+  dots(240 + fontBold.widthOfTextAtSize(data.fullName||'', 10) + 5, width-50, y-1);
+
+  // ── ROW 4 — sexe ────────────────────────────────────────────────────
+  y -= 18;
+  txt('Al-sinn (Sexe):', 50, y, font, 9);
+  txt(data.sexe === 'M' ? 'Masculin / Dhakar' : data.sexe === 'F' ? 'Feminin / Untha' : '..........', 140, y, fontBold, 9);
+  dots(300, width-50, y-1);
+
+  // ── ROW 5 — père ────────────────────────────────────────────────────
+  y -= 18;
+  txt("Ibn(at) / Pere:", 50, y, font, 9);
+  txt(data.pereNomPrenom || '..........', 130, y, fontBold, 9);
+  dots(130 + fontBold.widthOfTextAtSize(data.pereNomPrenom||'', 9) + 5, 310, y-1);
+  txt("'omrohu:", 315, y, font, 9);
+  txt(data.pereAge ? String(data.pereAge) : '......', 360, y, fontBold, 9);
+  dots(385, width-50, y-1);
+
+  // ── ROW 6 — métier père ──────────────────────────────────────────────
+  y -= 18;
+  txt('Mihnatohu (Profession):', 50, y, font, 9);
+  txt(data.pereMetier || '..........', 185, y, fontBold, 9);
+  dots(185 + fontBold.widthOfTextAtSize(data.pereMetier||'', 9) + 5, width-50, y-1);
+
+  // ── ROW 7 — mère ────────────────────────────────────────────────────
+  y -= 18;
+  txt("Wa / Mere:", 50, y, font, 9);
+  txt(data.mereNomPrenom || '..........', 110, y, fontBold, 9);
+  dots(110 + fontBold.widthOfTextAtSize(data.mereNomPrenom||'', 9) + 5, 310, y-1);
+  txt("'omroha:", 315, y, font, 9);
+  txt(data.mereAge ? String(data.mereAge) : '......', 360, y, fontBold, 9);
+  dots(385, width-50, y-1);
+
+  // ── ROW 8 — métier mère ──────────────────────────────────────────────
+  y -= 18;
+  txt('Mihnatoha (Profession):', 50, y, font, 9);
+  txt(data.mereMetier || '..........', 185, y, fontBold, 9);
+  dots(185 + fontBold.widthOfTextAtSize(data.mereMetier||'', 9) + 5, width-50, y-1);
+
+  // ── ROW 9 — domicile ─────────────────────────────────────────────────
+  y -= 18;
+  txt('Al-sakinin / Domicile:', 50, y, font, 9);
+  dots(175, 250, y-1);
+  txt('Baladiya:', 255, y, font, 9);
+  txt(data.domicileCommune || '..........', 305, y, fontBold, 9);
+  txt('Wilaya:', 410, y, font, 9);
+  txt(data.domicileWilaya || '..........', 450, y, fontBold, 9);
+
+  // ── ROW 10 — rédigé ──────────────────────────────────────────────────
+  y -= 18;
+  txt('Hurira fi:', 50, y, font, 9);
+  dots(95, 270, y-1);
+  txt("'ala al-sa'a:", 275, y, font, 9);
+  txt(formatTime(data.heureRedaction), 345, y, fontBold, 9);
+  dots(375, width-50, y-1);
+
+  // ── ROW 11 — déclaré par ─────────────────────────────────────────────
+  y -= 18;
+  txt("I'lan adla bihi Al-sayyid(a):", 50, y, font, 9);
+  txt(data.declarePar || '..........', 210, y, fontBold, 9);
+  dots(210 + fontBold.widthOfTextAtSize(data.declarePar||'', 9) + 5, width-50, y-1);
+
+  y -= 15;
+  dots(50, width-50, y-1);
+
+  // ── ROW 12 — officier ────────────────────────────────────────────────
+  y -= 18;
+  txt("Wa ba'da al-tilawa waqa'a ma'ana nahnu:", 50, y, font, 8);
+  txt(data.officierEtatCivil || '..........', 265, y, fontBold, 9);
+  dots(265 + fontBold.widthOfTextAtSize(data.officierEtatCivil||'', 9) + 5, width-200, y-1);
+  txt('Dabitu al-hala al-madaniya', width-195, y, font, 7);
+
+  // ── Mentions marginales ───────────────────────────────────────────────
+  y -= 18;
+  txt('Al-bayanat al-hamishiya:', 50, y, font, 9);
+  if (data.marginalNotes) {
+    txt(data.marginalNotes.substring(0,80), 185, y, font, 8);
+  }
+  dots(185, width-50, y-1);
+  y -= 14; dots(50, width-50, y-1);
+  y -= 14; dots(50, width-50, y-1);
+  y -= 14; dots(50, width-50, y-1);
+
+  // ── تاريخ الإصدار ────────────────────────────────────────────────────
+  ln(50, y-8, width-50, y-8, 0.3);
+  y -= 22;
+  txt(`Hurrira bi: ${data.redigeA || data.domicileCommune || 'Mostaganem'}   fi:   ${today}`, 50, y, font, 9);
+
+  // ── الاسم اللاتيني ───────────────────────────────────────────────────
+  y -= 22;
+  txt('Al-kitaba al-latiniya lil-ism wal-laqab / Ecriture latine:', 100, y, fontBold, 8);
+  y -= 14;
+  txt(data.fullName || '..........', 200, y, fontBold, 11);
+  dots(50, width-50, y-2);
+
+  // ── الملاحظات ────────────────────────────────────────────────────────
+  y -= 22;
+  txt('1- Kamil al-huruf / Toutes les lettres', 50, y, font, 8, grey);
+  y -= 12;
+  txt('2- Ism wa laqab al-awlad / Nom et prenom des enfants', 50, y, font, 8, grey);
+
+  // ── تذييل ────────────────────────────────────────────────────────────
+  page.drawRectangle({ x:0, y:0, width, height:30, color:green });
+  txt('Mustakhraj min Al-Sijil Al-Watani lil-Hala Al-Madaniya - Al-Marja\': J.M 7', 90, 10, font, 8, white);
 
   const pdfBytes = await pdfDoc.save();
   return Buffer.from(pdfBytes);
@@ -128,7 +205,7 @@ export const emailService = {
   async sendValidationEmailWithPDF(citizenEmail, citizenFirstName, requestSubject, employeeName, comment, pdfBuffer) {
     const { data, error } = await resend.emails.send({
       from: 'Baladiya Digital <onboarding@resend.dev>',
-      to: citizenEmail, // ← always send to your own email for demo
+      to: citizenEmail,
       subject: `Votre document est pret - ${requestSubject || 'Acte de Naissance'}`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden">
