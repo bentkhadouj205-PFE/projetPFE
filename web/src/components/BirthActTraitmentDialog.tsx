@@ -91,8 +91,9 @@ function DemandePreview({
     <div className="flex flex-col gap-3">
       {/* Header */}
       <div className="bg-slate-700 text-white rounded-lg p-4 text-center">
-        <h3 className="font-bold text-base">Demande d'Acte de Naissance</h3>
-        <p className="text-slate-300 text-xs mt-1">Birth Certificate Request</p>
+        <h3 className="font-bold text-base">
+          {language === 'fr' ? "Demande d'Acte de Naissance" : 'Birth Certificate Request'}
+        </h3>
       </div>
 
       {/* Unified Information Card */}
@@ -103,31 +104,15 @@ function DemandePreview({
           </p>
           <div className="space-y-2 text-sm">
             {[
-              { label: 'Wilaya', value: wilaya },
-              { label: 'Commune / Municipality', value: commune },
-              { label: "Année de l'acte / Year", value: actYear },
-              { label: "N° de l'acte / Act Number", value: actNumber },
-              { label: 'Position', value: position },
-              { label: 'Nombre de Copies / Copies', value: copiesCount },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex justify-between border-b border-slate-100 pb-1 last:border-0">
-                <span className="text-slate-500">{label}:</span>
-                <span className="font-medium text-slate-800">{value || '—'}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="pt-2 border-t border-slate-200">
-          <p className="text-center font-semibold text-slate-700 mb-3 text-sm">
-            {language === 'fr' ? 'Informations du Citoyen' : 'Requester Information'}
-          </p>
-          <div className="space-y-2 text-sm">
-            {[
               { label: 'First Name', value: citizen.firstName },
               { label: 'Last Name', value: citizen.lastName },
               { label: 'Email', value: citizen.email },
               { label: 'NIN', value: citizen.nin },
+              { label: 'Wilaya', value: wilaya },
+              { label: 'Commune / Municipality', value: commune },
+              { label: "Année de l'acte / Year", value: actYear },
+              { label: "N° de l'acte / Act Number", value: actNumber },
+
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between border-b border-slate-100 pb-1 last:border-0">
                 <span className="text-slate-500">{label}:</span>
@@ -148,11 +133,11 @@ function DemandePreview({
         </Button>
         <Button type="button" onClick={onReject}
           className="flex-1 bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-1">
-          <XCircle className="w-4 h-4" /> ✕ REJECT
+          <XCircle className="w-4 h-4" /> REJECT
         </Button>
         <Button type="button" onClick={onApprove}
           className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-1">
-          <CheckCircle className="w-4 h-4" /> ✓ APPROVE
+          <CheckCircle className="w-4 h-4" /> APPROVE
         </Button>
       </div>
     </div>
@@ -398,7 +383,7 @@ export function BirthActTraitmentDialog({
           ? `Email envoyé avec succès !`
           : `Email sent successfully!`
       );
-      
+
       // Close modal
       onOpenChange(false);
       onValidate();

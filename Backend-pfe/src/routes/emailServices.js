@@ -147,16 +147,16 @@ const transporter = nodemailer.createTransport({
 
 export const emailService = {
   async sendValidationEmailWithPDF(citizenEmail, citizenFirstName, requestSubject, status, employeeName, comment, pdfBuffer) {
-    const subject = `Votre document est prêt 📄 — ${requestSubject || 'Acte de Naissance'}`;
+    const subject = `Votre document est prêt  — ${requestSubject || 'Acte de Naissance'}`;
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden">
         <div style="background:#00782B;padding:20px;text-align:center">
-          <h1 style="color:#fff;margin:0;font-size:22px">🏛️ Baladiya Digital</h1>
+          <h1 style="color:#fff;margin:0;font-size:22px"> Baladiya Digital</h1>
           <p style="color:#c8f5d8;margin:4px 0 0">Service État Civil Numérique</p>
         </div>
         <div style="padding:24px">
           <p style="font-size:16px">Bonjour <strong>${citizenFirstName || ''}</strong>,</p>
-          <p>Votre demande d'<strong>${requestSubject || 'Acte de Naissance'}</strong> a été <span style="color:#00782B;font-weight:bold">approuvée ✅</span>.</p>
+          <p>Votre demande d'<strong>${requestSubject || 'Acte de Naissance'}</strong> a été <span style="color:#00782B;font-weight:bold">approuvée </span>.</p>
           <p>Votre document officiel est joint à cet email en format PDF.</p>
           ${comment ? `<p style="background:#f5f5f5;padding:12px;border-radius:6px;font-style:italic">Note : ${comment}</p>` : ''}
           <p style="color:#888;font-size:13px;margin-top:20px">Traité par : <strong>${employeeName || 'Service État Civil'}</strong></p>

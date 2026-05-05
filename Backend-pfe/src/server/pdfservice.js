@@ -1,4 +1,26 @@
 import PDFDocument from 'pdfkit';
+import { PDFDocument as LibPDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ── OFFICIAL TEMPLATE ─────────────────────────────────────────────
+const TEMPLATE_PATH = path.join(__dirname, '../../uploads/templates/Demande_Acte_Naissance.pdf');
+let templateBytes = null;
+try {
+  if (fs.existsSync(TEMPLATE_PATH)) {
+    templateBytes = fs.readFileSync(TEMPLATE_PATH);
+    console.log('✅ Official birth certificate template loaded');
+  } else {
+    console.warn('⚠️ Official template not found at:', TEMPLATE_PATH);
+  }
+} catch (err) {
+  console.warn('⚠️ Error loading official template:', err.message);
+}
+
 
 export class PDFService {
   //  EXISTING — Citizen Request PDF (unchanged)
@@ -413,6 +435,133 @@ export class PDFService {
         reject(err);
       }
     });
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  //  NEW — Fill official scanned Algerian birth certificate template
+  //  Uses pdf-lib to overlay text on the scanned PDF image
+  // ─────────────────────────────────────────────────────────────────
+  static async generateOfficialActeNaissance(data) {
+    if (!templateBytes) {
+      throw new Error('Official template not found. Place Demande_Acte_Naissance.pdf in uploads/templates/');
+    }
+
+    const pdfDoc = await LibPDFDocument.load(templateBytes);
+    const page = pdfDoc.getPages()[0];
+    const { width, height } = page.getSize();
+
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    // const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+    const draw = (text, x, y, opts = {}) => {
+      if (!text && text !== 0) return;
+      page.drawText(String(text), {
+        x, y, size: 10, font, color: rgb(0, 0, 0), ...opts
+      });
+    };
+
+    // Helpers
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '';
+    const fmtTime = (t) => t ? String(t).substring(0, 5) : '';
+    const calcAge = (birthDate) => {
+      if (!birthDate) return '';
+      const today = new Date();
+      const birth = new Date(birthDate);
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+      return age;
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // COORDINATES — ADJUST THESE AFTER CALIBRATION
+    // Use /api/pdf/debug-grid to generate calibration overlay
+    // ═══════════════════════════════════════════════════════════════
+
+    // Row 1: Date & time of birth
+    draw(fmtDate(data.date_naissance), 180, height - 128);
+    draw(fmtTime(data.heure_naissance), 400, height - 128);
+
+    // Row 2: Place of birth
+    draw(data.commune_naissance, 180, height - 152);
+    draw(data.wilaya_naissance, 400, height - 152);
+
+    // Row 3: Full name (nom et prénom)
+    draw(data.nom_prenom, 180, height - 176);
+
+    // Row 4: Age & sex
+    draw(calcAge(data.date_naissance), 180, height - 200);
+    draw(data.sexe === 'M' ? 'ذكر' : data.sexe === 'F' ? 'أنثى' : '', 340, height - 200);
+
+    // Row 5: Father name & age
+    draw(data.pere_nom_prenom, 180, height - 224);
+    draw(data.pere_age, 460, height - 224);
+
+    // Row 6: Father job, domicile
+    draw(data.pere_metier, 130, height - 248);
+    draw(data.pere_domicile_commune, 280, height - 248);
+    draw(data.pere_domicile_wilaya, 430, height - 248);
+
+    // Row 7: Mother name & age
+    draw(data.mere_nom_prenom, 180, height - 272);
+    draw(data.mere_age, 460, height - 272);
+
+    // Row 8: Mother job, domicile
+    draw(data.mere_metier, 130, height - 296);
+    draw(data.mere_domicile_commune, 280, height - 296);
+    draw(data.mere_domicile_wilaya, 430, height - 296);
+
+    // Row 9: Domicile (if different)
+    draw(data.domicile_commune, 180, height - 320);
+    draw(data.domicile_wilaya, 400, height - 320);
+
+    // Declaration section
+    draw(fmtDate(data.redige_le), 140, height - 368);
+    draw(fmtTime(data.redige_a_heure), 300, height - 368);
+    draw(data.declare_par, 180, height - 392);
+    draw(data.declare_par_titre, 430, height - 392);
+
+    // Officer info
+    draw(data.officier_etat_civil, 180, height - 440);
+    draw(data.officier_commune, 330, height - 440);
+    draw(data.officier_wilaya, 480, height - 440);
+
+    // Marginal notes
+    if (data.marginal_notes) {
+      draw(data.marginal_notes, 50, height - 490, { size: 8, maxWidth: width - 100 });
+    }
+
+    // Footer info
+    draw(`N° Acte: ${data.numero_acte || ''}`, 50, 55, { size: 9 });
+    draw(`N° Chahada: ${data.numero_chahada || 'N/A'}`, 190, 55, { size: 9 });
+    draw(`Wilaya: ${data.wilaya_delivrance || data.wilaya_naissance || ''}`, 330, 55, { size: 9 });
+    draw(`Date: ${fmtDate(data.date_delivrance)}`, 470, 55, { size: 9 });
+
+    return Buffer.from(await pdfDoc.save());
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  //  DEBUG — Generate grid overlay for coordinate calibration
+  // ─────────────────────────────────────────────────────────────────
+  static async generateDebugGrid() {
+    if (!templateBytes) {
+      throw new Error('Official template not found');
+    }
+
+    const pdfDoc = await LibPDFDocument.load(templateBytes);
+    const page = pdfDoc.getPages()[0];
+    const { width, height } = page.getSize();
+
+    for (let x = 0; x < width; x += 50) {
+      page.drawLine({ start: {x, y: 0}, end: {x, y: height}, thickness: 0.5, color: rgb(1, 0, 0) });
+      page.drawText(`${x}`, { x: x + 2, y: height - 15, size: 8, color: rgb(1, 0, 0) });
+    }
+    for (let y = 0; y < height; y += 50) {
+      page.drawLine({ start: {x: 0, y}, end: {x: width, y}, thickness: 0.5, color: rgb(1, 0, 0) });
+      page.drawText(`${Math.round(y)}`, { x: 5, y: y + 5, size: 8, color: rgb(1, 0, 0) });
+    }
+
+    return Buffer.from(await pdfDoc.save());
   }
 }
 

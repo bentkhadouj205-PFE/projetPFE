@@ -84,4 +84,42 @@ router.get('/carte-sejour/:userId', async (req, res) => {
   }
 });
 
+// ── GET /api/pdf/official-acte/:acteId ─────────────────────────────
+// Generate filled official birth certificate from scanned template
+router.get('/official-acte/:acteId', async (req, res) => {
+  try {
+    const { acteId } = req.params;
+
+    // Fetch from Supabase (your table: register.actes_naissance)
+    const { data: acte, error } = await supabase
+      .from('actes_naissance')
+      .select('*')
+      .eq('id', acteId)
+      .single();
+
+    if (error || !acte) {
+      return res.status(404).json({ message: 'Acte non trouvé dans le registre' });
+    }
+
+    const buffer = await PDFService.generateOfficialActeNaissance(acte);
+    sendPDF(res, buffer, `acte_naissance_officiel_${acte.numero_acte || acteId}.pdf`);
+
+  } catch (err) {
+    console.error('PDF official-acte error:', err.message);
+    res.status(500).json({ message: 'Erreur génération PDF officiel', error: err.message });
+  }
+});
+
+// ── GET /api/pdf/debug-grid ────────────────────────────────────────
+// Download calibration grid to find exact coordinates
+router.get('/debug-grid', async (req, res) => {
+  try {
+    const buffer = await PDFService.generateDebugGrid();
+    sendPDF(res, buffer, 'calibration_grid.pdf');
+  } catch (err) {
+    console.error('Debug grid error:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 export default router;

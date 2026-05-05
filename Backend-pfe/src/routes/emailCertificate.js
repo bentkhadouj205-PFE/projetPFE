@@ -1,6 +1,8 @@
 import express from 'express';
 import { emailService, generateCertificatePDF } from './emailServices.js';
 import { supabase } from '../supabaseClient.js';
+import PDFService from '../server/pdfservice.js';
+
 
 const router = express.Router();
 
@@ -12,7 +14,7 @@ router.post('/generate-pdf', async (req, res) => {
     const pdfBase64 = pdfBuffer.toString('base64');
     res.json({ pdfBase64 });
   } catch (err) {
-    console.error('❌ generate-pdf error:', err);
+    console.error(' generate-pdf error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -52,7 +54,44 @@ router.post('/generate-and-send', async (req, res) => {
 
     res.json({ success: true, messageId: info?.messageId || 'sent' });
   } catch (err) {
-    console.error('❌ generate-and-send error:', err);
+    console.error(' generate-and-send error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/email/send-official-acte/:acteId ────────────────────────────
+// Génère l'acte officiel à partir du template et l'envoie par email
+router.post('/send-official-acte/:acteId', async (req, res) => {
+  try {
+    const { email, name } = req.body;
+
+    // Fetch acte
+    const { data: acte, error } = await supabase
+      .from('actes_naissance')
+      .select('*')
+      .eq('id', req.params.acteId)
+      .single();
+
+    if (error || !acte) return res.status(404).json({ error: 'Acte non trouvé' });
+
+    // Generate PDF
+    const pdfBuffer = await PDFService.generateOfficialActeNaissance(acte);
+
+    // Envoie l'email avec le PDF officiel en pièce jointe
+    const info = await emailService.sendValidationEmailWithPDF(
+      email,
+      name || acte.nom_prenom,
+      'Acte de Naissance Officiel',
+      'completed',
+      'Service État Civil',
+      'Votre acte de naissance officiel est prêt.',
+      pdfBuffer
+    );
+
+    res.json({ success: true, messageId: info?.messageId || 'sent' });
+
+  } catch (err) {
+    console.error(' send-official-acte error:', err);
     res.status(500).json({ error: err.message });
   }
 });

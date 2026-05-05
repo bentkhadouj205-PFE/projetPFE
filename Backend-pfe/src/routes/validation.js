@@ -83,7 +83,7 @@ router.get('/', async (req, res) => {
 router.post('/:id/validate', async (req, res) => {
   const { id } = req.params;
   try {
-    console.log(`📡 [VALIDATE] Processing ID: ${id}`);
+    console.log(`[VALIDATE] Processing ID: ${id}`);
     const { data: request, error } = await supabase
       .from('demandes_inscription')
       .select('*')
@@ -259,8 +259,6 @@ router.post('/activate', async (req, res) => {
     if (data.status !== 'termine') {
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou non validée' });
     }
-
-    // 3. تحقق إذا كان المواطن موجود مسبقاً (بواسطة NIN لتجنب التكرار)
     const { data: existing } = await supabase
       .from('citizens')
       .select('id')
@@ -268,7 +266,6 @@ router.post('/activate', async (req, res) => {
       .maybeSingle();
 
     if (!existing) {
-      // المواطن غير موجود -> أنشئه في جدول citizens
       const { error: insertError } = await supabase
         .from('citizens')
         .insert([{
@@ -285,7 +282,6 @@ router.post('/activate', async (req, res) => {
       }
     }
 
-    // 4. تحديث حالة الطلب إلى activated
     const { error: updateError } = await supabase
       .from('demandes_inscription')
       .update({
