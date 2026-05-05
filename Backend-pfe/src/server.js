@@ -63,14 +63,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
 }));
 
-// Handle preflight
-app.options('*', cors());
+
 
 //  Global Ngrok Bypass & CORS Hardening
 app.use((req, res, next) => {
   res.setHeader('ngrok-skip-browser-warning', 'true');
 
-  // Handled by app.options('*', cors())
+  // CORS is handled by the main middleware above
   next();
 });
 
