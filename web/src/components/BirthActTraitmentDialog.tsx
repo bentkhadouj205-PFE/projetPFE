@@ -32,14 +32,33 @@ const POSITION_OPTIONS_FR = [
   { value: 'mention_marginal', label: 'Mention marginale' },
 ];
 
+const drawStamp = (doc: jsPDF) => {
+  const centerX = 170;
+  const centerY = 50;
+  const radius = 20;
+  // Outer circle
+  doc.setDrawColor(200, 0, 0);
+  doc.setLineWidth(0.5);
+  doc.circle(centerX, centerY, radius);
+  // Inner circle
+  doc.circle(centerX, centerY, radius - 3);
+  // Text inside stamp (Note: standard fonts won't render Arabic properly without a custom font)
+  doc.setFontSize(6);
+  doc.setTextColor(200, 0, 0);
+  doc.text("REPUBLIQUE ALGERIENNE", centerX, centerY - 4, { align: "center" });
+  doc.text("ETAT CIVIL", centerX, centerY + 2, { align: "center" });
+  doc.text("BALADIYA", centerX, centerY + 8, { align: "center" });
+};
+
 const generateBirthCertificatePDF = (citizen: BirthActCitizenShape, wilaya: string, commune: string, actYear: string, actNumber: string) => {
   const doc = new jsPDF("p", "mm", "a4");
-
+  const lineGap = 10;
   let y = 15;
 
   // Header
   doc.setFont("Helvetica", "normal");
   doc.setFontSize(11);
+  doc.setTextColor(0, 0, 0);
 
   doc.text("الجمهورية الجزائرية الديمقراطية الشعبية", 105, y, { align: "center" });
   y += 6;
@@ -47,71 +66,73 @@ const generateBirthCertificatePDF = (citizen: BirthActCitizenShape, wilaya: stri
   y += 6;
   doc.text("السجل الوطني للحالة المدنية", 105, y, { align: "center" });
 
-  y += 10;
+  y += 12;
 
   // Title
-  doc.setFontSize(16);
+  doc.setFontSize(18);
+  doc.setFont("Helvetica", "bold");
   doc.text("شهادة الميلاد", 105, y, { align: "center" });
+  doc.text("ACTE DE NAISSANCE", 105, y + 8, { align: "center" });
+  
+  // Add Official Stamp
+  drawStamp(doc);
 
-  y += 10;
+  y += 25;
 
   doc.setFontSize(11);
+  doc.setFont("Helvetica", "normal");
 
   // Enable dotted lines
   doc.setLineDashPattern([1, 1], 0);
 
-  // Line 1
-  doc.text("في يوم", 10, y);
-  doc.line(30, y, 200, y);
+  // Body Content
+  const drawLineWithText = (label: string, text: string, yPos: number) => {
+    doc.text(label, 10, yPos);
+    doc.text(text || "........", 50, yPos);
+    doc.line(10, yPos + 2, 200, yPos + 2); // Full width line
+  };
 
-  y += 8;
+  drawLineWithText("في يوم / Le:", "", y); y += lineGap;
+  drawLineWithText("ولد(ت) ب / Né(e) à:", commune + " (" + wilaya + ")", y); y += lineGap;
+  
+  doc.text("ولاية / Wilaya:", 10, y);
+  doc.text(wilaya || "........", 40, y);
+  doc.text("بلدية / Commune:", 110, y);
+  doc.text(commune || "........", 145, y);
+  doc.line(10, y + 2, 200, y + 2);
+  y += lineGap;
 
-  // Line 2
-  doc.text("ولد(ت) ب", 10, y);
-  doc.line(40, y, 200, y);
+  drawLineWithText("المسمى(ة) / Nom & Prénom:", `${citizen?.firstName || ''} ${citizen?.lastName || ''}`, y); y += lineGap;
+  drawLineWithText("رقم الشهادة / Act Number:", actNumber, y); y += lineGap;
+  drawLineWithText("السنة / Year:", actYear, y); y += lineGap;
 
-  y += 8;
+  // Extra legal lines
+  for (let i = 0; i < 3; i++) {
+    doc.line(10, y + 2, 200, y + 2);
+    y += lineGap;
+  }
 
-  // Wilaya / Commune
-  doc.text("ولاية", 10, y);
-  doc.text(wilaya || "........", 30, y);
-
-  doc.text("بلدية", 110, y);
-  doc.text(commune || "........", 130, y);
-
-  y += 8;
-
-  // Name
-  doc.text("المسمى(ة):", 10, y);
-  doc.text(`${citizen?.firstName || ''} ${citizen?.lastName || ''}`, 50, y);
-
-  y += 8;
-
-  // Act number
-  doc.text("رقم الشهادة:", 10, y);
-  doc.text(actNumber || "........", 50, y);
-
-  y += 8;
-
-  // Year
-  doc.text("السنة:", 10, y);
-  doc.text(actYear || "........", 50, y);
-
-  y += 10;
-
-  // Long dotted paragraph (like your PDF)
-  doc.line(10, y, 200, y);
-  y += 6;
-  doc.line(10, y, 200, y);
-  y += 6;
-  doc.line(10, y, 200, y);
-
-  // Disable dotted
+  // Footer / Signature Block
   doc.setLineDashPattern([], 0);
-
-  // Footer
   y += 10;
-  doc.text("مستخرج من السجل الوطني للحالة المدنية", 105, y, { align: "center" });
+  
+  doc.setFontSize(12);
+  doc.setFont("Helvetica", "bold");
+  doc.text("ضابط الحالة المدنية", 150, y, { align: "center" });
+  doc.text("Officier d'état civil", 150, y + 6, { align: "center" });
+  
+  // Signature zone
+  doc.setDrawColor(0, 0, 0);
+  doc.line(130, y + 12, 190, y + 12);
+  
+  doc.setFontSize(8);
+  doc.setFont("Helvetica", "normal");
+  doc.text("Signature et Cachet", 160, y + 16, { align: "center" });
+
+  // Page Footer
+  doc.setFontSize(7);
+  doc.setTextColor(100, 100, 100);
+  doc.text("Document généré numériquement par Baladiya Digital — © 2026", 105, 285, { align: "center" });
 
   return doc;
 };
