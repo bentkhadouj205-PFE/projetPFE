@@ -37,39 +37,40 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:5173',
   'http://192.168.1.6:5173',
-  'https://projet-2690ly2nn-bentkhadouj205-pfes-projects.vercel.app',
+  /\.vercel\.app$/,
   /\.ngrok-free\.dev$/,
-  /\.vercel\.app$/, // Allow all vercel.app subdomains
-  process.env.FRONTEND_URL?.replace(/\/$/, ''), // Strip trailing slash for CORS safety
+  process.env.FRONTEND_URL?.replace(/\/$/, ''),
 ].filter(Boolean);
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.some((allowed) =>
+      allowed instanceof RegExp ? allowed.test(origin) : allowed === origin
+    );
+    
+    if (isAllowed) {
+      callback(null, origin); // ← retourne l'origin exacte, pas true
+    } else {
+      console.warn('CORS blocked:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
 }));
+
+// Handle preflight
+app.options('*', cors());
 
 //  Global Ngrok Bypass & CORS Hardening
 app.use((req, res, next) => {
   res.setHeader('ngrok-skip-browser-warning', 'true');
 
-  // Handle manual preflight for problematic proxies
-  if (req.method === 'OPTIONS') {
-    const origin = req.headers.origin;
-    const isAllowed = allowedOrigins.some(allowed => {
-      if (allowed instanceof RegExp) return allowed.test(origin);
-      return allowed === origin;
-    });
-
-    if (origin && isAllowed) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-requested-with, ngrok-skip-browser-warning');
-      return res.sendStatus(204);
-    }
-  }
+  // Handled by app.options('*', cors())
   next();
 });
 
