@@ -43,21 +43,7 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    const isAllowed = allowedOrigins.some((allowed) =>
-      allowed instanceof RegExp ? allowed.test(origin) : allowed === origin
-    );
-    
-    if (isAllowed) {
-      callback(null, origin); // ← retourne l'origin exacte, pas true
-    } else {
-      console.warn('CORS blocked:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],

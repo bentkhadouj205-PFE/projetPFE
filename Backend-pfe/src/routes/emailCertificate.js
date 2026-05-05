@@ -22,6 +22,7 @@ router.post('/generate-pdf', async (req, res) => {
 // ── POST /api/email/generate-and-send ─────────────────────────────────────
 // Génère le PDF ET l'envoie par email au citoyen
 router.post('/generate-and-send', async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
   console.log('🚀 [Start] generate-and-send request received');
   try {
     const {
