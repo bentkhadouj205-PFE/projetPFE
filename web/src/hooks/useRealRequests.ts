@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 export interface Request {
-  _id: string;
+  id: string;
   citizen: {
     firstName: string;
     lastName: string;
@@ -35,24 +35,24 @@ export function useRealRequests(employeeId: string) {
       setLoading(false);
       return;
     }
-    
+
     try {
       setLoading(true);
-      const url = service 
+      const url = service
         ? `${API_BASE_URL}/requests?service=${service}`
         : `${API_BASE_URL}/requests/my-requests/${employeeId}`;
-        
+
       const response = await fetch(url);
       const data = await response.json();
       console.log('API RESPONSE RAW:', data);
-      
+
       if (response.ok) {
         const transformedRequests = data.requests?.map((req: any) => {
           const st = req.status === 'en_attente' ? 'pending'
             : req.status === 'en_traitement' ? 'in-progress'
-            : req.status === 'approuve' ? 'completed'
-            : req.status === 'rejete' ? 'rejected'
-            : req.status;
+              : req.status === 'approuve' ? 'completed'
+                : req.status === 'rejete' ? 'rejected'
+                  : req.status;
 
           return {
             id: req.id,
@@ -76,7 +76,7 @@ export function useRealRequests(employeeId: string) {
             documentStatus: 'pending',
           };
         }) || [];
-        
+
         setRequests(transformedRequests);
         console.log('TABLE DATA SOURCE:', transformedRequests);
       }
@@ -89,11 +89,53 @@ export function useRealRequests(employeeId: string) {
 
   const getTasksByEmployee = (id: string) => requests.filter(r => r.assignedTo === id);
 
+  const completeTask = async (taskId: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/requests/${taskId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'approuve' }),
+      });
+      if (response.ok) {
+        setRequests(prev => prev.map(r => r.id === taskId ? { ...r, status: 'completed' } : r));
+        toast.success(employeeId ? 'Demande approuvée' : 'Statut mis à jour');
+      } else {
+        throw new Error('Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error completing task:', error);
+      toast.error('Erreur lors de la mise à jour du statut');
+    }
+  };
+
+  const updateTask = async (taskId: string, updates: any) => {
+    // Map internal status back to DB status if needed
+    const dbStatus = updates.status === 'completed' ? 'approuve'
+      : updates.status === 'rejected' ? 'rejete'
+        : updates.status === 'pending' ? 'en_attente'
+          : updates.status;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/requests/${taskId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...updates, status: dbStatus }),
+      });
+      if (response.ok) {
+        setRequests(prev => prev.map(r => r.id === taskId ? { ...r, ...updates } : r));
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
+
   return {
     requests,
     loading,
     fetchRequests,
     getTasksByEmployee,
+    completeTask,
+    updateTask,
   };
 }
 

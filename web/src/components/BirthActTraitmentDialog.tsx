@@ -20,7 +20,6 @@ import {
 } from '@/components/ui/select';
 import { WILAYA_NAMES, communesForWilaya } from '@/data/wilayasCommunes';
 import { CheckCircle, Mail, ArrowLeft, XCircle, Loader2 } from 'lucide-react';
-import jsPDF from 'jspdf';
 
 
 const POSITION_OPTIONS_FR = [
@@ -32,110 +31,7 @@ const POSITION_OPTIONS_FR = [
   { value: 'mention_marginal', label: 'Mention marginale' },
 ];
 
-const drawStamp = (doc: jsPDF) => {
-  const centerX = 170;
-  const centerY = 50;
-  const radius = 20;
-  // Outer circle
-  doc.setDrawColor(200, 0, 0);
-  doc.setLineWidth(0.5);
-  doc.circle(centerX, centerY, radius);
-  // Inner circle
-  doc.circle(centerX, centerY, radius - 3);
-  // Text inside stamp (Note: standard fonts won't render Arabic properly without a custom font)
-  doc.setFontSize(6);
-  doc.setTextColor(200, 0, 0);
-  doc.text("REPUBLIQUE ALGERIENNE", centerX, centerY - 4, { align: "center" });
-  doc.text("ETAT CIVIL", centerX, centerY + 2, { align: "center" });
-  doc.text("BALADIYA", centerX, centerY + 8, { align: "center" });
-};
 
-const generateBirthCertificatePDF = (citizen: BirthActCitizenShape, wilaya: string, commune: string, actYear: string, actNumber: string) => {
-  const doc = new jsPDF("p", "mm", "a4");
-  const lineGap = 10;
-  let y = 15;
-
-  // Header
-  doc.setFont("Helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(0, 0, 0);
-
-  doc.text("الجمهورية الجزائرية الديمقراطية الشعبية", 105, y, { align: "center" });
-  y += 6;
-  doc.text("وزارة الداخلية والجماعات المحلية", 105, y, { align: "center" });
-  y += 6;
-  doc.text("السجل الوطني للحالة المدنية", 105, y, { align: "center" });
-
-  y += 12;
-
-  // Title
-  doc.setFontSize(18);
-  doc.setFont("Helvetica", "bold");
-  doc.text("شهادة الميلاد", 105, y, { align: "center" });
-  doc.text("ACTE DE NAISSANCE", 105, y + 8, { align: "center" });
-  
-  // Add Official Stamp
-  drawStamp(doc);
-
-  y += 25;
-
-  doc.setFontSize(11);
-  doc.setFont("Helvetica", "normal");
-
-  // Enable dotted lines
-  doc.setLineDashPattern([1, 1], 0);
-
-  // Body Content
-  const drawLineWithText = (label: string, text: string, yPos: number) => {
-    doc.text(label, 10, yPos);
-    doc.text(text || "........", 50, yPos);
-    doc.line(10, yPos + 2, 200, yPos + 2); // Full width line
-  };
-
-  drawLineWithText("في يوم / Le:", "", y); y += lineGap;
-  drawLineWithText("ولد(ت) ب / Né(e) à:", commune + " (" + wilaya + ")", y); y += lineGap;
-  
-  doc.text("ولاية / Wilaya:", 10, y);
-  doc.text(wilaya || "........", 40, y);
-  doc.text("بلدية / Commune:", 110, y);
-  doc.text(commune || "........", 145, y);
-  doc.line(10, y + 2, 200, y + 2);
-  y += lineGap;
-
-  drawLineWithText("المسمى(ة) / Nom & Prénom:", `${citizen?.firstName || ''} ${citizen?.lastName || ''}`, y); y += lineGap;
-  drawLineWithText("رقم الشهادة / Act Number:", actNumber, y); y += lineGap;
-  drawLineWithText("السنة / Year:", actYear, y); y += lineGap;
-
-  // Extra legal lines
-  for (let i = 0; i < 3; i++) {
-    doc.line(10, y + 2, 200, y + 2);
-    y += lineGap;
-  }
-
-  // Footer / Signature Block
-  doc.setLineDashPattern([], 0);
-  y += 10;
-  
-  doc.setFontSize(12);
-  doc.setFont("Helvetica", "bold");
-  doc.text("ضابط الحالة المدنية", 150, y, { align: "center" });
-  doc.text("Officier d'état civil", 150, y + 6, { align: "center" });
-  
-  // Signature zone
-  doc.setDrawColor(0, 0, 0);
-  doc.line(130, y + 12, 190, y + 12);
-  
-  doc.setFontSize(8);
-  doc.setFont("Helvetica", "normal");
-  doc.text("Signature et Cachet", 160, y + 16, { align: "center" });
-
-  // Page Footer
-  doc.setFontSize(7);
-  doc.setTextColor(100, 100, 100);
-  doc.text("Document généré numériquement par Baladiya Digital — © 2026", 105, 285, { align: "center" });
-
-  return doc;
-};
 
 
 
@@ -451,46 +347,67 @@ export function BirthActTraitmentDialog({
 
   const handleSendEmail = async () => {
     if (!citizen?.email) {
-      alert(language === 'fr' ? 'Aucun email disponible pour ce citoyen' : 'No email available for this citizen');
+      alert(
+        language === 'fr'
+          ? 'Aucun email disponible pour ce citoyen'
+          : 'No email available for this citizen'
+      );
       return;
     }
 
     setSending(true);
-    
-    // Simulate real-world transmission delay (1.5s)
-    setTimeout(() => {
-      try {
-        const doc = generateBirthCertificatePDF(
-          citizen,
+    try {
+      // 1. Generate PDF + Send email to citizen — all done on the backend
+      const response = await fetch(`${BACKEND_URL}/api/email/generate-and-send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // PDF data
+          fullName: `${citizen.firstName ?? ''} ${citizen.lastName ?? ''}`.trim(),
           wilaya,
           commune,
           actYear,
-          actNumber
-        );
+          actNumber,
+          position,
+          copiesCount,
+          // Email recipient
+          citizenEmail: citizen.email,
+          citizenFirstName: citizen.firstName,
+          citizenLastName: citizen.lastName,
+          nin: citizen.nin,
+          requestSubject: 'Acte de Naissance',
+          employeeName: 'Service Etat Civil',
+          comment: '',
+        }),
+      });
 
-        // Download PDF for the agent
-        doc.save(`acte-naissance-${citizen.firstName}.pdf`);
-
-        toast.success(
-          language === 'fr'
-            ? "Email envoyé au citoyen. Le PDF a été transmis avec succès."
-            : "Email sent to citizen. PDF transmitted successfully."
-        );
-        
-        setSending(false);
-        onOpenChange(false);
-        onValidate();
-
-      } catch (error: any) {
-        setSending(false);
-        console.error('Generation error:', error);
-        alert(
-          language === 'fr'
-            ? ` Erreur de génération: ${error.message}`
-            : ` Generation error: ${error.message}`
-        );
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to send email');
       }
-    }, 1500);
+
+      // 2. Success toast
+      toast.success(
+        language === 'fr'
+          ? `Email envoyé avec succès à ${citizen.email} !`
+          : `Email sent successfully to ${citizen.email}!`,
+        { duration: 4000 }
+      );
+
+      // 3. Close modal and mark as done
+      onOpenChange(false);
+      onValidate();
+
+    } catch (error: any) {
+      console.error('Send error:', error);
+      toast.error(
+        language === 'fr'
+          ? `Erreur d'envoi : ${error.message}`
+          : `Send error: ${error.message}`
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
 

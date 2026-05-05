@@ -51,7 +51,7 @@ function App() {
   );
 
   // 4. Data Hooks (Stable order)
-  const { requests, loading, fetchRequests, getTasksByEmployee } = useRealRequests(
+  const { requests, loading, fetchRequests, getTasksByEmployee, completeTask, updateTask } = useRealRequests(
     user?.role === 'employee' ? user.id : ''
   );
 
@@ -140,7 +140,7 @@ function App() {
               getEmployeeById: (id: string) =>
                 adminEmployees.find((e: any) => e._id === id || e.id === id),
             } as any}
-            tasks={{ tasks: requests, updateTask: () => { }, completeTask: () => { }, getTasksByEmployee } as any}
+            tasks={{ tasks: requests, updateTask, completeTask, getTasksByEmployee } as any}
             isDark={isDark}
             toggleDarkMode={toggleDarkMode}
           />
@@ -154,7 +154,7 @@ function App() {
             user={user as any}
             onLogout={logout}
             onUpdateUser={updateUser as any}
-            tasks={{ tasks: requests, updateTask: () => { }, completeTask: () => { }, getTasksByEmployee } as any}
+            tasks={{ tasks: requests, updateTask, completeTask, getTasksByEmployee } as any}
             isDark={isDark}
             toggleDarkMode={toggleDarkMode}
             notifications={notificationsState as any}
