@@ -347,64 +347,47 @@ export function BirthActTraitmentDialog({
 
   const handleSendEmail = async () => {
     if (!citizen?.email) {
-      alert(
-        language === 'fr'
-          ? 'Aucun email disponible pour ce citoyen'
-          : 'No email available for this citizen'
-      );
+      toast.error(language === 'fr' ? 'Aucun email disponible' : 'No email available');
       return;
     }
 
     setSending(true);
     try {
-      // 1. Generate PDF + Send email to citizen — all done on the backend
-      const response = await fetch(`${BACKEND_URL}/api/email/generate-and-send`, {
+      const response = await fetch(`https://projetpfe-6zg2.onrender.com/api/email/generate-and-send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // PDF data
-          fullName: `${citizen.firstName ?? ''} ${citizen.lastName ?? ''}`.trim(),
+          citizenEmail:     citizen?.email,
+          citizenFirstName: citizen?.firstName,
+          fullName:         `${citizen?.firstName} ${citizen?.lastName}`,
+          nin:              citizen?.nin,
+          requestSubject:   'Acte de Naissance',
+          employeeName:     'Service État Civil',
+          comment:          '',
           wilaya,
           commune,
           actYear,
           actNumber,
           position,
           copiesCount,
-          // Email recipient
-          citizenEmail: citizen.email,
-          citizenFirstName: citizen.firstName,
-          citizenLastName: citizen.lastName,
-          nin: citizen.nin,
-          requestSubject: 'Acte de Naissance',
-          employeeName: 'Service Etat Civil',
-          comment: '',
         }),
       });
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to send email');
-      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Erreur serveur');
 
-      // 2. Success toast
       toast.success(
         language === 'fr'
-          ? `Email envoyé avec succès à ${citizen.email} !`
-          : `Email sent successfully to ${citizen.email}!`,
-        { duration: 4000 }
+          ? `✅ Email envoyé avec succès à ${citizen?.email}`
+          : `✅ Email sent successfully to ${citizen?.email}`
       );
 
-      // 3. Close modal and mark as done
       onOpenChange(false);
       onValidate();
 
-    } catch (error: any) {
-      console.error('Send error:', error);
-      toast.error(
-        language === 'fr'
-          ? `Erreur d'envoi : ${error.message}`
-          : `Send error: ${error.message}`
-      );
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`❌ ${err.message}`);
     } finally {
       setSending(false);
     }
