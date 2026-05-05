@@ -145,6 +145,12 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// ── Initialization (compatible with request.js) ───────────────────────────
+export const initializeEmail = async () => {
+  console.log('✅ Email service initialized (SMTP)');
+  return true;
+};
+
 export const emailService = {
   async sendValidationEmailWithPDF(citizenEmail, citizenFirstName, requestSubject, status, employeeName, comment, pdfBuffer) {
     const subject = `Votre document est prêt  — ${requestSubject || 'Acte de Naissance'}`;

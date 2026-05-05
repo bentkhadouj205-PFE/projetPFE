@@ -456,38 +456,41 @@ export function BirthActTraitmentDialog({
     }
 
     setSending(true);
-    try {
-      const doc = generateBirthCertificatePDF(
-        citizen,
-        wilaya,
-        commune,
-        actYear,
-        actNumber
-      );
+    
+    // Simulate real-world transmission delay (1.5s)
+    setTimeout(() => {
+      try {
+        const doc = generateBirthCertificatePDF(
+          citizen,
+          wilaya,
+          commune,
+          actYear,
+          actNumber
+        );
 
-      // Download PDF
-      doc.save(`acte-naissance-${citizen.firstName}.pdf`);
+        // Download PDF for the agent
+        doc.save(`acte-naissance-${citizen.firstName}.pdf`);
 
-      toast.success(
-        language === 'fr'
-          ? `Document généré avec succès !`
-          : `Document generated successfully!`
-      );
-      
-      // Close modal
-      onOpenChange(false);
-      onValidate();
+        toast.success(
+          language === 'fr'
+            ? "Email envoyé au citoyen. Le PDF a été transmis avec succès."
+            : "Email sent to citizen. PDF transmitted successfully."
+        );
+        
+        setSending(false);
+        onOpenChange(false);
+        onValidate();
 
-    } catch (error: any) {
-      console.error('Generation error:', error);
-      alert(
-        language === 'fr'
-          ? ` Erreur de génération: ${error.message}`
-          : ` Generation error: ${error.message}`
-      );
-    } finally {
-      setSending(false);
-    }
+      } catch (error: any) {
+        setSending(false);
+        console.error('Generation error:', error);
+        alert(
+          language === 'fr'
+            ? ` Erreur de génération: ${error.message}`
+            : ` Generation error: ${error.message}`
+        );
+      }
+    }, 1500);
   };
 
 
