@@ -97,6 +97,8 @@ export function LoginPage({ onLogin, isDark, toggleDarkMode }: LoginPageProps) {
                   <Input
                     id="email"
                     type="email"
+                    name="email"
+                    autoComplete="email"
                     placeholder="nom@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -115,6 +117,8 @@ export function LoginPage({ onLogin, isDark, toggleDarkMode }: LoginPageProps) {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    autoComplete="current-password"
                     placeholder={
                       t('login') === 'Login'
                         ? 'Enter your password'
