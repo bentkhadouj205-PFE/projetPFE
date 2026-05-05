@@ -1,8 +1,9 @@
 {
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
-    "vite": "^5.0.0",
-    "@vitejs/plugin-react": "^4.0.0"
+    "@vitejs/plugin-react": "^4.0.0",
+    "resend": "^6.12.2",
+    "vite": "^5.0.0"
   },
   "scripts": {
     "update-ngrok": "node update-ngrok-url.js"
