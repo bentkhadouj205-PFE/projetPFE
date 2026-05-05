@@ -22,6 +22,7 @@ router.post('/generate-pdf', async (req, res) => {
 // ── POST /api/email/generate-and-send ─────────────────────────────────────
 // Génère le PDF ET l'envoie par email au citoyen
 router.post('/generate-and-send', async (req, res) => {
+  console.log('🚀 [Start] generate-and-send request received');
   try {
     const {
       citizenEmail, citizenFirstName, requestSubject,
@@ -29,7 +30,8 @@ router.post('/generate-and-send', async (req, res) => {
       wilaya, commune, actYear, actNumber,
     } = req.body;
 
-    // ✅ جلب بيانات الأكت من Supabase
+    // 1. ✅ جلب بيانات الأكت من Supabase
+    console.time('⏱️ Supabase Fetch');
     const { data: acte, error } = await supabase
       .schema('register')
       .from('actes_naissance')
@@ -38,6 +40,7 @@ router.post('/generate-and-send', async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
+    console.timeEnd('⏱️ Supabase Fetch');
 
     if (error) console.warn('⚠️ Acte not found, using request data:', error.message);
 
@@ -70,10 +73,13 @@ router.post('/generate-and-send', async (req, res) => {
       dateDelivrance:     acte?.date_delivrance    || new Date().toISOString().split('T')[0],
     };
 
-    // 1. Generate PDF
+    // 2. Generate PDF
+    console.time('⏱️ PDF Generation');
     const pdfBuffer = await generateCertificatePDF(pdfData);
+    console.timeEnd('⏱️ PDF Generation');
 
-    // 2. Send Email
+    // 3. Send Email
+    console.time('⏱️ Brevo API Send');
     await emailService.sendValidationEmailWithPDF(
       citizenEmail, citizenFirstName,
       requestSubject || 'Acte de Naissance',
@@ -81,15 +87,18 @@ router.post('/generate-and-send', async (req, res) => {
       comment || '',
       pdfBuffer
     );
+    console.timeEnd('⏱️ Brevo API Send');
 
-    // 3. Update status
+    // 4. Update status
     if (requestId) {
+      console.log('📡 Updating Supabase status...');
       await supabase
         .from('requests')
         .update({ status: 'completed' })
         .eq('id', requestId);
     }
 
+    console.log('✅ [Success] Email sent and status updated');
     res.json({ success: true });
 
   } catch (err) {

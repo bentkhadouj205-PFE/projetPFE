@@ -1,28 +1,8 @@
-import nodemailer from 'nodemailer';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 465,
-  secure: true, // استخدام SSL مباشرة
-  auth: {
-    user: process.env.BREVO_SMTP_USER,
-    pass: process.env.BREVO_SMTP_PASS,
-  },
-  socketTimeout: 30000, // زيادة وقت الانتظار لـ 30 ثانية
-  connectionTimeout: 30000,
-  greetingTimeout: 30000,
-});
-
 export async function initializeEmail() {
-  try {
-    await transporter.verify();
-    console.log('✅ Brevo SMTP ready (baladiyadigital27@gmail.com)');
-    return true;
-  } catch (error) {
-    console.error('❌ Brevo SMTP failed:', error.message);
-    return false;
-  }
+  console.log('✅ Brevo API Service ready');
+  return true;
 }
 
 export async function generateCertificatePDF(data) {
@@ -50,7 +30,6 @@ export async function generateCertificatePDF(data) {
 
   const sanitize = (str) => {
     if (!str) return '';
-    // Replace non-WinAnsi characters with '?' to avoid PDF crashes
     return String(str).replace(/[^\x00-\x7F]/g, '');
   };
 
@@ -226,11 +205,13 @@ export async function generateCertificatePDF(data) {
 
 export const emailService = {
   async sendValidationEmailWithPDF(citizenEmail, citizenFirstName, requestSubject, employeeName, comment, pdfBuffer) {
-    const info = await transporter.sendMail({
-      from: '"Baladiya Digital" <baladiyadigital27@gmail.com>',
-      to: citizenEmail,
+    const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.BREVO_SMTP_PASS;
+
+    const payload = {
+      sender: { name: "Baladiya Digital", email: "baladiyadigital27@gmail.com" },
+      to: [{ email: citizenEmail, name: citizenFirstName }],
       subject: `Votre document est prêt - ${requestSubject || 'Acte de Naissance'}`,
-      html: `
+      htmlContent: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden">
           <div style="background:#00782B;padding:20px;text-align:center">
             <h1 style="color:#fff;margin:0;font-size:22px">Baladiya Digital</h1>
@@ -248,13 +229,30 @@ export const emailService = {
           </div>
         </div>
       `,
-      attachments: [{
-        filename: 'acte_naissance.pdf',
-        content: pdfBuffer,
-        contentType: 'application/pdf',
-      }],
+      attachment: [
+        {
+          content: pdfBuffer.toString('base64'),
+          name: "acte_naissance.pdf"
+        }
+      ]
+    };
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': BREVO_API_KEY,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(payload)
     });
 
-    return { messageId: info.messageId };
-  },
+    const result = await response.json();
+    if (!response.ok) {
+      console.error('❌ Brevo API Error:', result);
+      throw new Error(result.message || 'Failed to send email via Brevo API');
+    }
+
+    return { messageId: result.messageId };
+  }
 };
