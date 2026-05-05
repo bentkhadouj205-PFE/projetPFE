@@ -11,7 +11,7 @@ export async function generateCertificatePDF(data) {
   const todayFr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
   // Données marginales
-  let marginalText = 'لا شيء / Néant';
+  let marginalText = 'Néant';
   if (data.marginal_status === 'married') marginalText = `Marié(e) avec ${data.marginal_spouse || ''}`;
   if (data.marginal_status === 'divorced') marginalText = `Divorcé(e) de ${data.marginal_spouse || ''}`;
 
@@ -51,14 +51,14 @@ export async function generateCertificatePDF(data) {
   page.drawRectangle({ x: 0, y: height - 80, width, height: 80, color: rgb(0.0, 0.47, 0.25) });
 
   drawText('RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE', margin, height - 30, fontBold, 11, rgb(1, 1, 1));
-  drawText('الجمهورية الجزائرية الديمقراطية الشعبية', margin, height - 50, fontRegular, 10, rgb(0.9, 0.9, 0.9));
+  drawText('République Algérienne Démocratique et Populaire', margin, height - 50, fontRegular, 10, rgb(0.9, 0.9, 0.9));
   drawText(`Wilaya: ${(data.wilaya || '').toUpperCase()}   |   Commune: ${(data.municipality || data.commune || '').toUpperCase()}`, margin, height - 68, fontRegular, 9, rgb(0.85, 0.85, 0.85));
 
   y = height - 110;
 
   // Titre principal
   drawText('ACTE DE NAISSANCE', margin, y, fontBold, 20, rgb(0.0, 0.47, 0.25));
-  drawText('شهادة الميلاد', width - margin - 120, y, fontBold, 16, rgb(0.0, 0.47, 0.25));
+  drawText('Acte de Naissance', width - margin - 160, y, fontBold, 14, rgb(0.0, 0.47, 0.25));
   drawLine(margin, y - 8, width - margin, y - 8, 1.5);
 
   y -= 35;
