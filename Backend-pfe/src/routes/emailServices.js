@@ -3,12 +3,15 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 const transporter = nodemailer.createTransport({
   host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
+  port: 465,
+  secure: true, // استخدام SSL مباشرة
   auth: {
-    user: process.env.BREVO_SMTP_USER, // ← 'a94997001@smtp-brevo.com'
-    pass: process.env.BREVO_SMTP_PASS, // ← 'xsmtpsib-...'
+    user: process.env.BREVO_SMTP_USER,
+    pass: process.env.BREVO_SMTP_PASS,
   },
+  socketTimeout: 30000, // زيادة وقت الانتظار لـ 30 ثانية
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
 });
 
 export async function initializeEmail() {
