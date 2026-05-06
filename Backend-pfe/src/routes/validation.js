@@ -28,6 +28,7 @@ router.get('/', async (req, res) => {
   try {
     console.log(' [VALIDATION] Fetching requests...');
     const { data: requests, error } = await supabase
+      .schema('public')
       .from('demandes_inscription')
       .select('nom, prenom, nin')
       .order('date_demande', { ascending: false });
@@ -52,20 +53,13 @@ router.get('/', async (req, res) => {
         lastName: r.nom,
         nin: r.nin,
         email: r.email,
-        dob: r.date_demande,
-        commune: r.adresse,
-        address: r.adresse,
-        status: r.status,
-        rejectionReason: r.commentaire,
         cniRectoPath: toStorageUrl('cni-scans', r.cni_recto_path),
         cniVersoPath: toStorageUrl('cni-scans', r.cni_verso_path),
         selfiePath: toStorageUrl('selfies', r.selfie_path),
         reg: {
-          firstName: citizen?.prenom ?? null,
-          lastName: citizen?.nom ?? null,
-          nin: citizen?.nin ?? null,
-          dob: citizen?.date_naissance ?? null,
-          commune: citizen?.commune ?? null,
+          firstName: citizens?.prenom ?? null,
+          lastName: citizens?.nom ?? null,
+          nin: citizens?.nin ?? null,
         }
       };
     }));
@@ -140,7 +134,7 @@ router.post('/:id/reject', async (req, res) => {
   try {
     const { data: request, error } = await supabase
       .from('demandes_inscription')
-      .select('*')
+      .select('nom, prenom, nin, email')
       .eq('id', id)
       .single();
 
