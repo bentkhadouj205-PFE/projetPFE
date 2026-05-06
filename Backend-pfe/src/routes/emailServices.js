@@ -32,24 +32,37 @@ export async function generateCertificatePDF(data) {
   let fontBold;
 
   try {
-    // محاولة تحميل الخط العربي من المجلد الرئيسي للمشروع
-    const fontPath = path.resolve(process.cwd(), 'fonts', 'NotoSansArabic-Regular.ttf');
-    console.log('🔍 Loading font from:', fontPath);
+    // تجربة عدة مسارات محتملة للخط لضمان العمل على Render
+    const pathsToTry = [
+      path.resolve(process.cwd(), 'fonts', 'NotoSansArabic-Regular.ttf'),
+      path.resolve(__dirname, '../../fonts', 'NotoSansArabic-Regular.ttf'),
+      '/opt/render/project/src/Backend-pfe/fonts/NotoSansArabic-Regular.ttf'
+    ];
     
-    if (fs.existsSync(fontPath)) {
-      const fontBytes = fs.readFileSync(fontPath);
+    let fontBytes;
+    let foundPath = null;
+    
+    for (const p of pathsToTry) {
+      console.log('🔍 Checking font path:', p);
+      if (fs.existsSync(p)) {
+        fontBytes = fs.readFileSync(p);
+        foundPath = p;
+        break;
+      }
+    }
+    
+    if (fontBytes) {
       fontArabic = await pdfDoc.embedFont(fontBytes);
       fontRegular = fontArabic;
       fontBold = fontArabic;
-      console.log('✅ Arabic font loaded successfully');
+      console.log('✅ Arabic font loaded successfully from:', foundPath);
     } else {
-      throw new Error('Font file not found');
+      throw new Error('Font file not found in any of the attempted paths');
     }
   } catch (error) {
-    console.warn('⚠️ Arabic font not found, falling back to Helvetica:', error.message);
-    fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    fontArabic = fontRegular;
+    console.error('❌ CRITICAL FONT ERROR:', error.message);
+    // إذا فشل تحميل الخط، لا يمكننا استخدام العربية. سنقوم بإلقاء خطأ بدلاً من الانهيار لاحقاً
+    throw new Error('Arabic font support is missing. Please check server logs.');
   }
 
   const black = rgb(0, 0, 0);
