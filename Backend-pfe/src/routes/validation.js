@@ -48,12 +48,14 @@ router.get('/', async (req, res) => {
         const { data: citizen, error: citizenError } = await supabase
           .schema('register')
           .from('citizens')
-          .select('nom, prenom, nin, date_naissance, commune, commune_naissance, wilaya_naissance')
+          .select('*')
           .eq('nin', cleanNIN)
           .maybeSingle();
 
         if (citizenError) {
-          console.warn(` [VALIDATION] Citizen lookup warning for NIN ${r.nin}:`, citizenError.message);
+          console.error(` [VALIDATION] Database Error for NIN ${cleanNIN}:`, citizenError.message);
+        } else {
+          console.log(` [VALIDATION] Registry result for ${cleanNIN}:`, citizen ? 'FOUND' : 'NOT FOUND');
         }
 
         return {
