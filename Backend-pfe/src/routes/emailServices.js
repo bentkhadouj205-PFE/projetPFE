@@ -16,163 +16,191 @@ export async function generateCertificatePDF(data) {
     return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
   };
 
-  const formatTime = (t) => t ? String(t).substring(0, 5) : '......';
-  const v = (val, fallback = '..........') => val ? String(val) : fallback;
+  const formatTime = (t) => (t ? String(t).substring(0, 5) : '......');
+  const v = (val, fallback = '..........') => (val ? String(val) : fallback);
 
   const html = `<!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html lang="ar">
 <head>
 <meta charset="UTF-8">
+<title>شهادة الميلاد</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    font-family: 'Amiri', serif;
-    font-size: 12px;
+body {
+    font-family: Arial, sans-serif;
     direction: rtl;
-    text-align: right;
-    padding: 14mm 12mm;
-    width: 210mm;
-    min-height: 297mm;
-    color: #000;
+    margin: 30px;
+    background-color: #fff;
+}
+.container {
+    width: 850px;
+    margin: auto;
+    border: 1px solid #ccc;
+    padding: 40px;
+}
+.center {
+    text-align: center;
     line-height: 1.8;
-  }
-  .header {
+}
+.line {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 4mm;
-    font-size: 11px;
-  }
-  .header .right { text-align: right; }
-  .header .center { flex:1; text-align: center; font-weight: bold; font-size: 13px; }
-  .header .left { text-align: left; font-size: 10px; }
-  .title { text-align: center; margin: 5mm 0 2mm; }
-  .title h1 { font-size: 24px; font-weight: bold; }
-  .title p { font-size: 11px; color: #555; }
-  hr { border: none; border-top: 1px solid #000; margin: 2mm 0; }
-  .cert-num { display: flex; justify-content: space-between; font-size: 11px; margin: 2mm 0; }
-  .row { display: flex; align-items: baseline; margin-bottom: 0.5mm; font-size: 12px; line-height: 2.2; }
-  .lbl { white-space: nowrap; margin-left: 4px; }
-  .fill { flex: 1; border-bottom: 1px dotted #555; margin: 0 4px; min-width: 20px; }
-  .val { font-weight: bold; margin: 0 4px; }
-  .issue { font-size: 12px; margin-top: 4mm; }
-  .latin { text-align: center; margin-top: 5mm; border-top: 1px solid #aaa; padding-top: 3mm; font-size: 11px; }
-  .latin .red { color: #cc0000; font-weight: bold; }
-  .latin .line { border-bottom: 1px dotted #888; display: inline-block; width: 200px; margin-top: 3px; }
-  .notes { font-size: 11px; margin-top: 3mm; line-height: 2; }
-  .footer { text-align: center; border-top: 1px solid #000; margin-top: 5mm; padding-top: 3mm; font-size: 12px; font-weight: bold; }
-  .footer small { font-weight: normal; color: #555; font-size: 10px; }
+    align-items: center;
+    margin: 8px 0;
+}
+.label {
+    white-space: nowrap;
+    font-size: 15px;
+    font-weight: bold;
+}
+.dots {
+    flex: 1;
+    border-bottom: 1px dotted black;
+    margin: 0 8px;
+    height: 14px;
+}
+.value {
+    color: #1a1a1a;
+    font-weight: normal;
+}
+.section {
+    margin-top: 25px;
+}
+.small {
+    font-size: 13px;
+}
 </style>
 </head>
 <body>
+<div class="container">
+    <div class="center">
+        <strong>الجمهورية الجزائرية الديمقراطية الشعبية</strong><br />
+        وزارة الداخلية والجماعات المحلية<br />
+        السجل الوطني للحالة المدنية<br /><br />
+        <strong>شهادة الميلاد</strong><br />
+        نسخة الكترونية
+    </div>
+     <div class="right">
+        وزارة الداخلية والجماعات المحلية<br />
+        السجل الوطني للحالة المدنية<br /><br />
+        
+    </div>
+    <div class="left"><strong>شهادة الميلاد</strong><br />
+        نسخة الكترونية
+        
+    </div>
 
-<div class="header">
-  <div class="right">
-    <div>وزارة الداخلية والجماعات المحلية</div>
-    <div><strong>السجل الوطني للحالة المدنية</strong></div>
-  </div>
-  <div class="center">الجمهورية الجزائرية الديموقراطية الشعبية</div>
-  <div class="left">بلدية</div>
+    <div class="section">
+        <div class="left">
+            <span class="label">رقم الشهادة:</span>
+            <span class="value">${v(data.numeroChahada)}</span>
+            <span class="value">${formatDate(data.dateNaissance)}</span>
+          
+        </div>
+        <div class="line">          
+            <span class="label">في يوم:</span>
+          <span class="dots"></span>
+          <span class="label">على الساعة:</span>
+            <span class="value">${formatTime(data.heureNaissance)}</span>
+            <span class="dots"></span>  
+            <span class="label">(ولد)ت بـ:</span>
+            <span class="value">${v(data.communeNaissance)}</span>
+            <span class="dots"></span>
+          
+            
+        </div>
+        <div class="line">
+        <span class="label">بلدية:</span>
+            <span class="value">${v(data.communeNaissance)}</span>
+            <span class="dots"></span>
+            <span class="label">ولاية:</span>
+            <span class="value">${v(data.wilayaNaissance)}</span>
+            <span class="dots"></span>
+            
+        </div>
+        <div class="line">
+            <span class="label">المسمى(ة):</span>
+            <span class="value"><strong>${v(data.fullName)}</strong></span>
+            <span class="dots"></span>
+        </div>
+        <div class="line">
+         <span class="label">الجنس </span>
+            <span class="value">${v(data.communeNaissance)}</span>
+            <span class="dots"></span>
+            <span class="label">ابن(ة):</span>
+            <span class="value">${v(data.pereNomPrenom)}</span>
+            <span class="dots"></span>
+            <span class="label">عمره:</span>
+            <span class="value">${v(data.pereAge)}</span>
+            <span class="dots"></span>
+            <span class="label">مهنته:</span>
+            <span class="value">${v(data.pereMetier)}</span>
+        </div>
+        <div class="line">
+            <span class="label">و:</span>
+            <span class="value">${v(data.mereNomPrenom)}</span>
+            <span class="dots"></span>
+            <span class="label">عمرها:</span>
+            <span class="value">${v(data.mereAge)}</span>
+            <span class="dots"></span>
+            <span class="label">مهنتها:</span>
+            <span class="value">${v(data.mereMetier)}</span>
+        </div>
+        <div class="line">
+            <span class="label">الساكنين بـ:</span>
+            <span class="value">${v(data.domicileCommune)}</span>
+            <span class="dots"></span>
+            <span class="label">بلدية:</span>
+            <span class="dots"></span>
+            <span class="label">ولاية:</span>
+            <span class="value">${v(data.domicileWilaya)}</span>
+        </div>
+        <div class="line">
+            <span class="label">حرر في:</span>
+            <span class="dots"></span>
+            <span class="label">على الساعة:</span>
+            <span class="value">${formatTime(data.heureRedaction)}</span>
+            <span class="dots"></span>
+        </div>
+        <div class="line">
+            <span class="label">إعلان ادى به الس يد )ة</span>
+            <span class="value">${v(data.declarePar)}</span>
+            <span class="dots"></span>
+            <span class="dots"></span>
+        </div>
+        <div class="line">
+            <span class="label">وبعد التلاوة وقع معنا نحن:</span>
+            <span class="value">${v(data.officierEtatCivil)}</span>
+            <span class="dots"></span>
+            <span class="label">ضابط الحالة المدنية</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="line">
+            <span class="label">البيانات الهامشية:</span>
+            <span class="value">${v(data.marginalNotes)}</span>
+            <span class="dots"></span>
+        </div>
+        <div class="line"><span class="dots"></span></div>
+        <div class="line"><span class="dots"></span></div>
+    </div>
+
+    <div class="section small">
+        <div class="left">
+            <span class="label">حررت بمستغانم في:</span>
+            <span class="value">${today}</span>
+            <span class="dots"></span>
+        </div>
+        <div class="right">
+            <span class="label">الكتابة بالحروف اللاتينية:</span>
+            <span class="value">${v(data.fullNameLatin || data.fullName)}</span>
+            <span class="dots"></span>
+        </div>
+        <div class="right">
+            مستخرج من السجل الوطني للحالة المدنية<br />
+            المرجع ج م 7
+        </div>
+    </div>
 </div>
-
-<div class="title">
-  <h1>شهادة الميلاد</h1>
-  <p>نسخة إلكترونية</p>
-</div>
-<hr/>
-
-<div class="cert-num">
-  <span>رقم الشهادة: <strong>${v(data.numeroChahada)}</strong></span>
-  <span>في يوم: <span style="border-bottom:1px dotted #666;display:inline-block;width:120px;">&nbsp;</span></span>
-</div>
-
-<div class="row">
-  <span class="lbl">على الساعة</span><span class="fill">${formatTime(data.heureNaissance)}</span>
-  <span class="lbl">ولد(ت) بـ</span><span class="fill">&nbsp;</span>
-</div>
-
-<div class="row">
-  <span class="lbl">بلدية</span><span class="val">${v(data.communeNaissance)}</span><span class="fill">&nbsp;</span>
-  <span class="lbl">ولاية</span><span class="val">${v(data.wilayaNaissance)}</span>
-</div>
-
-<div class="row">
-  <span class="lbl">../../..</span><span class="val">${formatDate(data.dateNaissance)}</span>
-  <span class="lbl" style="margin-right:8px;">المسمى(ة)</span>
-  <span class="val" style="font-size:13px;">${v(data.fullName)}</span>
-  <span class="fill">&nbsp;</span>
-</div>
-
-<div class="row">
-  <span class="lbl">السن</span>
-  <span class="val">${data.sexe === 'M' ? 'ذكر' : data.sexe === 'F' ? 'أنثى' : '......'}</span>
-  <span class="fill">&nbsp;</span>
-</div>
-
-<div class="row">
-  <span class="lbl">ابن(ة)</span><span class="val">${v(data.pereNomPrenom)}</span><span class="fill">&nbsp;</span>
-  <span class="lbl">عمره</span><span class="val">${v(data.pereAge, '......')}</span>
-  <span class="lbl">مهنته</span><span class="val">${v(data.pereMetier, '......')}</span><span class="fill">&nbsp;</span>
-</div>
-
-<div class="row">
-  <span class="lbl">و</span><span class="val">${v(data.mereNomPrenom)}</span><span class="fill">&nbsp;</span>
-  <span class="lbl">عمرها</span><span class="val">${v(data.mereAge, '......')}</span>
-  <span class="lbl">مهنتها</span><span class="val">${v(data.mereMetier, '......')}</span><span class="fill">&nbsp;</span>
-</div>
-
-<div class="row">
-  <span class="lbl">الساكنين</span><span class="fill">&nbsp;</span>
-  <span class="lbl">بلدية</span><span class="val">${v(data.domicileCommune)}</span>
-  <span class="lbl">ولاية</span><span class="val">${v(data.domicileWilaya)}</span>
-</div>
-
-<div class="row">
-  <span class="lbl">حرر في</span><span class="fill">&nbsp;</span>
-  <span class="lbl">على الساعة</span><span class="fill">${formatTime(data.heureRedaction)}</span>
-</div>
-
-<div class="row">
-  <span class="lbl">إبعلان أدلى به السيد(ة)</span>
-  <span class="val">${v(data.declarePar, '')}</span><span class="fill">&nbsp;</span>
-</div>
-<div class="row"><span class="fill">&nbsp;</span></div>
-
-<div class="row">
-  <span class="lbl">وبعد التلاوة وقع معنا نحن</span>
-  <span class="val">${v(data.officierEtatCivil, '')}</span><span class="fill">&nbsp;</span>
-  <span class="lbl">ضابط الحالة المدنية ببلدية</span>
-</div>
-
-<div class="row">
-  <span class="lbl">البيانات الهامشية</span>
-  <span class="fill">${v(data.marginalNotes, '')}&nbsp;</span>
-</div>
-<div class="row"><span class="fill">&nbsp;</span></div>
-<div class="row"><span class="fill">&nbsp;</span></div>
-<div class="row"><span class="fill">&nbsp;</span></div>
-<div class="row"><span class="fill">&nbsp;</span></div>
-
-<div class="issue">
-  حررت بـ <strong>${v(data.redigeA, v(data.domicileCommune, 'مستغانم'))}</strong> ......في...... <strong>${today}</strong>
-</div>
-
-<div class="latin">
-  <p class="red">الكتابة السابقة للاسم واللقب بالأحرف اللاتينية</p>
-  <div class="line">&nbsp;</div>
-</div>
-
-<div class="notes">
-  <p>1- بكامل الحروف</p>
-  <p>2- اسم ولقب الأولاد</p>
-</div>
-
-<div class="footer">
-  مستخرج من السجل الوطني للحالة المدنية
-  <br/><small>المرجع: ج م 7</small>
-</div>
-
 </body>
 </html>`;
 
