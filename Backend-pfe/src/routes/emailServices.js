@@ -32,18 +32,28 @@ export async function generateCertificatePDF(data) {
   let fontBold;
 
   try {
+    // تشخيص: طباعة محتويات المجلد الحالي والمجلد الرئيسي في الـ Logs
+    console.log('📂 CWD:', process.cwd());
+    try {
+      console.log('📂 Root Files:', fs.readdirSync(process.cwd()).join(', '));
+      if (fs.existsSync(path.join(process.cwd(), 'src'))) {
+         console.log('📂 src Files:', fs.readdirSync(path.join(process.cwd(), 'src')).join(', '));
+      }
+    } catch (e) { console.log('📂 ListDir error:', e.message); }
+
     // تجربة عدة مسارات محتملة للخط لضمان العمل على Render
     const pathsToTry = [
-      path.resolve(process.cwd(), 'fonts', 'NotoSansArabic-Regular.ttf'),
-      path.resolve(__dirname, '../../fonts', 'NotoSansArabic-Regular.ttf'),
-      '/opt/render/project/src/Backend-pfe/fonts/NotoSansArabic-Regular.ttf'
+      path.join(process.cwd(), 'fonts', 'NotoSansArabic-Regular.ttf'),
+      path.join(process.cwd(), 'Backend-pfe', 'fonts', 'NotoSansArabic-Regular.ttf'),
+      path.resolve(__dirname, '..', '..', 'fonts', 'NotoSansArabic-Regular.ttf'),
+      path.join('/opt/render/project/src/fonts/NotoSansArabic-Regular.ttf'),
+      path.join('/opt/render/project/src/Backend-pfe/fonts/NotoSansArabic-Regular.ttf')
     ];
     
     let fontBytes;
     let foundPath = null;
     
     for (const p of pathsToTry) {
-      console.log('🔍 Checking font path:', p);
       if (fs.existsSync(p)) {
         fontBytes = fs.readFileSync(p);
         foundPath = p;
@@ -57,6 +67,7 @@ export async function generateCertificatePDF(data) {
       fontBold = fontArabic;
       console.log('✅ Arabic font loaded successfully from:', foundPath);
     } else {
+      console.error('❌ Paths checked:', pathsToTry);
       throw new Error('Font file not found in any of the attempted paths');
     }
   } catch (error) {
