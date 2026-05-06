@@ -1,4 +1,5 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -24,6 +25,7 @@ export async function generateCertificatePDF(data) {
   const formatTime = (t) => t ? t.substring(0, 5) : '......';
 
   const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
   const page = pdfDoc.addPage([595.28, 841.89]);
   const { width, height } = page.getSize();
 
