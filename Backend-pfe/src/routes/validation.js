@@ -30,7 +30,7 @@ router.get('/', async (req, res) => {
     const { data: requests, error } = await supabase
       .schema('public')
       .from('demandes_inscription')
-      .select('nom, prenom, nin')
+      .select('*')
       .order('date_demande', { ascending: false });
 
     if (error) {
@@ -39,29 +39,41 @@ router.get('/', async (req, res) => {
     }
 
     const enriched = await Promise.all(requests.map(async (r) => {
-      // Find matching citizen in register.citizens by NIN
-      const { data: citizen } = await supabase
-        .schema('register')
-        .from('citizens')
-        .select('nom, prenom, nin')
-        .eq('nin', r.nin)
-        .maybeSingle();
+      try {
+        // Find matching citizen in register.citizens by NIN
+        const { data: citizen } = await supabase
+          .schema('register')
+          .from('citizens')
+          .select('nom, prenom, nin, date_naissance, commune')
+          .eq('nin', r.nin)
+          .maybeSingle();
 
-      return {
-        id: r.id,
-        firstName: r.prenom,
-        lastName: r.nom,
-        nin: r.nin,
-        email: r.email,
-        cniRectoPath: toStorageUrl('cni-scans', r.cni_recto_path),
-        cniVersoPath: toStorageUrl('cni-scans', r.cni_verso_path),
-        selfiePath: toStorageUrl('selfies', r.selfie_path),
-        reg: {
-          firstName: citizens?.prenom ?? null,
-          lastName: citizens?.nom ?? null,
-          nin: citizens?.nin ?? null,
-        }
-      };
+        return {
+          id: r.id,
+          firstName: r.prenom,
+          lastName: r.nom,
+          nin: r.nin,
+          email: r.email,
+          dob: r.date_demande,
+          commune: r.adresse,
+          address: r.adresse,
+          status: r.status,
+          rejectionReason: r.commentaire,
+          cniRectoPath: toStorageUrl('cni-scans', r.cni_recto_path),
+          cniVersoPath: toStorageUrl('cni-scans', r.cni_verso_path),
+          selfiePath: toStorageUrl('selfies', r.selfie_path),
+          reg: {
+            firstName: citizen?.prenom ?? null,
+            lastName: citizen?.nom ?? null,
+            nin: citizen?.nin ?? null,
+            dob: citizen?.date_naissance ?? null,
+            commune: citizen?.commune ?? null,
+          }
+        };
+      } catch (e) {
+        console.error('Error enriching request:', e.message);
+        return { ...r, reg: null };
+      }
     }));
 
     res.json({ data: enriched });
