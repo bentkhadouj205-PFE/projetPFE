@@ -26,27 +26,33 @@ const toStorageUrl = (bucket, path) => {
 // ── GET all registration requests ─────────────────────────────────────────
 router.get('/', async (req, res) => {
   try {
-    console.log(' [VALIDATION] Fetching requests...');
+    console.log(' [VALIDATION] GET / hit. Fetching requests...');
     const { data: requests, error } = await supabase
-      .schema('public')
       .from('demandes_inscription')
-      .select('*')
+      .select('nom, prenom, nin,email,adresse,cni_recto_path,cni_verso_path,selfie_path')
       .order('date_demande', { ascending: false });
 
     if (error) {
-      console.error(' Supabase fetch error:', error.message);
-      return res.status(500).json({ error: error.message });
+      console.error(' [VALIDATION] Supabase fetch error:', error.message);
+      return res.status(500).json({ error: 'Database fetch failed: ' + error.message });
     }
+
+    console.log(` [VALIDATION] Found ${requests?.length || 0} requests. Enriching...`);
 
     const enriched = await Promise.all(requests.map(async (r) => {
       try {
+        console.log(` [VALIDATION] Looking up citizen for NIN: ${r.nin}`);
         // Find matching citizen in register.citizens by NIN
-        const { data: citizen } = await supabase
+        const { data: citizen, error: citizenError } = await supabase
           .schema('register')
           .from('citizens')
-          .select('nom, prenom, nin, date_naissance, commune')
+          .select('*')
           .eq('nin', r.nin)
           .maybeSingle();
+
+        if (citizenError) {
+          console.warn(` [VALIDATION] Citizen lookup warning for NIN ${r.nin}:`, citizenError.message);
+        }
 
         return {
           id: r.id,
@@ -55,27 +61,28 @@ router.get('/', async (req, res) => {
           nin: r.nin,
           email: r.email,
           dob: r.date_demande,
-          commune: r.adresse,
-          address: r.adresse,
+          commune: r.adresse || r.commune || '',
+          address: r.adresse || '',
           status: r.status,
-          rejectionReason: r.commentaire,
+          rejectionReason: r.commentaire || '',
           cniRectoPath: toStorageUrl('cni-scans', r.cni_recto_path),
           cniVersoPath: toStorageUrl('cni-scans', r.cni_verso_path),
           selfiePath: toStorageUrl('selfies', r.selfie_path),
-          reg: {
-            firstName: citizen?.prenom ?? null,
-            lastName: citizen?.nom ?? null,
-            nin: citizen?.nin ?? null,
-            dob: citizen?.date_naissance ?? null,
-            commune: citizen?.commune ?? null,
-          }
+          reg: citizen ? {
+            firstName: citizen.prenom || citizen.first_name || '',
+            lastName: citizen.nom || citizen.last_name || '',
+            nin: citizen.nin || '',
+            dob: citizen.date_naissance || '',
+            commune: citizen.commune || '',
+          } : null
         };
-      } catch (e) {
-        console.error('Error enriching request:', e.message);
+      } catch (innerErr) {
+        console.error(' [VALIDATION] Error enriching request for NIN ' + r.nin + ':', innerErr.message);
         return { ...r, reg: null };
       }
     }));
 
+    console.log(' [VALIDATION] Enrichment complete. Sending response.');
     res.json({ data: enriched });
   } catch (err) {
     console.error(' Validation route error:', err.message);
