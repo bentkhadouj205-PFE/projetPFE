@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export async function initializeEmail() {
-  console.log('✅ Brevo API Service ready');
+  console.log(' Brevo API Service ready');
   return true;
 }
 
@@ -27,21 +27,26 @@ export async function generateCertificatePDF(data) {
   const page = pdfDoc.addPage([595.28, 841.89]);
   const { width, height } = page.getSize();
 
-  // ⚠️ IMPORTANT: تحميل خط يدعم العربية
   let fontArabic;
   let fontRegular;
   let fontBold;
 
   try {
-    // محاولة تحميل الخط العربي
-    const fontPath = path.join(__dirname, 'fonts', 'NotoSansArabic-Regular.ttf');
-    const fontBytes = fs.readFileSync(fontPath);
-    fontArabic = await pdfDoc.embedFont(fontBytes);
-    fontRegular = fontArabic;
-    fontBold = fontArabic; // يمكن تحميل خط Bold إذا وجد
-    console.log('✅ Arabic font loaded successfully');
+    // محاولة تحميل الخط العربي من المجلد الرئيسي للمشروع
+    const fontPath = path.resolve(process.cwd(), 'fonts', 'NotoSansArabic-Regular.ttf');
+    console.log('🔍 Loading font from:', fontPath);
+    
+    if (fs.existsSync(fontPath)) {
+      const fontBytes = fs.readFileSync(fontPath);
+      fontArabic = await pdfDoc.embedFont(fontBytes);
+      fontRegular = fontArabic;
+      fontBold = fontArabic;
+      console.log('✅ Arabic font loaded successfully');
+    } else {
+      throw new Error('Font file not found');
+    }
   } catch (error) {
-    console.warn('⚠️ Arabic font not found, falling back to Helvetica (Latin only)');
+    console.warn('⚠️ Arabic font not found, falling back to Helvetica:', error.message);
     fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
     fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     fontArabic = fontRegular;
