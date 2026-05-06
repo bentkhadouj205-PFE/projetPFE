@@ -1,39 +1,15 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { API_BASE_URL, BACKEND_URL } from '@/lib/apiBase';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, }
+  from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, }
+  from '@/components/ui/select';
 import { WILAYA_NAMES, communesForWilaya } from '@/data/wilayasCommunes';
 import { CheckCircle, Mail, ArrowLeft, XCircle, Loader2 } from 'lucide-react';
-
-
-const POSITION_OPTIONS_FR = [
-  { value: '', label: '—' },
-  { value: 'extrait_sans_filiation', label: 'Extrait sans filiation' },
-  { value: 'extrait_avec_filiation', label: 'Extrait avec filiation' },
-  { value: 'copie_integrale', label: 'Copie intégrale' },
-  { value: 'copie_litterale', label: 'Copie littérale' },
-  { value: 'mention_marginal', label: 'Mention marginale' },
-];
-
-
-
-
 
 export interface BirthActCitizenShape {
   id?: string;
@@ -46,7 +22,6 @@ export interface BirthActCitizenShape {
   actYear?: string;
   actNumber?: string;
 }
-
 interface BirthActTraitmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -55,7 +30,6 @@ interface BirthActTraitmentDialogProps {
   onValidate: () => void;
   onCancel: () => void;
 }
-
 function ensureWilayaOption(wilaya: string, list: string[]): string[] {
   const w = wilaya.trim();
   if (!w) return list;
@@ -72,13 +46,13 @@ function ensureCommuneOption(commune: string, list: string[]): string[] {
 
 // ─── Step 2: Demande d'Acte de Naissance ─────────────────────────────────────
 function DemandePreview({
-  citizen, wilaya, commune, actYear, actNumber, position, copiesCount,
-  language, onApprove, onReject, onBack,
+  citizen, wilaya, commune, actYear, actNumber,
+  language, onApprove, onBack,
 }: {
   citizen: BirthActCitizenShape;
   wilaya: string; commune: string; actYear: string; actNumber: string;
-  position: string; copiesCount: string; language: 'fr' | 'en';
-  onApprove: () => void; onReject: () => void; onBack: () => void;
+  language: 'fr' | 'en';
+  onApprove: () => void; onBack: () => void;
 }) {
   const Field = ({ label, value }: { label: string; value: string }) => (
     <div className="flex flex-col gap-1 mb-3">
@@ -110,10 +84,10 @@ function DemandePreview({
               { label: 'Last Name', value: citizen.lastName },
               { label: 'Email', value: citizen.email },
               { label: 'NIN', value: citizen.nin },
-              { label: 'Wilaya', value: wilaya },
-              { label: 'Commune / Municipality', value: commune },
-              { label: "Année de l'acte / Year", value: actYear },
-              { label: "N° de l'acte / Act Number", value: actNumber },
+              { label: 'Wilaya', value: citizen.wilaya },
+              { label: 'Commune / Municipality', value: citizen.commune },
+              { label: "Année de l'acte / Year", value: citizen.actYear },
+              { label: "N° de l'acte / Act Number", value: citizen.actNumber },
 
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between border-b border-slate-100 pb-1 last:border-0">
@@ -133,10 +107,7 @@ function DemandePreview({
           <ArrowLeft className="w-4 h-4" />
           {language === 'fr' ? 'Retour' : 'Back'}
         </Button>
-        <Button type="button" onClick={onReject}
-          className="flex-1 bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-1">
-          <XCircle className="w-4 h-4" /> REJECT
-        </Button>
+
         <Button type="button" onClick={onApprove}
           className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-1">
           <CheckCircle className="w-4 h-4" /> APPROVE
@@ -145,7 +116,6 @@ function DemandePreview({
     </div>
   );
 }
-
 function BirthCertificatePreview({
   citizen, wilaya, commune, actYear, actNumber, language, onSendEmail, onBack, sending
 }: {
@@ -223,7 +193,7 @@ function BirthCertificatePreview({
             &nbsp;على الساعة <span className="border-b border-dotted border-slate-400 inline-block w-16">......</span>
           </p>
           <p>
-            يُعلان به السيد(ة) <span className="border-b border-dotted border-slate-400 inline-block w-40">................</span>
+            يُعلن به السيد(ة) <span className="border-b border-dotted border-slate-400 inline-block w-40">................</span>
           </p>
           <p>
             وبعد التلاوة وقّع معنا نحن <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
@@ -358,20 +328,17 @@ export function BirthActTraitmentDialog({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          citizenEmail:     citizen?.email,
+          citizenEmail: citizen?.email,
           citizenFirstName: citizen?.firstName,
-          citizenLastName:  citizen?.lastName,
-          citizen_id:       citizen?.id,        // ← مهم لجلب البيانات من Supabase
-          requestId:        citizen?.id,        // In this UI context, id is the requestId
-          requestSubject:   'Acte de Naissance',
-          employeeName:     'Service État Civil',
-          comment:          '',
-          wilaya,
-          commune,
-          actYear,
-          actNumber,
-          position,
-          copiesCount,
+          citizenLastName: citizen?.lastName,
+          citizen_id: citizen?.id,        // ← مهم لجلب البيانات من Supabase
+          requestId: citizen?.id,        // In this UI context, id is the requestId
+          requestSubject: 'Acte de Naissance',
+          employeeName: 'Service État Civil',
+          wilaya: citizen.wilaya,
+          commune: citizen.commune,
+          actYear: citizen.actYear,
+          actNumber: citizen.actNumber,
         }),
       });
 
@@ -380,8 +347,8 @@ export function BirthActTraitmentDialog({
 
       toast.success(
         language === 'fr'
-          ? `✅ Email envoyé avec succès à ${citizen?.email}`
-          : `✅ Email sent successfully to ${citizen?.email}`
+          ? ` Email envoyé avec succès à ${citizen?.email}`
+          : ` Email sent successfully to ${citizen?.email}`
       );
 
       onOpenChange(false);
@@ -389,7 +356,7 @@ export function BirthActTraitmentDialog({
 
     } catch (err: any) {
       console.error(err);
-      toast.error(`❌ ${err.message}`);
+      toast.error(` ${err.message}`);
     } finally {
       setSending(false);
     }
@@ -446,11 +413,6 @@ export function BirthActTraitmentDialog({
                   <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-600 w-full">
                     <SelectValue placeholder={tr.select} />
                   </SelectTrigger>
-                  <SelectContent>
-                    {POSITION_OPTIONS_FR.filter((o) => o.value !== '').map((o) => (
-                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                    ))}
-                  </SelectContent>
                 </Select>
               </Row>
               <Row label={tr.copies}>
@@ -477,10 +439,8 @@ export function BirthActTraitmentDialog({
             <DemandePreview
               citizen={citizen} wilaya={wilaya} commune={commune}
               actYear={actYear} actNumber={actNumber}
-              position={POSITION_OPTIONS_FR.find(o => o.value === position)?.label || position}
-              copiesCount={copiesCount} language={language}
+              language={language}
               onApprove={handleSendEmail}
-              onReject={() => onOpenChange(false)}
               onBack={() => onOpenChange(false)}
             />
           </>

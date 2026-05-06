@@ -23,7 +23,7 @@ router.post('/generate-pdf', async (req, res) => {
 // Génère le PDF ET l'envoie par email au citoyen
 router.post('/generate-and-send', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  console.log('🚀 [Start] generate-and-send request received');
+  console.log('[Start] generate-and-send request received');
   try {
     const {
       citizenEmail, citizenFirstName, requestSubject,
@@ -31,8 +31,8 @@ router.post('/generate-and-send', async (req, res) => {
       wilaya, commune, actYear, actNumber,
     } = req.body;
 
-    // 1. ✅ جلب بيانات الأكت من Supabase
-    console.time('⏱️ Supabase Fetch');
+    // 1. جلب بيانات الأكت من Supabase
+    console.time(' Supabase Fetch');
     const { data: acte, error } = await supabase
       .schema('register')
       .from('actes_naissance')
@@ -41,46 +41,46 @@ router.post('/generate-and-send', async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
-    console.timeEnd('⏱️ Supabase Fetch');
+    console.timeEnd(' Supabase Fetch');
 
-    if (error) console.warn('⚠️ Acte not found, using request data:', error.message);
+    if (error) console.warn(' Acte not found, using request data:', error.message);
 
     // دمج البيانات
     const pdfData = {
       citizenEmail,
       citizenFirstName,
-      fullName:           acte?.nom_prenom        || `${citizenFirstName} ${req.body.citizenLastName || ''}`,
-      numeroChahada:      acte?.numero_chahada     || actNumber,
-      numeroActe:         acte?.numero_acte        || actNumber,
-      dateNaissance:      acte?.date_naissance     || '',
-      heureNaissance:     acte?.heure_naissance    || '',
-      wilayaNaissance:    acte?.wilaya_naissance   || wilaya,
-      communeNaissance:   acte?.commune_naissance  || commune,
-      sexe:               acte?.sexe               || '',
-      pereNomPrenom:      acte?.pere_nom_prenom    || '',
-      pereAge:            acte?.pere_age           || '',
-      pereMetier:         acte?.pere_metier        || '',
-      mereNomPrenom:      acte?.mere_nom_prenom    || '',
-      mereAge:            acte?.mere_age           || '',
-      mereMetier:         acte?.mere_metier        || '',
-      domicileCommune:    acte?.domicile_commune   || commune,
-      domicileWilaya:     acte?.domicile_wilaya    || wilaya,
-      heureRedaction:     acte?.heure_redaction    || '',
-      redigeA:            acte?.redige_a           || commune,
-      declarePar:         acte?.declare_par        || '',
-      officierEtatCivil:  acte?.officier_etat_civil|| '',
-      marginalNotes:      acte?.marginal_notes     || '',
-      wilayaDelivrance:   acte?.wilaya_delivrance  || wilaya,
-      dateDelivrance:     acte?.date_delivrance    || new Date().toISOString().split('T')[0],
+      fullName: acte?.nom_prenom || `${citizenFirstName} ${req.body.citizenLastName || ''}`,
+      numeroChahada: acte?.numero_chahada || actNumber,
+      numeroActe: acte?.numero_acte || actNumber,
+      dateNaissance: acte?.date_naissance || '',
+      heureNaissance: acte?.heure_naissance || '',
+      wilayaNaissance: acte?.wilaya_naissance || wilaya,
+      communeNaissance: acte?.commune_naissance || commune,
+      sexe: acte?.sexe || '',
+      pereNomPrenom: acte?.pere_nom_prenom || '',
+      pereAge: acte?.pere_age || '',
+      pereMetier: acte?.pere_metier || '',
+      mereNomPrenom: acte?.mere_nom_prenom || '',
+      mereAge: acte?.mere_age || '',
+      mereMetier: acte?.mere_metier || '',
+      domicileCommune: acte?.domicile_commune || commune,
+      domicileWilaya: acte?.domicile_wilaya || wilaya,
+      heureRedaction: acte?.heure_redaction || '',
+      redigeA: acte?.redige_a || commune,
+      declarePar: acte?.declare_par || '',
+      officierEtatCivil: acte?.officier_etat_civil || '',
+      marginalNotes: acte?.marginal_notes || '',
+      wilayaDelivrance: acte?.wilaya_delivrance || wilaya,
+      dateDelivrance: acte?.date_delivrance || new Date().toISOString().split('T')[0],
     };
 
     // 2. Generate PDF
-    console.time('⏱️ PDF Generation');
+    console.time(' PDF Generation');
     const pdfBuffer = await generateCertificatePDF(pdfData);
-    console.timeEnd('⏱️ PDF Generation');
+    console.timeEnd(' PDF Generation');
 
     // 3. Send Email
-    console.time('⏱️ Brevo API Send');
+    console.time(' Brevo API Send');
     await emailService.sendValidationEmailWithPDF(
       citizenEmail, citizenFirstName,
       requestSubject || 'Acte de Naissance',
@@ -88,22 +88,22 @@ router.post('/generate-and-send', async (req, res) => {
       comment || '',
       pdfBuffer
     );
-    console.timeEnd('⏱️ Brevo API Send');
+    console.timeEnd(' Brevo API Send');
 
     // 4. Update status
     if (requestId) {
-      console.log('📡 Updating Supabase status...');
+      console.log(' Updating Supabase status...');
       await supabase
         .from('requests')
         .update({ status: 'completed' })
         .eq('id', requestId);
     }
 
-    console.log('✅ [Success] Email sent and status updated');
+    console.log(' [Success] Email sent and status updated');
     res.json({ success: true });
 
   } catch (err) {
-    console.error('🔥 generate-and-send error:', err);
+    console.error(' generate-and-send error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -116,8 +116,9 @@ router.post('/send-official-acte/:acteId', async (req, res) => {
 
     // Fetch acte
     const { data: acte, error } = await supabase
+      .schema('register')
       .from('actes_naissance')
-      .select('*')
+      .select('nom_prenom, numero_chahada, numero_acte, date_naissance, heure_naissance, wilaya_naissance, commune_naissance, sexe, pere_nom_prenom, pere_age, pere_metier, mere_nom_prenom, mere_age, mere_metier, domicile_commune, domicile_wilaya, heure_redaction, redige_a, declare_par, officier_etat_civil, marginal_notes, wilaya_delivrance, date_delivrance')
       .eq('id', req.params.acteId)
       .single();
 

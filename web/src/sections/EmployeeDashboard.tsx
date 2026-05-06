@@ -56,8 +56,6 @@ interface TaskWithCitizen extends Task {
     actYear?: string;
     actNumber?: string;
     // Fatima
-    cni?: string;
-    cniFileUrl?: string;
     factureFileUrl?: string;
     dateNaissance?: string;
     adresse?: string;
@@ -109,7 +107,6 @@ export function EmployeeDashboard({
         c?.commune?.toLowerCase().includes(q) ||
         c?.actYear?.toLowerCase().includes(q) ||
         c?.actNumber?.toLowerCase().includes(q) ||
-        c?.cni?.toLowerCase().includes(q) ||
         c?.dateNaissance?.toLowerCase().includes(q) ||
         task.title?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
@@ -243,7 +240,6 @@ export function EmployeeDashboard({
                 <>
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('firstName')}</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('lastName')}</th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">CNI</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">
                     {language === 'fr' ? 'Date Naissance' : 'Birth Date'}
                   </th>
@@ -281,7 +277,6 @@ export function EmployeeDashboard({
                   <>
                     <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.firstName)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.lastName)}</td>
-                    <td className="px-3 py-3 whitespace-nowrap font-mono text-xs">{dash(task.citizen?.cni)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.dateNaissance)}</td>
                   </>
                 )}

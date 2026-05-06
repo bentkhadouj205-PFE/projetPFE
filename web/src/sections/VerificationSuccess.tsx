@@ -15,7 +15,7 @@ export const VerificationSuccess: React.FC<{ onLogin: () => void }> = ({ onLogin
       if (!token) { setStatus('error'); return; }
 
       try {
-        console.log('📡 [VERIFY] Sending token to backend:', token.substring(0, 8) + '...');
+        console.log('[VERIFY] Sending token to backend:', token.substring(0, 8) + '...');
         const res = await fetch(`${API_BASE_URL}/validations/activate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

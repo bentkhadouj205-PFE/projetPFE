@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
     console.log(' [VALIDATION] Fetching requests...');
     const { data: requests, error } = await supabase
       .from('demandes_inscription')
-      .select('*')
+      .select('nom, prenom, nin')
       .order('date_demande', { ascending: false });
 
     if (error) {
@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
       const { data: citizen } = await supabase
         .schema('register')
         .from('citizens')
-        .select('nom, prenom, nin, date_naissance, commune')
+        .select('nom, prenom, nin')
         .eq('nin', r.nin)
         .maybeSingle();
 
@@ -57,11 +57,9 @@ router.get('/', async (req, res) => {
         address: r.adresse,
         status: r.status,
         rejectionReason: r.commentaire,
-        // CNI recto/verso + selfie from Supabase Storage
         cniRectoPath: toStorageUrl('cni-scans', r.cni_recto_path),
         cniVersoPath: toStorageUrl('cni-scans', r.cni_verso_path),
         selfiePath: toStorageUrl('selfies', r.selfie_path),
-        // Registry comparison
         reg: {
           firstName: citizen?.prenom ?? null,
           lastName: citizen?.nom ?? null,
