@@ -1082,10 +1082,10 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                     {/* CNI & Selfie */}
                     <div className="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-700 border border-slate-100 dark:border-slate-700 rounded-lg overflow-hidden">
                       <div className="px-6 py-4">
-                        <p className="text-xs text-slate-400 mb-2">{language === 'fr' ? 'CNI - scan soumis' : 'CNI - submitted scan'}</p>
+                        <p className="text-xs text-slate-400 mb-2">{language === 'fr' ? 'CNI' : 'ID Card'}</p>
                         {selectedRequest.cniScanPath ? (
-                          <a href={selectedRequest.cniScanPath} target="_blank" rel="noopener noreferrer">
-                            <img src={selectedRequest.cniScanPath} alt="CNI scan" className="w-full h-40 object-cover rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:opacity-90 transition-opacity" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          <a href={selectedRequest.cniScanPath.startsWith('http') ? selectedRequest.cniScanPath : `http://localhost:5000${selectedRequest.cniScanPath}`} target="_blank" rel="noreferrer">
+                            <img src={selectedRequest.cniScanPath.startsWith('http') ? selectedRequest.cniScanPath : `http://localhost:5000${selectedRequest.cniScanPath}`} alt="CNI" className="w-full h-40 object-cover rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:opacity-90 transition-opacity" />
                           </a>
                         ) : (
                           <div className="h-20 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center gap-2 border border-dashed border-slate-300 dark:border-slate-600">
@@ -1095,10 +1095,10 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                         )}
                       </div>
                       <div className="px-6 py-4">
-                        <p className="text-xs text-slate-400 mb-2">{language === 'fr' ? 'Photo selfie du citoyen' : 'Citizen selfie photo'}</p>
+                        <p className="text-xs text-slate-400 mb-2">Selfie</p>
                         {selectedRequest.selfiePath ? (
-                          <a href={selectedRequest.selfiePath} target="_blank" rel="noopener noreferrer">
-                            <img src={selectedRequest.selfiePath} alt="Selfie" className="w-full h-40 object-cover rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:opacity-90 transition-opacity" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          <a href={selectedRequest.selfiePath.startsWith('http') ? selectedRequest.selfiePath : `http://localhost:5000${selectedRequest.selfiePath}`} target="_blank" rel="noreferrer">
+                            <img src={selectedRequest.selfiePath.startsWith('http') ? selectedRequest.selfiePath : `http://localhost:5000${selectedRequest.selfiePath}`} alt="Selfie" className="w-full h-40 object-cover rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:opacity-90 transition-opacity" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                           </a>
                         ) : (
                           <div className="h-20 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center gap-2 border border-dashed border-slate-300 dark:border-slate-600">
@@ -1110,37 +1110,48 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                     </div>
 
                     {/* ACTIONS */}
-                    {selectedRequest.status === 'en_attente' && (
-                      <div className="pt-6 border-t border-slate-100 mt-6">
-                        <div className="grid grid-cols-2 gap-4">
-                          {/* Validate button */}
-                          <button
-                            type="button"
-                            onClick={() => handleValidate(selectedRequest.id)}
-                            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
-                          >
-                            <ShieldCheck className="w-5 h-5" />
-                            {language === 'fr' ? 'Valider - envoyer email activation' : 'Validate - send activation email'}
-                          </button>
+                    {selectedRequest.status === 'en_attente' && (() => {
+                      const firstNameMatch = isMatch(selectedRequest.firstName, selectedRequest.reg?.firstName);
+                      const lastNameMatch = isMatch(selectedRequest.lastName, selectedRequest.reg?.lastName);
+                      const ninMatch = isMatch(selectedRequest.nin, selectedRequest.reg?.nin);
+                      const allFieldsMatch = firstNameMatch && lastNameMatch && ninMatch;
 
-                          {/* Reject section - textarea is optional, button always visible */}
-                          <div className="flex flex-col gap-2">
-
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                await handleReject(selectedRequest.id);
-                                setRejectReason('');
-                              }}
-                              className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
-                            >
-                              <XCircle className="w-5 h-5" />
-                              {language === 'fr' ? 'Rejeter - envoyer email refus' : 'Reject - send rejection email'}
-                            </button>
+                      return (
+                        <div className="pt-6 border-t border-slate-100 mt-6">
+                          <div className="flex justify-center w-full">
+                            {allFieldsMatch ? (
+                              <button
+                                type="button"
+                                onClick={() => handleValidate(selectedRequest.id)}
+                                className="w-full max-w-md flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
+                              >
+                                <ShieldCheck className="w-5 h-5" />
+                                {language === 'fr' ? 'Valider - envoyer email activation' : 'Validate - send activation email'}
+                              </button>
+                            ) : (
+                              <div className="w-full max-w-md flex flex-col gap-3">
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await handleReject(selectedRequest.id);
+                                    setRejectReason('');
+                                  }}
+                                  className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-bold transition-all shadow-md active:scale-95"
+                                >
+                                  <XCircle className="w-5 h-5" />
+                                  {language === 'fr' ? 'Rejeter - envoyer email refus' : 'Reject - send rejection email'}
+                                </button>
+                                <p className="text-sm text-center text-red-500 font-semibold bg-red-50 py-2 rounded-lg border border-red-100">
+                                  {language === 'fr'
+                                    ? 'Attention : Données non conformes au registre'
+                                    : 'Warning: Data does not match the registry'}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {(selectedRequest.status === 'validated' || selectedRequest.status === 'termine') && (
                       <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-center gap-2 text-emerald-600 font-bold text-lg">
@@ -1160,7 +1171,6 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
               )}
             </div>
           )}
-
           {/* ── Messages ── */}
           {activeTab === 'messages' && (
             <div className="flex gap-6 h-[calc(100vh-180px)]">
