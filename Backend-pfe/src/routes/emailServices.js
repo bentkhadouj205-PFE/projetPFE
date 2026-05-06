@@ -29,61 +29,18 @@ export async function generateCertificatePDF(data) {
   const page = pdfDoc.addPage([595.28, 841.89]);
   const { width, height } = page.getSize();
 
-  let fontArabic;
-  let fontRegular;
-  let fontBold;
-
-  try {
-    // تشخيص: طباعة محتويات المجلد الحالي والمجلد الرئيسي في الـ Logs
-    console.log('📂 CWD:', process.cwd());
-    try {
-      console.log('📂 Root Files:', fs.readdirSync(process.cwd()).join(', '));
-      if (fs.existsSync(path.join(process.cwd(), 'src'))) {
-         console.log('📂 src Files:', fs.readdirSync(path.join(process.cwd(), 'src')).join(', '));
-      }
-    } catch (e) { console.log('📂 ListDir error:', e.message); }
-
-    // تجربة عدة مسارات محتملة للخط لضمان العمل على Render
-    const pathsToTry = [
-      path.join(process.cwd(), 'fonts', 'NotoSansArabic-Regular.ttf'),
-      path.join(process.cwd(), 'Backend-pfe', 'fonts', 'NotoSansArabic-Regular.ttf'),
-      path.resolve(__dirname, '..', '..', 'fonts', 'NotoSansArabic-Regular.ttf'),
-      path.join('/opt/render/project/src/fonts/NotoSansArabic-Regular.ttf'),
-      path.join('/opt/render/project/src/Backend-pfe/fonts/NotoSansArabic-Regular.ttf')
-    ];
-    
-    let fontBytes;
-    let foundPath = null;
-    
-    for (const p of pathsToTry) {
-      if (fs.existsSync(p)) {
-        fontBytes = fs.readFileSync(p);
-        foundPath = p;
-        break;
-      }
-    }
-    
-    if (fontBytes) {
-      fontArabic = await pdfDoc.embedFont(fontBytes);
-      fontRegular = fontArabic;
-      fontBold = fontArabic;
-      console.log('✅ Arabic font loaded successfully from:', foundPath);
-    } else {
-      console.error('❌ Paths checked:', pathsToTry);
-      throw new Error('Font file not found in any of the attempted paths');
-    }
-  } catch (error) {
-    console.error('❌ CRITICAL FONT ERROR:', error.message);
-    // إذا فشل تحميل الخط، لا يمكننا استخدام العربية. سنقوم بإلقاء خطأ بدلاً من الانهيار لاحقاً
-    throw new Error('Arabic font support is missing. Please check server logs.');
-  }
+  // ✅ استخدام الخطوط الافتراضية لضمان العمل على Render
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontArabic = fontRegular; 
 
   const black = rgb(0, 0, 0);
   const grey = rgb(0.4, 0.4, 0.4);
 
   const sanitize = (str) => {
     if (!str) return '';
-    return String(str);
+    // تنظيف النصوص من الحروف غير اللاتينية لمنع الانهيار مع خط Helvetica
+    return String(str).replace(/[^\x00-\x7F]/g, '');
   };
 
   const txt = (text, x, y, f = fontRegular, size = 10, color = black) => {
