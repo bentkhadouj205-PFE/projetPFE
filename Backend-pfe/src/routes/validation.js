@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
     console.log(' [VALIDATION] GET / hit. Fetching requests...');
     const { data: requests, error } = await supabase
       .from('demandes_inscription')
-      .select('nom, prenom, nin,email,adresse,cni_recto_path,cni_verso_path,selfie_path')
+      .select('*')
       .order('date_demande', { ascending: false });
 
     if (error) {
@@ -41,13 +41,15 @@ router.get('/', async (req, res) => {
 
     const enriched = await Promise.all(requests.map(async (r) => {
       try {
-        console.log(` [VALIDATION] Looking up citizen for NIN: ${r.nin}`);
+        const cleanNIN = String(r.nin || '').trim();
+        console.log(` [VALIDATION] Looking up citizen for NIN: "${cleanNIN}"`);
+
         // Find matching citizen in register.citizens by NIN
         const { data: citizen, error: citizenError } = await supabase
           .schema('register')
           .from('citizens')
-          .select('*')
-          .eq('nin', r.nin)
+          .select('nom, prenom, nin, date_naissance, commune, commune_naissance, wilaya_naissance')
+          .eq('nin', cleanNIN)
           .maybeSingle();
 
         if (citizenError) {
