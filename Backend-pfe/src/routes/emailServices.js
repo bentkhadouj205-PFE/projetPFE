@@ -238,17 +238,17 @@ export async function generateCertificatePDF(input) {
   </div>
 
   <div class="footer-section-left">
-    <div class="row">
-      <span class="lbl">حررت ب. مستغانم ......</span>
+    <div class="row-left">
+      <span class="lbl-left">حررت ب. مستغانم ......</span>
       <span class="lbl">في...</span>
       <span class="val">${today}</span>
       <span class="lbl">.../.../...</span>
     </div>
   </div>
 
-  <div class="footer-section-right">
+  <div class="footer-button -right">
     <div class="latin-line">الكتابة السابقة للاسم واللقب ب أحرف اللاتينية</div>
-    <div class="extra-dots" style="width:55%;margin-right:auto;margin-left:0;"></div>
+      <span class="dots"></span>
     <div class="notes">
       1- بكامل الحروف<br />
       2- اسم ولقب الولد
@@ -264,7 +264,7 @@ export async function generateCertificatePDF(input) {
   let browser;
   try {
     const execPath = await chromium.executablePath();
-    console.log('🚀 [PDF] Launching Chromium from:', execPath);
+    console.log(' [PDF] Launching Chromium from:', execPath);
 
     // Optional: Sanity check for binary existence
     // import fs from 'fs'; // Ensure fs is available if using this
