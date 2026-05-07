@@ -174,6 +174,7 @@ export function CarteSejourTraitmentDialog({
           requestSubject: language === 'fr' ? 'Fiche de Résidence' : 'Residence Card',
           employeeName: 'Service État Civil',
           requestId: demandes?.id,
+          citizen_id: demandes?.id, // Added for backend compatibility
           wilaya: demandes?.wilaya,
           commune: demandes?.commune,
           adresse: adresse,

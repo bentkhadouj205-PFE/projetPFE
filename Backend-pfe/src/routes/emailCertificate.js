@@ -31,28 +31,34 @@ router.post('/generate-and-send', async (req, res) => {
       wilaya, commune, actYear, actNumber,
     } = req.body;
 
-    // 1. جلب بيانات الأكت من Supabase
-    console.time(' Supabase Fetch');
-    const { data: acte, error } = await supabase
-      .schema('register')
-      .from('actes_naissance')
-      .select('*')
-      .eq('citizen_id', citizen_id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-    console.timeEnd(' Supabase Fetch');
+    const isResidenceCard = requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence') || requestSubject.toLowerCase().includes('séjour'));
 
-    if (error) console.warn(' Acte not found, using request data:', error.message);
+    // 1. جلب بيانات الأكت من Supabase (Only for birth certificates)
+    let acte = null;
+    if (!isResidenceCard) {
+      console.time(' Supabase Fetch');
+      const { data, error } = await supabase
+        .schema('register')
+        .from('actes_naissance')
+        .select('*')
+        .eq('citizen_id', citizen_id || '')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      console.timeEnd(' Supabase Fetch');
+      if (!error) acte = data;
+    }
 
     // دمج البيانات
     const pdfData = {
+      subject: requestSubject,
+      type_document: requestSubject,
       citizenEmail,
       citizenFirstName,
       fullName: acte?.nom_prenom || `${citizenFirstName} ${req.body.citizenLastName || ''}`,
       numeroChahada: acte?.numero_chahada || actNumber,
       numeroActe: acte?.numero_acte || actNumber,
-      dateNaissance: acte?.date_naissance || '',
+      dateNaissance: acte?.date_naissance || req.body.dateNaissance || '',
       heureNaissance: acte?.heure_naissance || '',
       wilayaNaissance: acte?.wilaya_naissance || wilaya,
       communeNaissance: acte?.commune_naissance || commune,
@@ -72,6 +78,10 @@ router.post('/generate-and-send', async (req, res) => {
       marginalNotes: acte?.marginal_notes || '',
       wilayaDelivrance: acte?.wilaya_delivrance || wilaya,
       dateDelivrance: acte?.date_delivrance || new Date().toISOString().split('T')[0],
+      // Residence Card specific
+      adresse: req.body.adresse || '',
+      wilaya: wilaya,
+      commune: commune,
     };
 
     // 2. Generate PDF

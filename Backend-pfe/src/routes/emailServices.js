@@ -423,7 +423,9 @@ export const emailService = {
       `,
       attachment: [{
         content: pdfBuffer.toString('base64'),
-        name: 'Acte_de_Naissance.pdf',
+        name: (requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence'))) 
+          ? 'Fiche_de_Residence.pdf' 
+          : 'Acte_de_Naissance.pdf',
       }],
     };
 
