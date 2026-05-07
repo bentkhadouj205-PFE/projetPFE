@@ -84,7 +84,7 @@ export async function generateCertificatePDF(input) {
   .title-block { text-align: center; margin: 20px 0 4px; }
   .title-block h1 { font-size: 30px; font-weight: bold; }
   .title-block .subtitle { font-size: 15px; margin-top: 4px; }
-  .rows { margin-top: 28px; }
+  .rows { margin-top: 60px; }
   .row { display: flex; align-items: flex-end; width: 100%; margin-bottom: 10px; font-size: 14.5px; }
   .lbl { white-space: nowrap; padding-left: 4px; padding-right: 2px; }
   .dots { flex: 1; border-bottom: 1px dotted #000; min-width: 30px; margin: 0 4px 3px; }
@@ -118,100 +118,92 @@ export async function generateCertificatePDF(input) {
     <div class="subtitle">نسخة الكترونية</div>
   </div>
 
-  <div class="rows">
+  <div class="rows-right">
 
     <div class="row-split">
-      <div class="right-part">
+      <div class="right-part">   
+         <span class="right-label">رقم الشهادة &nbsp; ${v(d.numeroChahada)}</span> 
+         <span class="right-label">${formatDate(d.dateNaissance)}</span>
+
         <span class="lbl">في يوم</span>
-        <span class="dots"></span>
         <span class="val">${formatDate(d.dateNaissance)}</span>
+        <span class="dots"></span>
       </div>
-      <span class="left-label">رقم الشهادة &nbsp; ${v(d.numeroChahada)}</span>
 </div>
 
     <div class="row">
-      <span class="dots"></span>
       <span class="lbl">على الساعة</span>
-      <span class="dots"></span>
       <span class="val">${formatTime(d.heureNaissance)}</span>
       <span class="dots"></span>
       <span class="lbl">ولد(ت)ب.</span>
-      <span class="dots"></span>
       <span class="val">${v(d.communeNaissance)}</span>
+      <span class="dots"></span>
     </div>
 
     <div class="row">
       <span class="lbl">بلدية</span>
+      <span class="val">${v(d.communeNaissance)}</span> 
       <span class="dots"></span>
-      <span class="val">${v(d.communeNaissance)}</span>
-      <span class="dots"></span>
-      <span class="lbl">ولاية.</span>
-      <span class="dots"></span>
+      <span class="lbl">ولاية.</span>  
       <span class="val">${v(d.wilayaNaissance)}</span>
+    <span class="dots"></span>
     </div>
 
     <div class="row-split">
-      <div class="right-part">
+      <div class="center-part">
         <span class="lbl">المسمى(ة)</span>
-        <span class="dots"></span>
         <span class="val"><strong>${v(d.fullName)}</strong></span>
         <span class="dots"></span>
+        <span class="dots"></span>
       </div>
-      <span class="left-label">${formatDate(d.dateNaissance)}</span>
     </div>
 
     <div class="row">
       <span class="lbl">الجنس</span>
-      <span class="dots"></span>
       <span class="val">${v(d.genre)}</span>
+      <span class="dots"></span>
       <span class="dots"></span>
     </div>
 
     <div class="row">
       <span class="lbl">ابن(ة)</span>
-      <span class="dots"></span>
       <span class="val">${v(d.pereNomPrenom)}</span>
       <span class="dots"></span>
-      <span class="lbl">عمره.</span>
       <span class="dots"></span>
+      <span class="lbl">عمره.</span>
       <span class="val">/////</span>
       <span class="lbl">مهنة.</span>
-      <span class="dots"></span>
       <span class="val">/////</span>
       <span class="dots"></span>
     </div>
 
     <div class="row">
       <span class="lbl">و</span>
-      <span class="dots"></span>
       <span class="val">${v(d.mereNomPrenom)}</span>
       <span class="dots"></span>
       <span class="lbl">عمرها</span>
-      <span class="dots"></span>
       <span class="val">/////</span>
       <span class="lbl">مهنتها.</span>
-      <span class="dots"></span>
       <span class="val">/////</span>
       <span class="dots"></span>
     </div>
 
     <div class="row">
       <span class="lbl">الساكنين.</span>
-      <span class="dots"></span>
       <span class="val">${v(d.domicileCommune)}</span>
       <span class="dots"></span>
       <span class="lbl">بلدية.</span>
+      <span class="val">/////</span> 
+      <span class="dots"></span> 
+      <span class="lbl">ولاية.</span>   
+      <span class="val">/////</span>
       <span class="dots"></span>
-      <span class="lbl">ولاية.</span>
-      <span class="dots"></span>
-      <span class="val">${v(d.domicileWilaya)}</span>
     </div>
 
     <div class="row">
       <span class="lbl">حرر في</span>
       <span class="dots"></span>
       <span class="lbl">على الساعة...</span>
-      <span class="dots"></span>
       <span class="val">${formatTime(d.heureRedaction)}</span>
       <span class="dots"></span>
     </div>
@@ -235,8 +227,8 @@ export async function generateCertificatePDF(input) {
 
     <div class="row">
       <span class="lbl">البيانات الهامشية</span>
-      <span class="dots"></span>
       <span class="val">${v(d.marginalNotes)}</span>
+      <span class="dots"></span>
       <span class="dots"></span>
     </div>
 
@@ -247,7 +239,7 @@ export async function generateCertificatePDF(input) {
 
   </div>
 
-  <div class="footer-section-right">
+  <div class="footer-section-left">
     <div class="row">
       <span class="lbl">حررت ب. مستغانم ......</span>
       <span class="lbl">في...</span>
@@ -256,7 +248,7 @@ export async function generateCertificatePDF(input) {
     </div>
   </div>
 
-  <div class="footer-bottom-left">
+  <div class="footer-section-right">
     <div class="latin-line">الكتابة السابقة للاسم واللقب ب أحرف اللاتينية</div>
     <div class="extra-dots" style="width:55%;margin-right:auto;margin-left:0;"></div>
     <div class="notes">
@@ -273,10 +265,16 @@ export async function generateCertificatePDF(input) {
 
   let browser;
   try {
+    const execPath = await chromium.executablePath();
+    console.log('🚀 [PDF] Launching Chromium from:', execPath);
+
+    // Optional: Sanity check for binary existence
+    // import fs from 'fs'; // Ensure fs is available if using this
+
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath: execPath,
       headless: chromium.headless,
     });
 
