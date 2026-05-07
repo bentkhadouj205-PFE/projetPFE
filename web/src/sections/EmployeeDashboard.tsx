@@ -247,7 +247,9 @@ export function EmployeeDashboard({
               )}
               {/* Default columns */}
               {!showBirthActColumns && !showCarteSejourColumns && (
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('citizen')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">
+                  {language === 'fr' ? 'Demandes' : 'Requests'}
+                </th>
               )}
               <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('email')}</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('nin')}</th>

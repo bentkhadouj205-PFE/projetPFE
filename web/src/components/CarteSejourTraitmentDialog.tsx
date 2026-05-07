@@ -87,6 +87,7 @@ function DemandePreview({
         <Field label="NIN" value={citizen.nin} />
         <Field label={language === 'fr' ? 'Adresse / سكن' : 'Address / سكن'} value={citizen.adresse} />
         <Field label={language === 'fr' ? 'Wilaya' : 'Wilaya'} value={citizen.wilaya} />
+        <FilePreview label={language === 'fr' ? 'Justificatif (Photo)' : 'Proof of Residence (Photo)'} url={citizen.factureFileUrl} />
       </div>
 
 
@@ -318,13 +319,13 @@ export function CarteSejourTraitmentDialog({
             </DialogHeader>
             <div className="rounded-lg border border-slate-200 dark:border-slate-600 px-4 bg-slate-50/50 dark:bg-slate-800/40">
               <Row label={tr.firstName}>
-                <Input readOnly value={citizen?.firstName ?? ''} className="bg-white dark:bg-slate-900" />
+                <Input readOnly value={demendes?.firstName ?? ''} className="bg-white dark:bg-slate-900" />
               </Row>
               <Row label={tr.lastName}>
-                <Input readOnly value={citizen?.lastName ?? ''} className="bg-white dark:bg-slate-900" />
+                <Input readOnly value={demendes?.lastName ?? ''} className="bg-white dark:bg-slate-900" />
               </Row>
               <Row label={tr.nin}>
-                <Input readOnly value={citizen?.nin ?? ''} className="bg-white dark:bg-slate-900 font-mono" />
+                <Input readOnly value={demendes?.nin ?? ''} className="bg-white dark:bg-slate-900 font-mono" />
               </Row>
               <Row label={tr.adresse}>
                 <Input
@@ -334,6 +335,7 @@ export function CarteSejourTraitmentDialog({
                   className="bg-white dark:bg-slate-900"
                 />
               </Row>
+              <FileRow label={language === 'fr' ? 'Justificatif (Photo)' : 'Proof of Residence (Photo)'} url={citizen?.factureFileUrl} />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => { onCancel(); onOpenChange(false); }}>
