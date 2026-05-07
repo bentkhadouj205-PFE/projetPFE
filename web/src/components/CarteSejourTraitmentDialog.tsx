@@ -171,7 +171,7 @@ export function CarteSejourTraitmentDialog({
           citizenEmail: demandes?.email,
           citizenFirstName: demandes?.firstName,
           citizenLastName: demandes?.lastName,
-          requestSubject: language === 'fr' ? 'Fiche de Résidence' : 'Residence Card',
+          requestSubject: 'Fiche de Résidence',
           employeeName: 'Service État Civil',
           requestId: demandes?.id,
           citizen_id: demandes?.id, // Added for backend compatibility

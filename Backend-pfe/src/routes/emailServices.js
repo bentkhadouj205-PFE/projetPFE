@@ -47,20 +47,29 @@ export async function generateCertificatePDF(input) {
   const v = (val, fallback = '..........') => (val ? String(val) : fallback);
 
   // 2. Determine Document Type and Select Template
-  const isResidenceCard = 
-    (actes_naissance.subject && (actes_naissance.subject.includes('résidence') || actes_naissance.subject.includes('séjour'))) ||
-    (actes_naissance.type_document && (actes_naissance.type_document.includes('résidence') || actes_naissance.type_document.includes('séjour')));
+  const rawType = actes_naissance.subject || actes_naissance.type_document || actes_naissance.requestSubject || '';
+  console.log(' [PDF Gen] Raw type received:', rawType);
+  
+  // Normalize string: convert é -> e, etc.
+  const dType = rawType.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, ''); 
+  
+  console.log(' [PDF Gen] Normalized type:', dType);
+  
+  const isResidenceCard = dType.includes('residence') || dType.includes('sejour') || dType.includes('carte');
+  console.log(' [PDF Gen] isResidenceCard:', isResidenceCard);
 
   let html = '';
 
   if (isResidenceCard) {
     // ─── RESIDENCE CARD TEMPLATE ──────────────────────────────────────────────
     const d = {
-      fullName: actes_naissance.nom_prenom ?? `${actes_naissance.firstName ?? ''} ${actes_naissance.lastName ?? ''}`.trim() ?? actes_naissance.fullName,
-      dateNaissance: actes_naissance.date_naissance ?? actes_naissance.dateNaissance ?? '',
-      adresse: actes_naissance.adresse ?? actes_naissance.citizen_address ?? '',
-      wilaya: actes_naissance.wilaya ?? actes_naissance.domicile_wilaya ?? 'مستغانم',
-      commune: actes_naissance.commune ?? actes_naissance.domicile_commune ?? 'مستغانم',
+      fullName: actes_naissance.fullName || actes_naissance.nom_prenom || `${actes_naissance.firstName || ''} ${actes_naissance.lastName || ''}`.trim(),
+      dateNaissance: actes_naissance.date_naissance || actes_naissance.dateNaissance || '',
+      adresse: actes_naissance.adresse || actes_naissance.citizen_address || '',
+      wilaya: actes_naissance.wilaya || actes_naissance.domicile_wilaya || 'مستغانم',
+      commune: actes_naissance.commune || actes_naissance.domicile_commune || 'مستغانم',
     };
 
     html = `<!DOCTYPE html>

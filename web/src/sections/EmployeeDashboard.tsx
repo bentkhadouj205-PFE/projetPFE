@@ -583,7 +583,7 @@ export function EmployeeDashboard({
       <BirthActTraitmentDialog
         open={birthActOpen}
         onOpenChange={(open) => { setBirthActOpen(open); if (!open) setBirthActTask(null); }}
-        citizen={birthActTask?.citizen ?? null}
+        citizen={birthActTask ? { ...birthActTask.citizen, id: birthActTask.id } : null}
         language={language}
         onCancel={() => setBirthActTask(null)}
         onValidate={() => {
@@ -597,7 +597,7 @@ export function EmployeeDashboard({
       <CarteSejourTraitmentDialog
         open={carteSejourOpen}
         onOpenChange={(open) => { setCarteSejourOpen(open); if (!open) setCarteSejourTask(null); }}
-        demandes={carteSejourTask?.citizen ?? null}
+        demandes={carteSejourTask ? { ...carteSejourTask.citizen, id: carteSejourTask.id } : null}
         language={language}
         onCancel={() => setCarteSejourTask(null)}
         onValidate={() => {

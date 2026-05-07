@@ -1,6 +1,7 @@
 import express from 'express';
 import { emailService, generateCertificatePDF } from './emailServices.js';
 import { supabase } from '../supabaseClient.js';
+import pool from '../db.js';
 import PDFService from '../server/pdfservice.js';
 
 
@@ -51,8 +52,9 @@ router.post('/generate-and-send', async (req, res) => {
 
     // دمج البيانات
     const pdfData = {
-      subject: requestSubject,
-      type_document: requestSubject,
+      ...req.body, // مرر كل الـ body أولاً لضمان وجود كل الحقول
+      subject: requestSubject || 'Fiche de Résidence', 
+      type_document: requestSubject || 'Fiche de Résidence',
       citizenEmail,
       citizenFirstName,
       fullName: acte?.nom_prenom || `${citizenFirstName} ${req.body.citizenLastName || ''}`,
@@ -102,11 +104,17 @@ router.post('/generate-and-send', async (req, res) => {
 
     // 4. Update status
     if (requestId) {
-      console.log(' Updating Supabase status...');
-      await supabase
-        .from('requests')
-        .update({ status: 'completed' })
-        .eq('id', requestId);
+      console.log(' Updating PostgreSQL requests status...');
+      try {
+        await pool.query(
+          "UPDATE requests SET status = 'completed', document_status = 'approved' WHERE id = $1",
+          [requestId]
+        );
+      } catch (dbErr) {
+        console.error(' DB Status Update Error:', dbErr.message);
+        // We don't necessarily want to fail the whole request if only the status update fails, 
+        // but the user is seeing an error, so let's be careful.
+      }
     }
 
     console.log(' [Success] Email sent and status updated');
