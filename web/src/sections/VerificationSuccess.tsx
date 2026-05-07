@@ -11,9 +11,7 @@ export const VerificationSuccess: React.FC<{ onLogin: () => void }> = ({ onLogin
       // Use standard Web API instead of react-router-dom
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
-
       if (!token) { setStatus('error'); return; }
-
       try {
         console.log('[VERIFY] Sending token to backend:', token.substring(0, 8) + '...');
         const res = await fetch(`${API_BASE_URL}/validations/activate`, {
