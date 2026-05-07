@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, Mail, ArrowLeft, XCircle, FileImage } from 'lucide-react';
+import { CheckCircle, Mail, XCircle, FileImage } from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface CarteSejourCitizenShape {
@@ -35,9 +35,13 @@ interface CarteSejourTraitmentDialogProps {
   onCancel: () => void;
 }
 
-// ─── Step 2: Demande de Fiche de Résidence ──────────────────────────────────────
-function DemandePreview({
-  citizen, language, onApprove, onReject, onBack,
+// ─── Step 2: Approve / Reject ─────────────────────────────────────────────────
+function ReviewStep({
+  citizen,
+  language,
+  onApprove,
+  onReject,
+  onBack,
 }: {
   citizen: CarteSejourCitizenShape;
   language: 'fr' | 'en';
@@ -45,157 +49,57 @@ function DemandePreview({
   onReject: () => void;
   onBack: () => void;
 }) {
-  const Field = ({ label, value }: { label: string; value?: string }) => (
-    <div className="flex flex-col gap-1 mb-3">
-      <label className="text-sm font-semibold text-slate-600">{label}:</label>
-      <div className="border border-blue-300 rounded px-3 py-2 bg-blue-50 text-slate-800 text-sm">
-        {value || '—'}
-      </div>
-    </div>
-  );
-
-  const FilePreview = ({ label, url }: { label: string; url?: string }) => (
-    <div className="flex flex-col gap-1 mb-3">
-      <label className="text-sm font-semibold text-slate-600">{label}:</label>
-      {url ? (
-        <a href={url} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2 border border-blue-300 rounded px-3 py-2 bg-blue-50 text-blue-600 text-sm hover:bg-blue-100 transition-colors">
-          <FileImage className="w-4 h-4" />
-          {language === 'fr' ? 'Voir le fichier' : 'View file'}
-        </a>
-      ) : (
-        <div className="border border-slate-200 rounded px-3 py-2 bg-slate-50 text-slate-400 text-sm">
-          {language === 'fr' ? 'Aucun fichier' : 'No file'}
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="bg-slate-700 text-white rounded-lg p-4 text-center">
-        <h3 className="font-bold text-base">Demande de Fiche de Résidence</h3>
-        <p className="text-slate-300 text-xs mt-1">Residence Card Request</p>
-      </div>
-
-      <div className="px-1">
-        <Field label={language === 'fr' ? 'Nom' : 'Last Name'} value={citizen.lastName} />
-        <Field label={language === 'fr' ? 'Prénom' : 'First Name'} value={citizen.firstName} />
-        <Field label="Email" value={citizen.email} />
-        <Field label="NIN" value={citizen.nin} />
-        <Field label={language === 'fr' ? 'Adresse / سكن' : 'Address / سكن'} value={citizen.adresse} />
-        <Field label={language === 'fr' ? 'Wilaya' : 'Wilaya'} value={citizen.wilaya} />
-        <FilePreview label={language === 'fr' ? 'Justificatif (Photo)' : 'Proof of Residence (Photo)'} url={citizen.factureFileUrl} />
-      </div>
-
-      <div className="flex gap-3 pt-1">
-        <Button type="button" variant="outline" onClick={onBack} className="flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" />
-          {language === 'fr' ? 'Retour' : 'Back'}
-        </Button>
-        <Button type="button" onClick={onReject}
-          className="flex-1 bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-1">
-          <XCircle className="w-4 h-4" /> REJECT
-        </Button>
-        <Button type="button" onClick={onApprove}
-          className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-1">
-          <CheckCircle className="w-4 h-4" /> APPROVE
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function CarteSejourPreview({
-  citizen, language, onSendEmail, onBack,
-}: {
-  citizen: CarteSejourCitizenShape;
-  language: 'fr' | 'en';
-  onSendEmail: () => void;
-  onBack: () => void;
-}) {
-  const today = new Date().toLocaleDateString('fr-FR');
+  const fr = language === 'fr';
 
   return (
     <div className="flex flex-col gap-4">
-      <div dir="rtl" className="border border-slate-300 rounded-lg p-5 bg-white text-right"
-        style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', lineHeight: '2' }}>
-
-        <div className="text-right mb-2 text-xs">
-          <p className="font-bold">الجمهورية الجزائرية الديموقراطية الشعبية</p>
-          <p>وزارة الداخلية</p>
-        </div>
-
-        <div className="text-xs mb-2 space-y-0.5 text-right">
-          <p>ولاية <span className="font-bold">{citizen.wilaya || 'مستغانم'}</span></p>
-          <p>دائرة <span className="font-bold">{citizen.wilaya || 'مستغانم'}</span></p>
-          <p>بلدية <span className="font-bold">{citizen.commune || 'مستغانم'}</span></p>
-        </div>
-
-        <div className="text-center my-4">
-          <div className="border-2 border-slate-800 inline-block px-6 py-1">
-            <h2 className="text-xl font-bold">بطاقة اقامة</h2>
-          </div>
-        </div>
-
-        <div className="text-xs space-y-3 mt-4">
-          <p>
-            نَحْنُ <span className="border-b border-dotted border-slate-400 inline-block w-32">............</span>
-            &nbsp;ولد عابد مشري
-          </p>
-          <p>
-            رئيسُ المَجْلِس الشَّعْبِيّ البَلَدِيّ لِبَلَدِيَّةِ: <span className="font-bold">{citizen.commune || 'مستغانم'}</span>
-          </p>
-          <div className="text-center my-3">
-            <p className="font-bold text-sm">نَشْهَدُ بأَنَّ:</p>
-          </div>
-          <p>
-            السيد(ة) <span className="font-bold">{citizen.firstName} {citizen.lastName}</span>
-            <span className="border-b border-dotted border-slate-400 inline-block w-20 mr-2">........</span>
-          </p>
-          <p>
-            المولود ب <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
-            &nbsp;بتاريخ <span className="font-bold">{citizen.dateNaissance || '..../.../...'}</span>
-          </p>
-          <p>
-            الجنسية <span className="border-b border-dotted border-slate-400 inline-block w-24">............</span>
-            &nbsp;المهنة <span className="border-b border-dotted border-slate-400 inline-block w-24">............</span>
-          </p>
-          <p>السكن <span className="font-bold">{citizen.adresse || '............'}</span></p>
-          <p className="text-xs">يقيم بنفس العنوان مُنذُ أكْثَر من سِتَّةِ (6) أَشْهُر</p>
-          <p className="text-xs">وَقَدْ سَلَّمَتْ لَهُ هَذِهِ الشَّهادَةُ لإِدْلاء بِها فِي حُدُودِ ما يَسْمَحُ بِهِ القَانُونُ</p>
-        </div>
-
-        <div className="mt-4 text-xs">
-          <p className="font-bold">حرر ب <span>{citizen.commune || 'مستغانم'}</span> بتاريخ {today}</p>
-          <p>وَالْغَرَضُ مِنْ مَنْح هَذِهِ الشَّهَادَةُ هُوَ إِثْباتُ السُّكْنِ</p>
-        </div>
-
-        <div className="mt-3 text-xs border-t pt-2">
-          <p className="font-bold">(1) إِنَّ صَلاحِيَّةَ الْعَمَل بِهَذِهِ الشَّهَادَةِ لا يُمْكِنُ أَنْ تَتَجَاوَز سِتَّةَ (6) أَشْهُر</p>
-          <p className="mt-1">الكتابة السابقة للاسم والقب</p>
-          <p className="border-b border-dotted border-slate-400 inline-block w-48 mt-1">&nbsp;</p>
-        </div>
+      {/* Summary card */}
+      <div className="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600 divide-y divide-slate-200 dark:divide-slate-600">
+        {[
+          { label: fr ? 'Nom complet' : 'Full name', value: `${citizen.firstName ?? ''} ${citizen.lastName ?? ''}`.trim() },
+          { label: 'Email', value: citizen.email },
+          { label: 'NIN', value: citizen.nin },
+          { label: fr ? 'Date de naissance' : 'Date of birth', value: citizen.dateNaissance },
+          { label: fr ? 'Adresse' : 'Address', value: citizen.adresse },
+          { label: 'Wilaya', value: citizen.wilaya },
+        ].map(({ label, value }) =>
+          value ? (
+            <div key={label} className="flex items-center justify-between px-4 py-2.5">
+              <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
+              <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right max-w-[55%]">{value}</span>
+            </div>
+          ) : null
+        )}
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm border border-slate-200 dark:border-slate-600">
-        <p className="font-semibold text-slate-700 dark:text-slate-300 mb-1">
-          {language === 'fr' ? 'Citoyen' : 'Citizen'}:
-        </p>
-        <p className="text-slate-600 dark:text-slate-400">
-          {citizen.firstName} {citizen.lastName} — <span className="text-blue-600">{citizen.email}</span>
-        </p>
+      {/* Email notice */}
+      <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2.5 text-sm text-slate-600 dark:text-slate-300">
+        <Mail className="w-4 h-4 text-blue-500 shrink-0" />
+        {fr
+          ? 'Un email de confirmation sera envoyé automatiquement au citoyen.'
+          : 'A confirmation email will be sent automatically to the citizen.'}
       </div>
 
-      <div className="flex gap-3">
-        <Button type="button" variant="outline" onClick={onBack} className="flex items-center gap-2">
-          <ArrowLeft className="w-4 h-4" />
-          {language === 'fr' ? 'Retour' : 'Back'}
+      {/* Actions */}
+      <div className="flex gap-3 pt-1">
+        <Button type="button" variant="outline" onClick={onBack} className="w-24">
+          {fr ? 'Retour' : 'Back'}
         </Button>
-        <Button type="button" onClick={onSendEmail}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2">
-          <Mail className="w-4 h-4" />
-          {language === 'fr' ? 'Envoyer par Email' : 'Send by Email'}
+        <Button
+          type="button"
+          onClick={onReject}
+          className="flex-1 bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-1.5"
+        >
+          <XCircle className="w-4 h-4" />
+          {fr ? 'Rejeter' : 'Reject'}
+        </Button>
+        <Button
+          type="button"
+          onClick={onApprove}
+          className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-1.5"
+        >
+          <CheckCircle className="w-4 h-4" />
+          {fr ? 'Approuver' : 'Approve'}
         </Button>
       </div>
     </div>
@@ -207,34 +111,32 @@ export function CarteSejourTraitmentDialog({
   open, onOpenChange, demandes, language, onValidate, onCancel,
 }: CarteSejourTraitmentDialogProps) {
   const [adresse, setAdresse] = useState('');
-  const [step, setStep] = useState<'form' | 'demande' | 'certificate'>('form');
+  const [step, setStep] = useState<'form' | 'review'>('form');
 
   const tr = useMemo(() => language === 'fr' ? {
     title: 'Traitement — Fiche de Résidence',
     subtitle: 'Vérifiez les informations du dossier avant de poursuivre.',
-    certTitle: 'Fiche de Résidence — بطاقة الإقامة',
-    certSubtitle: 'Vérifiez le document avant envoi.',
     adresse: 'Adresse / سكن',
     validate: 'Valider',
     cancel: 'Annuler',
     firstName: 'Prénom',
     lastName: 'Nom',
     nin: 'NIN',
-    dateNaissance: 'Date de naissance',
-    email: 'Email',
+    reviewTitle: 'Confirmation de la demande',
+    reviewSubtitle: 'Approuvez ou rejetez la demande du citoyen.',
+    emailSent: 'Email envoyé avec succès au citoyen !',
   } : {
     title: 'Processing — Residence Card',
     subtitle: 'Review the file information before continuing.',
-    certTitle: 'Residence Card — بطاقة الإقامة',
-    certSubtitle: 'Review the document before sending.',
     adresse: 'Address / سكن',
     validate: 'Confirm',
     cancel: 'Cancel',
     firstName: 'First name',
     lastName: 'Last name',
     nin: 'NIN',
-    dateNaissance: 'Date of birth',
-    email: 'Email',
+    reviewTitle: 'Request Confirmation',
+    reviewSubtitle: "Approve or reject the citizen's request.",
+    emailSent: 'Email sent successfully to the citizen!',
   }, [language]);
 
   useEffect(() => {
@@ -243,19 +145,24 @@ export function CarteSejourTraitmentDialog({
     setStep('form');
   }, [open, demandes]);
 
-  const handleSendEmail = () => {
-    const email = demandes?.email || '';
-    const subject = encodeURIComponent('بطاقة الإقامة - Fiche de Résidence');
-    const body = encodeURIComponent(
-      `Bonjour ${demandes?.firstName || ''} ${demandes?.lastName || ''},\n\nVeuillez trouver ci-joint votre Fiche de Résidence.\n\nCordialement,\nService d'état civil`
-    );
-    window.open(
-      `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${subject}&body=${body}`,
-      '_blank'
-    );
-    toast.success(language === 'fr' ? 'Email envoyé avec succès' : 'Email sent successfully');
-    onOpenChange(false);
+  const handleApprove = () => {
     onValidate();
+    onOpenChange(false);
+    toast.success(tr.emailSent, {
+      icon: <Mail className="w-4 h-4 text-green-600" />,
+      duration: 4000,
+      description: demandes?.email
+        ? `${language === 'fr' ? 'Destinataire' : 'Recipient'}: ${demandes.email}`
+        : undefined,
+    });
+  };
+
+  const handleReject = () => {
+    onOpenChange(false);
+    toast.error(
+      language === 'fr' ? 'Demande rejetée' : 'Request rejected',
+      { duration: 3000 }
+    );
   };
 
   const Row = ({ label, children }: { label: string; children: ReactNode }) => (
@@ -282,7 +189,7 @@ export function CarteSejourTraitmentDialog({
     </div>
   );
 
-  const citizenWithAdresse = { ...demandes, adresse };
+  const citizenWithAdresse: CarteSejourCitizenShape = { ...demandes, adresse };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -313,52 +220,35 @@ export function CarteSejourTraitmentDialog({
                   className="bg-white dark:bg-slate-900"
                 />
               </Row>
-              <FileRow label={language === 'fr' ? 'Justificatif (Photo)' : 'Proof of Residence (Photo)'} url={demandes?.factureFileUrl} />
+              <FileRow
+                label={language === 'fr' ? 'Justificatif (Photo)' : 'Proof of Residence (Photo)'}
+                url={demandes?.factureFileUrl}
+              />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => { onCancel(); onOpenChange(false); }}>
                 {tr.cancel}
               </Button>
-              <Button type="button" onClick={() => setStep('demande')}
-                className="bg-blue-600 hover:bg-blue-700">
+              <Button type="button" onClick={() => setStep('review')} className="bg-blue-600 hover:bg-blue-700">
                 {tr.validate}
               </Button>
             </div>
           </>
         )}
 
-        {/* ── Step 2: Demande Preview ── */}
-        {step === 'demande' && demandes && (              // ✅ demandes (not demands)
-          <>
-            <DialogHeader className="sr-only">
-              <DialogTitle>{tr.title}</DialogTitle>
-              <DialogDescription>{tr.subtitle}</DialogDescription>
-            </DialogHeader>
-            <DemandePreview
-              citizen={citizenWithAdresse}
-              language={language}
-              onApprove={() => setStep('certificate')}
-              onReject={() => onOpenChange(false)}
-              onBack={() => setStep('form')}
-            />
-          </>
-        )}
-
-        {/* ── Step 3: Certificate ── */}
-        {step === 'certificate' && demandes && (
+        {/* ── Step 2: Approve / Reject ── */}
+        {step === 'review' && demandes && (
           <>
             <DialogHeader>
-              <DialogTitle className="text-slate-900 dark:text-white flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-500" />
-                {tr.certTitle}
-              </DialogTitle>
-              <DialogDescription>{tr.certSubtitle}</DialogDescription>
+              <DialogTitle className="text-slate-900 dark:text-white">{tr.reviewTitle}</DialogTitle>
+              <DialogDescription>{tr.reviewSubtitle}</DialogDescription>
             </DialogHeader>
-            <CarteSejourPreview
+            <ReviewStep
               citizen={citizenWithAdresse}
               language={language}
-              onSendEmail={handleSendEmail}
-              onBack={() => setStep('demande')}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              onBack={() => setStep('form')}
             />
           </>
         )}
