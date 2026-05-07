@@ -1,12 +1,6 @@
 import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
-import { createClient } from '@supabase/supabase-js';
-
-// ── Supabase client ──────────────────────────────────────────────────────────
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+import { supabase } from '../supabaseClient.js';
 
 export async function initializeEmail() {
   console.log('Brevo API Service ready');
@@ -32,7 +26,7 @@ export async function fetchActeNaissance(requestId) {
 // ── Generate PDF from DB row ─────────────────────────────────────────────────
 export async function generateCertificatePDF(requestId) {
   // 1. Pull the record from register.actes_naissance
-  const data = await fetchActeNaissance(requestId);
+  const actes_naissance = await fetchActeNaissance(requestId);
 
   const now = new Date();
   const today = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
@@ -96,12 +90,12 @@ export async function generateCertificatePDF(requestId) {
   .row-split .right-part .lbl { white-space: nowrap;}
   .row-split .right-part .dots {flex: 1;border-bottom: 1px dashed #000;min-width: 60px;margin: 0 5px;}
   .row-split .right-part .val { white-space: nowrap;}
-  .footer-section { margin-top: 30px; font-size: 14px; }
-  .footer-bottom { margin-top: 20px; font-size: 13.5px; }
-  .footer-bottom .latin-line { text-align: right; margin-bottom: 6px; }
-  .footer-bottom .notes { text-align: right; font-size: 13px; line-height: 1.9; margin-top: 6px; }
-  .footer-bottom .bold-center { text-align: center; font-weight: bold; font-size: 14px; margin-top: 6px; }
-  .footer-bottom .ref { text-align: center; font-size: 13px; }
+  .footer-section-right { margin-top: 30px; font-size: 14px; text-align: right; }
+  .footer-bottom-left { margin-top: 20px; font-size: 13.5px; text-align: right; }
+  .footer-bottom-left .latin-line { text-align: right; margin-bottom: 6px; }
+  .footer-bottom-left .notes { text-align: right; font-size: 13px; line-height: 1.9; margin-top: 6px; }
+  .footer-bottom-left .bold-center { text-align: center; font-weight: bold; font-size: 14px; margin-top: 6px; }
+  .footer-bottom-left .ref { text-align: center; font-size: 13px; }
   .extra-dots { border-bottom: 1px dotted #000; width: 100%; margin: 8px 0; }
 </style>
 </head>
