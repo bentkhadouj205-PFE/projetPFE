@@ -47,12 +47,13 @@ function ensureCommuneOption(commune: string, list: string[]): string[] {
 // ─── Step 2: Demande d'Acte de Naissance ─────────────────────────────────────
 function DemandePreview({
   citizen, wilaya, commune, actYear, actNumber,
-  language, onApprove, onBack,
+  language, onSendEmail, onBack, sending,
 }: {
   citizen: BirthActCitizenShape;
   wilaya: string; commune: string; actYear: string; actNumber: string;
   language: 'fr' | 'en';
-  onApprove: () => void; onBack: () => void;
+  onSendEmail: () => void; onBack: () => void;
+  sending: boolean;
 }) {
   const Field = ({ label, value }: { label: string; value: string }) => (
     <div className="flex flex-col gap-1 mb-3">
@@ -64,14 +65,7 @@ function DemandePreview({
   );
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Header */}
-      <div className="bg-slate-700 text-white rounded-lg p-4 text-center">
-        <h3 className="font-bold text-base">
-          {language === 'fr' ? "Demande d'Acte de Naissance" : 'Birth Certificate Request'}
-        </h3>
-      </div>
-
+    <div className="flex flex-col gap-3 pt-2">
       {/* Unified Information Card */}
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-4">
         <div>
@@ -88,7 +82,6 @@ function DemandePreview({
               { label: 'Commune / Municipality', value: commune },
               { label: "Année de l'acte / Year", value: actYear },
               { label: "N° de l'acte / Act Number", value: actNumber },
-
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between border-b border-slate-100 pb-1 last:border-0">
                 <span className="text-slate-500">{label}:</span>
@@ -103,162 +96,25 @@ function DemandePreview({
 
       {/* Buttons */}
       <div className="flex gap-3 pt-1">
-        <Button type="button" variant="outline" onClick={onBack} className="flex items-center gap-1">
+        <Button type="button" variant="outline" onClick={onBack} disabled={sending} className="flex items-center gap-1">
           <ArrowLeft className="w-4 h-4" />
           {language === 'fr' ? 'Retour' : 'Back'}
         </Button>
 
-        <Button type="button" onClick={onApprove}
-          className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-1">
-          <CheckCircle className="w-4 h-4" /> APPROVE
-        </Button>
-      </div>
-    </div>
-  );
-}
-function BirthCertificatePreview({
-  citizen, wilaya, commune, actYear, actNumber, language, onSendEmail, onBack, sending
-}: {
-  citizen: BirthActCitizenShape;
-  wilaya: string; commune: string; actYear: string; actNumber: string;
-  language: 'fr' | 'en'; onSendEmail: () => void; onBack: () => void;
-  sending: boolean;
-}) {
-  const now = new Date();
-  // Format: YYYY/MM/DD (Algerian official format)
-  const todayAr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div dir="rtl" id="birth-certificate" className="border border-slate-300 rounded-lg p-5 bg-white text-right"
-        style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', lineHeight: '2' }}>
-
-        {/* Top Header Row */}
-        <div className="flex justify-between items-start mb-1 text-xs">
-          {/* Left: National Registry label */}
-          <div className="text-right">
-            <p>وزارة الداخلية والجماعات المحلية</p>
-            <p className="font-bold">السجل الوطني للحالة المدنية</p>
-          </div>
-          {/* Right: Republic header centered */}
-          <div className="text-center flex-1">
-            <p className="font-bold text-sm">الجمهورية الجزائرية الديموقراطية الشعبية</p>
-          </div>
-        </div>
-
-        {/* Main Title */}
-        <div className="text-center my-3">
-          <h2 className="text-xl font-bold">شهادة الميلاد</h2>
-          <p className="text-xs text-slate-500">نسخة إلكترونية</p>
-        </div>
-
-        {/* Certificate Number and Date row */}
-        <div className="flex justify-between text-xs mb-2">
-          <span>{actYear || '..../.../...'}</span>
-          <span>رقم الشهادة: <span className="font-bold">{actNumber || '..........'}</span></span>
-        </div>
-
-        {/* Certificate Body */}
-        <div className="text-xs space-y-1.5">
-          <p>
-            في يوم <span className="border-b border-dotted border-slate-400 inline-block w-28">............</span>
-            &nbsp;على الساعة <span className="border-b border-dotted border-slate-400 inline-block w-16">......</span>
-          </p>
-          <p>
-            ولد(ت)ب <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
-            &nbsp;ولاية <span className="font-bold">{wilaya || '............'}</span>
-          </p>
-          <p>
-            &nbsp;.../.../&nbsp;<span className="font-bold">{actYear || '....'}</span>
-            &nbsp;المسمى(ة): <span className="font-bold">{citizen.firstName} {citizen.lastName}</span>
-          </p>
-          <p>الجنس <span className="border-b border-dotted border-slate-400 inline-block w-24">............</span></p>
-          <p>
-            ابن(ة) <span className="border-b border-dotted border-slate-400 inline-block w-24">............</span>
-            &nbsp;عمره <span className="border-b border-dotted border-slate-400 inline-block w-12">......</span>
-            &nbsp;مهنته <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
-          </p>
-          <p>
-            و <span className="border-b border-dotted border-slate-400 inline-block w-24">............</span>
-            &nbsp;عمرها <span className="border-b border-dotted border-slate-400 inline-block w-12">......</span>
-            &nbsp;مهنتها <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
-          </p>
-          <p>
-            الساكنين <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
-            &nbsp;بلدية <span className="font-bold">{commune || '............'}</span>
-            &nbsp;ولاية <span className="font-bold">{wilaya || '............'}</span>
-          </p>
-          <p>
-            حرر في <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
-            &nbsp;على الساعة <span className="border-b border-dotted border-slate-400 inline-block w-16">......</span>
-          </p>
-          <p>
-            يُعلن به السيد(ة) <span className="border-b border-dotted border-slate-400 inline-block w-40">................</span>
-          </p>
-          <p>
-            وبعد التلاوة وقّع معنا نحن <span className="border-b border-dotted border-slate-400 inline-block w-20">........</span>
-            &nbsp;ضابط الحالة المدنية بالبلدية
-          </p>
-          <p>البيانات الهامشية <span className="border-b border-dotted border-slate-400 inline-block w-40">................</span></p>
-          {[...Array(3)].map((_, i) => <p key={i} className="border-b border-dotted border-slate-300 w-full">&nbsp;</p>)}
-        </div>
-
-        {/* Issue Date — AUTO */}
-        <div className="mt-3 text-xs">
-          <p>حررت ب <span className="font-bold">{commune || 'مستقانم'}</span> ...في.... <span className="font-bold">{todayAr}</span></p>
-        </div>
-
-        {/* Latin Name note */}
-        <div className="mt-3 text-xs text-center border-t pt-2">
-          <p className="text-red-600 font-bold">الكتابة السابقة للاسم واللقب بالأحرف اللاتينية</p>
-          <p className="border-b border-dotted border-slate-400 inline-block w-56 mt-1">&nbsp;</p>
-        </div>
-
-        {/* Notes */}
-        <div className="mt-2 text-xs space-y-0.5 text-right">
-          <p>1- كامل الحروف</p>
-          <p>2- اسم وقب الأولاد</p>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-3 text-center border-t pt-2">
-          <p className="font-bold text-xs">مستخرج من السجل الوطني للحالة المدنية</p>
-          <p className="text-xs text-slate-500">المرجع: 7</p>
-        </div>
-      </div>
-
-      <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm border border-slate-200 dark:border-slate-600">
-        <p className="font-semibold text-slate-700 dark:text-slate-300 mb-1">
-          {language === 'fr' ? 'Citoyen' : 'Citizen'}:
-        </p>
-        <p className="text-slate-600 dark:text-slate-400">
-          {citizen.firstName} {citizen.lastName} — <span className="text-blue-600">{citizen.email}</span>
-        </p>
-      </div>
-
-      <div className="flex gap-3">
-        <Button type="button" variant="outline" onClick={onBack} className="flex items-center gap-2">
-          <ArrowLeft className="w-4 h-4" />
-          {language === 'fr' ? 'Retour' : 'Back'}
-        </Button>
         <Button type="button" onClick={onSendEmail} disabled={sending}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 disabled:opacity-50">
+          className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2">
           {sending ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              {language === 'fr' ? 'Envoi...' : 'Sending...'}
-            </>
+            <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            <>
-              <Mail className="w-4 h-4" />
-              {language === 'fr' ? 'Envoyer par Email' : 'Send by Email'}
-            </>
+            <CheckCircle className="w-4 h-4" />
           )}
+          {language === 'fr' ? 'Approuver et Envoyer' : 'Approve & Send'}
         </Button>
       </div>
     </div>
   );
 }
+
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export function BirthActTraitmentDialog({
@@ -274,17 +130,11 @@ export function BirthActTraitmentDialog({
 
   const tr = useMemo(() => language === 'fr' ? {
     title: 'Traitement — Acte de naissance',
-    subtitle: 'Vérifiez les informations issues du dossier avant de poursuivre.',
-    certTitle: 'Acte de Naissance — شهادة الميلاد',
-    certSubtitle: 'Vérifiez le document avant envoi.',
     wilaya: 'Wilaya', commune: 'Commune', actYear: "Année de l'acte",
     actNumber: "N° de l'acte", position: 'Position', copies: 'Nbre de Copies',
     firstName: 'Prénom', lastName: 'Nom', validate: 'Valider', cancel: 'Annuler', select: 'Sélectionner',
   } : {
     title: 'Processing — Birth certificate',
-    subtitle: 'Review the information from the file before continuing.',
-    certTitle: 'Birth Certificate — شهادة الميلاد',
-    certSubtitle: 'Review the document before sending.',
     wilaya: 'Wilaya', commune: 'Municipality', actYear: 'Year of act',
     actNumber: 'Act number', position: 'Position', copies: 'Number of copies',
     firstName: 'First name', lastName: 'Last name', validate: 'Confirm', cancel: 'Cancel', select: 'Select',
@@ -374,7 +224,6 @@ export function BirthActTraitmentDialog({
           <>
             <DialogHeader>
               <DialogTitle className="text-slate-900 dark:text-white">{tr.title}</DialogTitle>
-              <DialogDescription>{tr.subtitle}</DialogDescription>
             </DialogHeader>
             <div className="rounded-lg border border-slate-200 dark:border-slate-600 px-4 bg-slate-50/50 dark:bg-slate-800/40">
               <Row label={tr.firstName}>
@@ -439,7 +288,6 @@ export function BirthActTraitmentDialog({
           <>
             <DialogHeader className="sr-only">
               <DialogTitle>{tr.title}</DialogTitle>
-              <DialogDescription>{tr.subtitle}</DialogDescription>
             </DialogHeader>
             <DemandePreview
               citizen={citizen}
@@ -448,26 +296,8 @@ export function BirthActTraitmentDialog({
               actYear={actYear}
               actNumber={actNumber}
               language={language}
-              onApprove={() => setStep('certificate')}
-              onBack={() => setStep('form')}
-            />
-          </>
-        )}
-
-        {step === 'certificate' && citizen && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="text-slate-900 dark:text-white flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-500" />
-                {tr.certTitle}
-              </DialogTitle>
-              <DialogDescription>{tr.certSubtitle}</DialogDescription>
-            </DialogHeader>
-            <BirthCertificatePreview
-              citizen={citizen} wilaya={wilaya} commune={commune}
-              actYear={actYear} actNumber={actNumber} language={language}
               onSendEmail={handleSendEmail}
-              onBack={() => setStep('demande')}
+              onBack={() => setStep('form')}
               sending={sending}
             />
           </>
