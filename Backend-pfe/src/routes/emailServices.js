@@ -23,10 +23,16 @@ export async function fetchActeNaissance(requestId) {
   return data;
 }
 
-// ── Generate PDF from DB row ─────────────────────────────────────────────────
-export async function generateCertificatePDF(requestId) {
-  // 1. Pull the record from register.actes_naissance
-  const actes_naissance = await fetchActeNaissance(requestId);
+// ── Generate PDF from DB row or Object ──────────────────────────────────────
+export async function generateCertificatePDF(input) {
+  let actes_naissance;
+  if (typeof input === 'string') {
+    // If input is a string, it's a requestId/UUID to fetch from DB
+    actes_naissance = await fetchActeNaissance(input);
+  } else {
+    // Otherwise it's already the data object
+    actes_naissance = input || {};
+  }
 
   const now = new Date();
   const today = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
@@ -41,15 +47,14 @@ export async function generateCertificatePDF(requestId) {
   const v = (val, fallback = '..........') => (val ? String(val) : fallback);
 
   // 2. Map DB column names → template variables
-  //    Adjust the left-hand keys if your column names differ in Supabase
   const d = {
-    numeroChahada: actes_naissance.numero_chahada ?? actes_naissance.numeroChahada,
+    numeroChahada: actes_naissance.numero_chahada ?? actes_naissance.numeroChahada ?? actes_naissance.numeroActe,
     dateNaissance: actes_naissance.date_naissance ?? actes_naissance.dateNaissance,
     heureNaissance: actes_naissance.heure_naissance ?? actes_naissance.heureNaissance,
     communeNaissance: actes_naissance.commune_naissance ?? actes_naissance.communeNaissance,
     wilayaNaissance: actes_naissance.wilaya_naissance ?? actes_naissance.wilayaNaissance,
-    fullName: actes_naissance.full_name ?? actes_naissance.fullName,
-    genre: actes_naissance.genre,
+    fullName: actes_naissance.nom_prenom ?? actes_naissance.full_name ?? actes_naissance.fullName,
+    genre: actes_naissance.genre ?? actes_naissance.sexe,
     pereNomPrenom: actes_naissance.pere_nom_prenom ?? actes_naissance.pereNomPrenom,
     pereAge: actes_naissance.pere_age ?? actes_naissance.pereAge,
     pereMetier: actes_naissance.pere_metier ?? actes_naissance.pereMetier,
@@ -292,11 +297,17 @@ export async function generateCertificatePDF(requestId) {
 
 // ── Email sender ─────────────────────────────────────────────────────────────
 export const emailService = {
-  async sendValidationEmailWithPDF(citizenEmail, citizenFirstName, requestSubject, employeeName, comment, requestId) {
+  async sendValidationEmailWithPDF(citizenEmail, citizenFirstName, requestSubject, employeeName, comment, pdfBufferOrId) {
     const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.BREVO_SMTP_PASS;
 
-    // Generate PDF filled from DB
-    const pdfBuffer = await generateCertificatePDF(requestId);
+    let pdfBuffer;
+    if (Buffer.isBuffer(pdfBufferOrId)) {
+      // If it's already a Buffer, use it directly
+      pdfBuffer = pdfBufferOrId;
+    } else {
+      // If it's a string ID or data object, generate the PDF
+      pdfBuffer = await generateCertificatePDF(pdfBufferOrId);
+    }
 
     const payload = {
       sender: { name: 'Baladiya Digital', email: 'baladiyadigital27@gmail.com' },
