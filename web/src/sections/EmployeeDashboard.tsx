@@ -88,7 +88,7 @@ export function EmployeeDashboard({
   const positionLower = (user.position || '').toLowerCase();
 
   const isBirthActEmployee = serviceLower.includes('naissance') || positionLower.includes('naissance');
-  const isCarteSejourEmployee = 
+  const isCarteSejourEmployee =
     serviceLower.includes('séjour') || serviceLower.includes('sejour') ||
     serviceLower.includes('résidence') || serviceLower.includes('residence') ||
     positionLower.includes('séjour') || positionLower.includes('sejour') ||
@@ -597,7 +597,7 @@ export function EmployeeDashboard({
       <CarteSejourTraitmentDialog
         open={carteSejourOpen}
         onOpenChange={(open) => { setCarteSejourOpen(open); if (!open) setCarteSejourTask(null); }}
-        citizen={carteSejourTask?.citizen ?? null}
+        demandes={carteSejourTask?.citizen ?? null}
         language={language}
         onCancel={() => setCarteSejourTask(null)}
         onValidate={() => {
