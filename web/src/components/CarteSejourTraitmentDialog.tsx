@@ -376,8 +376,10 @@ export function CarteSejourTraitmentDialog({
         {/* ── Step 2: Demande Preview ── */}
         {step === 'demande' && citizen && (
           <>
-            <DialogTitle className="sr-only">{tr.title}</DialogTitle>
-            <DialogDescription className="sr-only">{tr.subtitle}</DialogDescription>
+            <DialogHeader className="sr-only">
+              <DialogTitle>{tr.title}</DialogTitle>
+              <DialogDescription>{tr.subtitle}</DialogDescription>
+            </DialogHeader>
             <DemandePreview
               citizen={citizenWithAdresse}
               language={language}

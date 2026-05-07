@@ -272,99 +272,88 @@ router.put('/:requestId/read', async (req, res) => {
 // ── GET /requests/:requestId ──────────────────────────────────────────────────
 router.get('/:requestId', async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT * FROM requests WHERE id = $1`,
-      [req.params.requestId]
-    );
-    if (rows.length === 0) {
+    const { requestId } = req.params;
+    const { data, error } = await supabase
+      .from('demandes')
+      .select('*')
+      .eq('id', requestId)
+      .single();
+
+    if (error || !data) {
       return res.status(404).json({ message: 'Demande non trouvée' });
     }
-    res.json(rows[0]);
+    res.json(data);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// ── PUT /requests/:requestId/validate-with-pdf ────────────────────────────────
-router.put('/:requestId/validate-with-pdf', async (req, res) => {
+// ── PUT /requests/validate-with-pdf/:requestId ────────────────────────────────
+router.put('/validate-with-pdf/:requestId', async (req, res) => {
   try {
-    const { status, document_status, comment, employee_id } = req.body;
+    const { requestId } = req.params;
+    const { status, documentStatus, comment, position } = req.body;
 
-    // Fetch request
-    const { rows: reqRows } = await pool.query(
-      `SELECT * FROM requests WHERE id = $1`,
-      [req.params.requestId]
-    );
-    if (reqRows.length === 0) {
+    // 1. Fetch request from Supabase
+    const { data: request, error: fetchErr } = await supabase
+      .from('demandes')
+      .select('*')
+      .eq('id', requestId)
+      .single();
+
+    if (fetchErr || !request) {
       return res.status(404).json({ message: 'Demande non trouvée' });
     }
-    const request = reqRows[0];
 
-    // Fetch employee
-    let emp = null;
-    if (employee_id) {
-      const { rows: empRows } = await pool.query(
-        `SELECT id, first_name, last_name, email, service, position
-         FROM employees WHERE id = $1`,
-        [employee_id]
-      );
-      emp = empRows[0] ?? null;
-    }
+    // 2. Update request in Supabase
+    const { data: updated, error: updateErr } = await supabase
+      .from('demandes')
+      .update({
+        status: status,
+        document_status: documentStatus || request.document_status,
+        commentaire: comment || request.commentaire
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
 
-    // Update request
-    const { rows: updated } = await pool.query(
-      `UPDATE requests
-       SET status          = $1,
-           document_status = COALESCE($2, document_status),
-           comment         = COALESCE($3, comment),
-           assigned_by     = COALESCE($4, assigned_by),
-           updated_at      = NOW()
-       WHERE id = $5
-       RETURNING *`,
-      [
-        status,
-        document_status ?? null,
-        comment         ?? null,
-        employee_id     ?? null,
-        req.params.requestId
-      ]
-    );
-    const updatedRequest = updated[0];
+    if (updateErr) throw updateErr;
 
-    console.log('Validation demande:', updatedRequest.id, '| Statut:', status);
+    console.log('Validation demande (Supabase):', requestId, '| Statut:', status);
 
-    // Generate PDF (pass the flat row directly)
+    // 3. Generate PDF
     let pdfBuffer = null;
     try {
-      pdfBuffer = await PDFService.generateCitizenPDF(updatedRequest);
-      console.log('PDF généré:', pdfBuffer.length, 'bytes');
+      // Use the helper from emailServices.js which handles both IDs and objects
+      // We pass the updated object directly
+      const { generateCertificatePDF } = await import('./emailServices.js');
+      pdfBuffer = await generateCertificatePDF(updated);
+      console.log('PDF généré via emailServices:', pdfBuffer?.length, 'bytes');
     } catch (pdfError) {
-      console.error('PDF Error:', pdfError.message);
+      console.error('PDF Generation Error:', pdfError.message);
     }
 
-    // Send email
+    // 4. Send email
     let emailSent = false;
-    if ((status === 'completed' || status === 'rejected') && pdfBuffer && updatedRequest.citizen_email) {
+    if (pdfBuffer && updated.email) {
       try {
         await emailService.sendValidationEmailWithPDF(
-          updatedRequest.citizen_email,
-          updatedRequest.citizen_first_name,
-          updatedRequest.subject,
-          status,
-          emp ? `${emp.first_name} ${emp.last_name}` : 'Service municipal',
+          updated.email,
+          updated.prenom || updated.firstName,
+          updated.type_document || 'Document municipal',
+          position || 'Service municipal',
           comment,
           pdfBuffer
         );
         emailSent = true;
-        console.log('Email envoyé');
       } catch (emailError) {
-        console.error('Email Error:', emailError.message);
+        console.error('Email Transmission Error:', emailError.message);
       }
     }
 
     res.json({
       message: 'Demande traitée',
-      request: updatedRequest,
+      request: updated,
       pdfGenerated: !!pdfBuffer,
       emailSent
     });

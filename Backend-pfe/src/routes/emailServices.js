@@ -124,14 +124,12 @@ export async function generateCertificatePDF(input) {
       <div class="right-part">   
          <span class="right-label">رقم الشهادة &nbsp; ${v(d.numeroChahada)}</span> 
          <span class="right-label">${formatDate(d.dateNaissance)}</span>
-
-        <span class="lbl">في يوم</span>
-        <span class="val">${formatDate(d.dateNaissance)}</span>
-        <span class="dots"></span>
       </div>
 </div>
 
     <div class="row">
+      <span class="lbl">في يوم</span>
+      <span class="dots"></span>
       <span class="lbl">على الساعة</span>
       <span class="val">${formatTime(d.heureNaissance)}</span>
       <span class="dots"></span>
@@ -272,14 +270,23 @@ export async function generateCertificatePDF(input) {
     // import fs from 'fs'; // Ensure fs is available if using this
 
     browser = await puppeteer.launch({
-      args: chromium.args,
+      args: [
+        ...chromium.args,
+        '--disable-dev-shm-usage',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-gpu',
+        '--no-zygote',
+        '--single-process'
+      ],
       defaultViewport: chromium.defaultViewport,
       executablePath: execPath,
       headless: chromium.headless,
     });
 
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setDefaultNavigationTimeout(60000); // 60s timeout
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 });
 
     const pdfBuffer = await page.pdf({
       format: 'A4',

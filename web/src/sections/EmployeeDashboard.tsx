@@ -88,8 +88,11 @@ export function EmployeeDashboard({
   const positionLower = (user.position || '').toLowerCase();
 
   const isBirthActEmployee = serviceLower.includes('naissance') || positionLower.includes('naissance');
-  const isCarteSejourEmployee = serviceLower.includes('séjour') || serviceLower.includes('sejour') ||
-    positionLower.includes('séjour') || positionLower.includes('sejour');
+  const isCarteSejourEmployee = 
+    serviceLower.includes('séjour') || serviceLower.includes('sejour') ||
+    serviceLower.includes('résidence') || serviceLower.includes('residence') ||
+    positionLower.includes('séjour') || positionLower.includes('sejour') ||
+    positionLower.includes('résidence') || positionLower.includes('residence');
 
   const showBirthActColumns = isBirthActEmployee;
   const showCarteSejourColumns = isCarteSejourEmployee;

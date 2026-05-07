@@ -84,10 +84,10 @@ function DemandePreview({
               { label: 'Last Name', value: citizen.lastName },
               { label: 'Email', value: citizen.email },
               { label: 'NIN', value: citizen.nin },
-              { label: 'Wilaya', value: citizen.wilaya },
-              { label: 'Commune / Municipality', value: citizen.commune },
-              { label: "Année de l'acte / Year", value: citizen.actYear },
-              { label: "N° de l'acte / Act Number", value: citizen.actNumber },
+              { label: 'Wilaya', value: wilaya },
+              { label: 'Commune / Municipality', value: commune },
+              { label: "Année de l'acte / Year", value: actYear },
+              { label: "N° de l'acte / Act Number", value: actNumber },
 
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between border-b border-slate-100 pb-1 last:border-0">
@@ -324,21 +324,24 @@ export function BirthActTraitmentDialog({
 
     setSending(true);
     try {
-      const response = await fetch(`https://projetpfe-6zg2.onrender.com/api/email/generate-and-send`, {
+      const response = await fetch(`${API_BASE_URL}/email/generate-and-send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
         body: JSON.stringify({
           citizenEmail: citizen?.email,
           citizenFirstName: citizen?.firstName,
           citizenLastName: citizen?.lastName,
-          citizen_id: citizen?.id,        // ← مهم لجلب البيانات من Supabase
-          requestId: citizen?.id,        // In this UI context, id is the requestId
-          requestSubject: 'Acte de Naissance',
+          requestSubject: tr.title,
           employeeName: 'Service État Civil',
-          wilaya: citizen.wilaya,
-          commune: citizen.commune,
-          actYear: citizen.actYear,
-          actNumber: citizen.actNumber,
+          requestId: citizen?.id,
+          citizen_id: citizen?.id,
+          wilaya: citizen?.wilaya,
+          commune: citizen?.commune,
+          actYear: citizen?.actYear,
+          actNumber: citizen?.actNumber,
         }),
       });
 
@@ -434,14 +437,19 @@ export function BirthActTraitmentDialog({
 
         {step === 'demande' && citizen && (
           <>
-            <DialogTitle className="sr-only">{tr.title}</DialogTitle>
-            <DialogDescription className="sr-only">{tr.subtitle}</DialogDescription>
+            <DialogHeader className="sr-only">
+              <DialogTitle>{tr.title}</DialogTitle>
+              <DialogDescription>{tr.subtitle}</DialogDescription>
+            </DialogHeader>
             <DemandePreview
-              citizen={citizen} wilaya={wilaya} commune={commune}
-              actYear={actYear} actNumber={actNumber}
+              citizen={citizen}
+              wilaya={wilaya}
+              commune={commune}
+              actYear={actYear}
+              actNumber={actNumber}
               language={language}
-              onApprove={handleSendEmail}
-              onBack={() => onOpenChange(false)}
+              onApprove={() => setStep('certificate')}
+              onBack={() => setStep('form')}
             />
           </>
         )}
