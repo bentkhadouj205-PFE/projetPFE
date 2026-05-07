@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt';
 import express from 'express';
 import { supabase } from '../supabaseClient.js';
 
@@ -245,6 +246,40 @@ router.get('/verify-email', async (req, res) => {
       name: `${data.prenom} ${data.nom}` 
     });
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// PUT /admin/employees/:id/password — update employee password hash
+router.put('/employees/:id/password', async (req, res) => {
+  try {
+    const { password } = req.body;
+    const { id } = req.params;
+
+    if (!password) {
+      return res.status(400).json({ message: 'Password requis' });
+    }
+
+    // ✅ bcrypt يولد salt جديد تلقائياً
+    const password_hash = await bcrypt.hash(password, 10);
+
+    const { data, error } = await supabase
+      .from('employees')
+      .update({ password_hash })
+      .eq('id', id)
+      .select('id, email, first_name, last_name')
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: 'Mot de passe mis à jour',
+      employee: data
+    });
+
+  } catch (error) {
+    console.error('Erreur update password:', error);
     res.status(500).json({ message: error.message });
   }
 });
