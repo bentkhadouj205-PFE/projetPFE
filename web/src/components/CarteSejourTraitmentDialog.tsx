@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle, Mail, ArrowLeft, XCircle, FileImage } from 'lucide-react';
+import { toast } from 'sonner';
 
 export interface CarteSejourCitizenShape {
   firstName?: string;
@@ -82,35 +83,13 @@ function DemandePreview({
       <div className="px-1">
         <Field label={language === 'fr' ? 'Nom' : 'Last Name'} value={citizen.lastName} />
         <Field label={language === 'fr' ? 'Prénom' : 'First Name'} value={citizen.firstName} />
+        <Field label="Email" value={citizen.email} />
         <Field label="NIN" value={citizen.nin} />
-        <Field label="CNI" value={citizen.cni} />
-        <Field label={language === 'fr' ? 'Date de naissance' : 'Date of birth'} value={citizen.dateNaissance} />
         <Field label={language === 'fr' ? 'Adresse / سكن' : 'Address / سكن'} value={citizen.adresse} />
         <Field label={language === 'fr' ? 'Wilaya' : 'Wilaya'} value={citizen.wilaya} />
-        <Field label={language === 'fr' ? 'Commune' : 'Municipality'} value={citizen.commune} />
-        <FilePreview label="CNI (Photo)" url={citizen.cniFileUrl} />
-        <FilePreview label={language === 'fr' ? 'Facture (Photo)' : 'Invoice (Photo)'} url={citizen.factureFileUrl} />
       </div>
 
-      {/* Requester Information */}
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-        <p className="text-center font-semibold text-slate-700 mb-3 text-sm">Requester Information</p>
-        <div className="space-y-2 text-sm">
-          {[
-            { label: 'First Name', value: citizen.firstName },
-            { label: 'Last Name', value: citizen.lastName },
-            { label: 'Email', value: citizen.email },
-            { label: 'NIN', value: citizen.nin },
-          ].map(({ label, value }) => (
-            <div key={label} className="flex justify-between">
-              <span className="text-slate-500">{label}:</span>
-              <span className={`font-medium ${label === 'Email' ? 'text-blue-600' : 'text-slate-800'}`}>
-                {value || '—'}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+
 
       {/* Buttons */}
       <div className="flex gap-3 pt-1">
@@ -205,7 +184,7 @@ function CarteSejourPreview({
 
         {/* Footer */}
         <div className="mt-4 text-xs">
-          <p className="font-bold">حرر ب <span>{citizen.commune || 'مستقانم'}</span> بتاريخ {today}</p>
+          <p className="font-bold">حرر ب <span>{citizen.commune || 'مستغانم'}</span> بتاريخ {today}</p>
           <p>وَالْغَرَضُ مِنْ مَنْح هَذِهِ الشَّهَادَةُ هُوَ إِثْباتُ السُّكْنِ</p>
         </div>
 
@@ -295,6 +274,9 @@ export function CarteSejourTraitmentDialog({
       `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${subject}&body=${body}`,
       '_blank'
     );
+    toast.success(language === 'fr' ? 'Email envoyé avec succès' : 'Email sent successfully');
+    onOpenChange(false);
+    onValidate();
   };
 
   const Row = ({ label, children }: { label: string; children: ReactNode }) => (
@@ -344,12 +326,6 @@ export function CarteSejourTraitmentDialog({
               <Row label={tr.nin}>
                 <Input readOnly value={citizen?.nin ?? ''} className="bg-white dark:bg-slate-900 font-mono" />
               </Row>
-              <Row label={tr.cni}>
-                <Input readOnly value={citizen?.cni ?? ''} className="bg-white dark:bg-slate-900 font-mono" />
-              </Row>
-              <Row label={tr.dateNaissance}>
-                <Input readOnly value={citizen?.dateNaissance ?? ''} className="bg-white dark:bg-slate-900" />
-              </Row>
               <Row label={tr.adresse}>
                 <Input
                   value={adresse}
@@ -358,14 +334,12 @@ export function CarteSejourTraitmentDialog({
                   className="bg-white dark:bg-slate-900"
                 />
               </Row>
-              <FileRow label="CNI (Photo)" url={citizen?.cniFileUrl} />
-              <FileRow label={language === 'fr' ? 'Facture (Photo)' : 'Invoice (Photo)'} url={citizen?.factureFileUrl} />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => { onCancel(); onOpenChange(false); }}>
                 {tr.cancel}
               </Button>
-              <Button type="button" onClick={() => { setStep('demande'); onValidate(); }}
+              <Button type="button" onClick={() => setStep('demande')}
                 className="bg-blue-600 hover:bg-blue-700">
                 {tr.validate}
               </Button>

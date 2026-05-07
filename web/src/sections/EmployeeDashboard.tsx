@@ -243,9 +243,6 @@ export function EmployeeDashboard({
                 <>
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('firstName')}</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('lastName')}</th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">
-                    {language === 'fr' ? 'Date Naissance' : 'Birth Date'}
-                  </th>
                 </>
               )}
               {/* Default columns */}
@@ -280,7 +277,6 @@ export function EmployeeDashboard({
                   <>
                     <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.firstName)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.lastName)}</td>
-                    <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.dateNaissance)}</td>
                   </>
                 )}
                 {/* Default row cell */}
@@ -602,7 +598,11 @@ export function EmployeeDashboard({
         citizen={carteSejourTask?.citizen ?? null}
         language={language}
         onCancel={() => setCarteSejourTask(null)}
-        onValidate={() => { }}
+        onValidate={() => {
+          if (carteSejourTask) {
+            tasks.completeTask(carteSejourTask.id);
+          }
+        }}
       />
 
       {/* Other employees */}
