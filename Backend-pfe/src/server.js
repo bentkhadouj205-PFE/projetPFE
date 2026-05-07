@@ -19,6 +19,7 @@ import chatRoutes from './routes/chatRoutes.js';
 import pdfRoutes from './routes/pdfRoutes.js';
 import emailCertificateRoutes from './routes/emailCertificate.js';
 import validationRoutes from './routes/validation.js';
+import acteNaissanceRoutes from './routes/acteNaissance.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -294,6 +295,7 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/email', emailCertificateRoutes);
+app.use('/api/acte-naissance', acteNaissanceRoutes);
 app.use('/api', demandeRoutes);
 
 app.get('/', (req, res) => {

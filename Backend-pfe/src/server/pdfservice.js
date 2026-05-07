@@ -1,5 +1,4 @@
 import PDFDocument from 'pdfkit';
-import { PDFDocument as LibPDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,162 +8,312 @@ const __dirname = path.dirname(__filename);
 
 export class PDFService {
   
-  // ========== EXISTING — Citizen Request PDF ==========
+  // ========== EXISTING METHODS ==========
+  
   static generateCitizenPDF(requestRow) {
     return new Promise((resolve, reject) => {
       try {
-        const doc    = new PDFDocument();
+        const doc = new PDFDocument();
         const chunks = [];
         doc.on('data', chunk => chunks.push(chunk));
-        doc.on('end',  ()    => resolve(Buffer.concat(chunks)));
-
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.rect(0, 0, 612, 100).fill('#1e40af');
-        doc.fillColor('#ffffff').fontSize(28).font('Helvetica-Bold').text('BALADIYA DIGITAL', 50, 30);
+        doc.fillColor('#ffffff');
+        doc.fontSize(28).font('Helvetica-Bold').text('BALADIYA DIGITAL', 50, 30);
         doc.fontSize(14).font('Helvetica').text('Fiche de Traitement de Demande', 50, 65);
         doc.fontSize(10).text(`Ref: ${requestRow.id ?? 'N/A'}`, 450, 40).text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 450, 55);
-
         doc.fillColor('#1f2937').fontSize(16).font('Helvetica-Bold').text('INFORMATIONS DU CITOYEN', 50, 130);
         doc.moveTo(50, 150).lineTo(562, 150).stroke('#e5e7eb');
-
         const citizenInfo = [
           ['Nom complet:', `${requestRow.citizen_first_name ?? ''} ${requestRow.citizen_last_name ?? ''}`.trim()],
-          ['Email:',       requestRow.citizen_email   ?? 'Non spécifié'],
-          ['NIN:',         requestRow.citizen_nin     ?? 'Non spécifié'],
-          ['Adresse:',     requestRow.citizen_address ?? 'Non spécifiée']
+          ['Email:', requestRow.citizen_email ?? 'Non spécifié'],
+          ['NIN:', requestRow.citizen_nin ?? 'Non spécifié'],
+          ['Adresse:', requestRow.citizen_address ?? 'Non spécifiée']
         ];
-
         let y = 170;
         doc.fontSize(11).font('Helvetica-Bold');
         for (const [label, value] of citizenInfo) {
           doc.fillColor('#4b5563').text(label, 50, y);
           doc.fillColor('#1f2937').font('Helvetica').text(value, 200, y);
+          doc.font('Helvetica-Bold');
           y += 25;
         }
-
+        y += 20;
+        doc.fillColor('#1e40af').fontSize(16).font('Helvetica-Bold').text('DÉTAILS DE LA DEMANDE', 50, y);
+        doc.moveTo(50, y + 20).lineTo(562, y + 20).stroke('#e5e7eb');
+        const requestInfo = [
+          ['Sujet:', requestRow.subject ?? 'Non spécifié'],
+          ['Description:', requestRow.description ?? 'Aucune description'],
+          ['Assigné à:', requestRow.assigned_employee_name ?? 'Non spécifié'],
+          ['Date:', requestRow.created_at ? new Date(requestRow.created_at).toLocaleDateString('fr-FR') : 'Non spécifiée'],
+          ['Statut:', requestRow.status ?? 'En attente']
+        ];
+        y += 40;
+        doc.fontSize(11).font('Helvetica-Bold');
+        for (const [label, value] of requestInfo) {
+          doc.fillColor('#4b5563').text(label, 50, y);
+          doc.fillColor('#1f2937').font('Helvetica');
+          if (label === 'Description:') { doc.text(value, 200, y, { width: 362 }); y += 40; }
+          else { doc.text(value, 200, y); y += 25; }
+          doc.font('Helvetica-Bold');
+        }
         doc.rect(0, 750, 612, 42).fill('#f3f4f6');
-        doc.fillColor('#6b7280').fontSize(9).font('Helvetica').text('Document généré par Baladiya Digital', 50, 765);
-        
+        doc.fillColor('#6b7280').fontSize(9).font('Helvetica').text('Document généré par Baladiya Digital', 50, 765).text('© 2026 Administration Municipale', 50, 780);
         doc.end();
       } catch (error) { reject(error); }
     });
   }
 
-  // ========== EXISTING — Notification PDF ==========
   static generateNotificationPDF(employeeInfo, notificationData) {
     return new Promise((resolve, reject) => {
       try {
-        const doc    = new PDFDocument();
+        const doc = new PDFDocument();
         const chunks = [];
         doc.on('data', chunk => chunks.push(chunk));
-        doc.on('end',  ()    => resolve(Buffer.concat(chunks)));
-
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.rect(0, 0, 612, 100).fill('#1e40af');
         doc.fillColor('#ffffff').fontSize(28).font('Helvetica-Bold').text('BALADIYA DIGITAL', 50, 30);
-        
-        doc.fillColor('#1f2937').fontSize(16).font('Helvetica-Bold').text('NOTIFICATION', 50, 130);
-        doc.fontSize(11).font('Helvetica').text(notificationData.message || '...', 50, 160);
-        
+        doc.fontSize(14).font('Helvetica').text('Notification', 50, 65);
+        doc.fillColor('#1f2937').fontSize(16).font('Helvetica-Bold').text('DÉTAILS DE LA NOTIFICATION', 50, 130);
+        doc.moveTo(50, 150).lineTo(562, 150).stroke('#e5e7eb');
+        const fields = [
+          ['Titre:', notificationData.title ?? 'Non spécifié'],
+          ['Message:', notificationData.message ?? 'Aucun message'],
+          ['Type:', notificationData.type ?? 'Non spécifié'],
+          ['Service:', notificationData.service ?? 'Général']
+        ];
+        let y = 170;
+        doc.fontSize(11).font('Helvetica-Bold');
+        for (const [label, value] of fields) {
+          doc.fillColor('#4b5563').text(label, 50, y);
+          doc.fillColor('#1f2937').font('Helvetica');
+          if (label === 'Message:') { doc.text(value, 200, y, { width: 362 }); y += 40; }
+          else { doc.text(value, 200, y); y += 25; }
+          doc.font('Helvetica-Bold');
+        }
         doc.end();
       } catch (error) { reject(error); }
     });
   }
 
-  // ========== NEW — Acte de Naissance (Algerian Birth Certificate) ==========
+  // ========== BIRTH CERTIFICATE MATCHING YOUR DATABASE SCHEMA ==========
+  
   static async generateActeNaissance(data) {
-    try {
-      const pdfDoc = await LibPDFDocument.create();
-      const page = pdfDoc.addPage([595, 842]);
-      const { width, height } = page;
-      
-      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      
-      const darkBlue = rgb(0.12, 0.23, 0.37);
-      const gray = rgb(0.4, 0.4, 0.4);
-      const lightGray = rgb(0.85, 0.85, 0.85);
-      const white = rgb(1, 1, 1);
-      const black = rgb(0, 0, 0);
-
-      // Helper to center text since pdf-lib doesn't have a native 'center' option
-      const drawCenterText = (text, yPos, size, font, color) => {
-        const textWidth = font.widthOfTextAtSize(text, size);
-        page.drawText(text, {
-          x: (width / 2) - (textWidth / 2),
-          y: yPos,
-          size,
-          font,
-          color
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ 
+          size: 'A4',
+          margins: { top: 50, bottom: 50, left: 50, right: 50 }
         });
-      };
-      
-      // Header
-      page.drawRectangle({ x: 0, y: height - 95, width: width, height: 95, color: darkBlue });
-      drawCenterText('الجمهورية الجزائرية الديموقراطية الشعبية', height - 30, 13, helveticaBold, white);
-      drawCenterText('وزارة الداخلية والجماعات المحلية', height - 48, 9, helvetica, white);
-      drawCenterText('السجل الوطني للحالة المدنية', height - 62, 9, helvetica, white);
-      drawCenterText('شهادة الميلاد', height - 82, 20, helveticaBold, white);
-      drawCenterText('نسخة الكترونية', height - 97, 9, helvetica, white);
-      
-      let y = height - 125;
-      page.drawLine({ start: { x: 50, y: y }, end: { x: width - 50, y: y }, thickness: 1, color: gray });
-      
-      page.drawText(`رقم الشهادة: ${data.numero_acte || '...../...../.....'}`, { x: 50, y: y - 15, size: 9, font: helvetica, color: black });
-      page.drawText(`ولد(ت) في يوم: ${data.date_naissance || '...../...../.....'}`, { x: 50, y: y - 30, size: 9, font: helvetica, color: black });
-      page.drawText(`على الساعة: ${data.heure_naissance || '.....'}`, { x: 250, y: y - 30, size: 9, font: helvetica, color: black });
-      page.drawText(`ببلدية: ${data.commune_naissance || '.............'}`, { x: 50, y: y - 45, size: 9, font: helvetica, color: black });
-      page.drawText(`ولاية: ${data.wilaya_naissance || '.............'}`, { x: 250, y: y - 45, size: 9, font: helvetica, color: black });
-      
-      y = y - 75;
-      page.drawText(`المسمى(ة): ${data.nom_complet || '.................................'}`, { x: 50, y: y, size: 11, font: helveticaBold, color: darkBlue });
-      page.drawText(`الجنس: ${data.sexe === 'M' ? 'ذكر' : data.sexe === 'F' ? 'أنثى' : '.....'}`, { x: 50, y: y - 18, size: 9, font: helvetica, color: black });
-      
-      y = y - 45;
-      page.drawText(`ابن(ة): ${data.pere_nom || '.................................'}`, { x: 50, y: y, size: 9, font: helvetica, color: black });
-      page.drawText(`عمره: ${data.pere_age || '.....'} سنة`, { x: 50, y: y - 18, size: 9, font: helvetica, color: black });
-      page.drawText(`مهنة: ${data.pere_metier || '.....................'}`, { x: 200, y: y - 18, size: 9, font: helvetica, color: black });
-      
-      page.drawText(`و ${data.mere_nom || '.................................'}`, { x: 50, y: y - 40, size: 9, font: helvetica, color: black });
-      page.drawText(`عمرها: ${data.mere_age || '.....'} سنة`, { x: 50, y: y - 58, size: 9, font: helvetica, color: black });
-      page.drawText(`مهنتها: ${data.mere_metier || '.....................'}`, { x: 200, y: y - 58, size: 9, font: helvetica, color: black });
-      
-      y = y - 90;
-      page.drawText(`الساكنين: ${data.adresse || '..................................................'}`, { x: 50, y: y, size: 9, font: helvetica, color: black });
-      page.drawText(`بلدية: ${data.domicile_commune || '.............'}`, { x: 50, y: y - 18, size: 9, font: helvetica, color: black });
-      page.drawText(`ولاية: ${data.domicile_wilaya || '.............'}`, { x: 250, y: y - 18, size: 9, font: helvetica, color: black });
-      
-      y = y - 50;
-      page.drawLine({ start: { x: 50, y: y }, end: { x: width - 50, y: y }, thickness: 0.5, color: lightGray });
-      page.drawText(`حرر في: ${data.date_acte || '...../...../.....'}`, { x: 50, y: y - 18, size: 9, font: helvetica, color: black });
-      page.drawText(`بإعلان أدلى به السيد(ة): ${data.declarant || '.................................'}`, { x: 50, y: y - 36, size: 9, font: helvetica, color: black });
-      
-      y = y - 130;
-      const today = new Date();
-      const dateStr = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
-      drawCenterText(`حررت ب. ${data.wilaya_delivrance || 'Mostaganem'} .... في ${data.date_delivrance || dateStr}`, y, 9, helvetica, black);
-      
-      y = y - 50;
-      drawCenterText('مستخرج من السجل الوطني للحالة المدنية - المرجع ج م 7', y, 9, helveticaBold, darkBlue);
-      
-      const pdfBytes = await pdfDoc.save();
-      return Buffer.from(pdfBytes);
-      
-    } catch (error) {
-      console.error('Error generating Acte de Naissance:', error);
-      throw error;
-    }
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        
+        const darkBlue = '#1e3a5f';
+        const black = '#1f2937';
+        const gray = '#6b7280';
+        
+        const formatDate = (date) => {
+          if (!date) return '...../...../.....';
+          const d = new Date(date);
+          return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+        };
+        
+        const formatTime = (time) => {
+          if (!time) return '.....';
+          return time;
+        };
+        
+        let y = doc.y;
+        
+        // ========== HEADER ==========
+        doc.rect(0, 0, 612, 85).fill(darkBlue);
+        
+        doc.fillColor('#ffffff')
+           .fontSize(13)
+           .font('Helvetica-Bold')
+           .text('الجمهورية الجزائرية الديموقراطية الشعبية', 306, 20, { align: 'center', width: 500 });
+        
+        doc.fontSize(9)
+           .font('Helvetica')
+           .text('وزارة الداخلية والجماعات المحلية', 306, 40, { align: 'center', width: 500 });
+        
+        doc.fontSize(8)
+           .font('Helvetica-Bold')
+           .text(`ولاية: ${data.wilaya_naissance || '.............'}`, 480, 58)
+           .text(`دائرة: ${data.daira || '.............'}`, 480, 70)
+           .text(`بلدية: ${data.commune_naissance || '.............'}`, 480, 82);
+        
+        doc.fontSize(20)
+           .font('Helvetica-Bold')
+           .text('شهادة الميلاد', 306, 105, { align: 'center', width: 500 });
+        
+        doc.fontSize(10)
+           .font('Helvetica')
+           .text('نسخة الكترونية', 306, 130, { align: 'center', width: 500 });
+        
+        // ========== CERTIFICATE NUMBER ==========
+        y = 165;
+        doc.fillColor(black)
+           .fontSize(10)
+           .font('Helvetica')
+           .text(`رقم الشهادة: ${data.numero_chahada || data.numero_acte || '...../...../.....'}`, 50, y);
+        
+        // ========== BIRTH DETAILS ==========
+        y += 25;
+        doc.text(`في يوم: ${formatDate(data.date_naissance)}`, 50, y);
+        doc.text(`على الساعة: ${formatTime(data.heure_naissance)}`, 250, y);
+        
+        y += 20;
+        doc.text(`ولد(ت) ب: ${data.lieu_naissance || '.............'}`, 50, y);
+        
+        y += 20;
+        doc.text(`بلدية: ${data.commune_naissance || '.............'}`, 50, y);
+        doc.text(`ولاية: ${data.wilaya_naissance || '.............'}`, 250, y);
+        
+        // ========== CHILD NAME ==========
+        y += 30;
+        doc.font('Helvetica-Bold')
+           .fontSize(11)
+           .text(`المسمى(ة): ${data.nom_prenom || '..........................'}`, 50, y);
+        
+        y += 20;
+        doc.font('Helvetica')
+           .fontSize(10)
+           .text(`الجنس: ${data.sexe === 'M' ? 'ذكر' : data.sexe === 'F' ? 'أنثى' : '.....'}`, 50, y);
+        
+        // ========== FATHER ==========
+        y += 30;
+        doc.font('Helvetica-Bold')
+           .text(`ابن(ة): ${data.pere_nom_prenom || '........................'}`, 50, y);
+        
+        y += 20;
+        doc.font('Helvetica')
+           .text(`عمره: ${data.pere_age || '.....'} سنة`, 50, y)
+           .text(`مهنة: ${data.pere_metier || '.....................'}`, 200, y);
+        
+        y += 18;
+        doc.text(` domicilié à: ${data.pere_domicile_commune || '.............'}`, 50, y)
+           .text(`ولاية: ${data.pere_domicile_wilaya || '.............'}`, 250, y);
+        
+        // ========== MOTHER ==========
+        y += 28;
+        doc.font('Helvetica-Bold')
+           .text(`و: ${data.mere_nom_prenom || '........................'}`, 50, y);
+        
+        y += 20;
+        doc.font('Helvetica')
+           .text(`عمرها: ${data.mere_age || '.....'} سنة`, 50, y)
+           .text(`مهنتها: ${data.mere_metier || '.....................'}`, 200, y);
+        
+        y += 18;
+        doc.text(` domiciliée à: ${data.mere_domicile_commune || '.............'}`, 50, y)
+           .text(`ولاية: ${data.mere_domicile_wilaya || '.............'}`, 250, y);
+        
+        // ========== FAMILY ADDRESS ==========
+        y += 28;
+        doc.font('Helvetica-Bold')
+           .text(`الساكنين:`, 50, y);
+        
+        y += 20;
+        doc.font('Helvetica')
+           .text(`بلدية: ${data.domicile_commune || '.............'}`, 50, y)
+           .text(`ولاية: ${data.domicile_wilaya || '.............'}`, 250, y);
+        
+        // ========== ISSUANCE DETAILS ==========
+        y += 35;
+        doc.text(`حرر في: ${formatDate(data.date_acte)}`, 50, y);
+        doc.text(`على الساعة: ${formatTime(data.heure_redaction)}`, 250, y);
+        
+        y += 20;
+        doc.text(`بإعلان أدلى به السيد(ة): ${data.declare_par || '........................'}`, 50, y);
+        
+        // ========== OFFICER SIGNATURE ==========
+        y += 50;
+        doc.text(`وبعد التلاوة وقع معنا نحن:`, 50, y);
+        
+        y += 20;
+        doc.text(`..................................................`, 50, y);
+        
+        y += 20;
+        doc.font('Helvetica-Bold')
+           .text(`${data.officier_etat_civil || 'ضابط الحالة المدنية'}`, 50, y);
+        doc.font('Helvetica')
+           .text(`ببلدية: ${data.officier_commune || data.commune_naissance || '.............'}`, 200, y);
+        
+        // ========== MARGINAL NOTES ==========
+        y += 45;
+        doc.font('Helvetica-Bold')
+           .text(`البيانات الهامشية:`, 50, y);
+        
+        y += 20;
+        doc.font('Helvetica')
+           .fontSize(9)
+           .fillColor(gray);
+        
+        if (data.marginal_notes) {
+          const lines = data.marginal_notes.split('\n');
+          for (const line of lines) {
+            doc.text(line, 50, y, { width: 500 });
+            y += 15;
+          }
+        } else {
+          for (let i = 0; i < 4; i++) {
+            doc.text('.........................................................................', 50, y + (i * 15));
+          }
+          y += 60;
+        }
+        
+        // ========== FOOTER ==========
+        doc.fillColor(black);
+        const today = new Date();
+        const dateStr = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+        
+        y += 30;
+        doc.font('Helvetica')
+           .fontSize(10)
+           .text(`حررت ب. ${data.wilaya_delivrance || 'مستغانم'} في ${formatDate(data.date_delivrance) || dateStr}`, 306, y, { align: 'center', width: 500 });
+        
+        // ========== LATIN TRANSCRIPTION ==========
+        y += 30;
+        doc.fontSize(9)
+           .fillColor(gray)
+           .text(`الكتابة السابقة للاسم واللقب بالحروف اللاتينية:`, 50, y);
+        
+        y += 18;
+        doc.fillColor(black)
+           .fontSize(9)
+           .text(`1- بكامل الحروف: ${(data.nom_prenom || '').toUpperCase()}`, 50, y);
+        
+        y += 18;
+        doc.text(`2- اسم ولقب الولادة: ${(data.pere_nom_prenom || '').toUpperCase()}`, 50, y);
+        
+        // ========== FINAL REFERENCE ==========
+        y += 35;
+        doc.font('Helvetica-Bold')
+           .fontSize(10)
+           .fillColor(darkBlue)
+           .text(`مستخرج من السجل الوطني للحالة المدنية - المرجع ج م 7`, 306, y, { align: 'center', width: 500 });
+        
+        doc.end();
+      } catch (error) {
+        console.error('Error generating Acte de Naissance:', error);
+        reject(error);
+      }
+    });
   }
 
-  // ========== EXISTING — Carte de Séjour ==========
   static generateCarteSejour(data) {
     return new Promise((resolve, reject) => {
       try {
-        const doc    = new PDFDocument({ size: 'A4' });
+        const doc = new PDFDocument({ size: 'A4' });
         const chunks = [];
         doc.on('data', chunk => chunks.push(chunk));
-        doc.on('end',  ()    => resolve(Buffer.concat(chunks)));
-
-        doc.rect(0, 0, 595, 90).fill('#1e3a5f');
-        doc.fillColor('#ffffff').fontSize(15).font('Helvetica-Bold').text('الجمهورية الجزائرية الديموقراطية الشعبية', 50, 18, { align: 'center', width: 495 });
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        const W = 595;
+        doc.rect(0, 0, W, 90).fill('#1e3a5f');
+        doc.fillColor('#ffffff').fontSize(15).font('Helvetica-Bold').text('الجمهورية الجزائرية الديموقراطية الشعبية', 50, 18, { align: 'center', width: W - 100 });
+        doc.fillColor('#1f2937').fontSize(22).font('Helvetica-Bold').text('CARTE DE RÉSIDENCE', 50, 105, { align: 'center', width: W - 100 });
         doc.end();
       } catch (err) { reject(err); }
     });
