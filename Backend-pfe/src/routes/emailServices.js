@@ -27,10 +27,8 @@ export async function fetchActeNaissance(requestId) {
 export async function generateCertificatePDF(input) {
   let actes_naissance;
   if (typeof input === 'string') {
-    // If input is a string, it's a requestId/UUID to fetch from DB
     actes_naissance = await fetchActeNaissance(input);
   } else {
-    // Otherwise it's already the data object
     actes_naissance = input || {};
   }
 
@@ -46,14 +44,12 @@ export async function generateCertificatePDF(input) {
   const formatTime = (t) => (t ? String(t).substring(0, 5) : '......');
   const v = (val, fallback = '..........') => (val ? String(val) : fallback);
 
-  // 2. Determine Document Type and Select Template
   const rawType = actes_naissance.subject || actes_naissance.type_document || actes_naissance.requestSubject || '';
   console.log(' [PDF Gen] Raw type received:', rawType);
 
-  // Normalize string: convert é -> e, etc.
   const dType = rawType.toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(/[\\u0300-\\u036f]/g, '');
 
   console.log(' [PDF Gen] Normalized type:', dType);
 
@@ -85,7 +81,7 @@ export async function generateCertificatePDF(input) {
 <style>
   @page {
     size: A4;
-    margin: 12mm 18mm 12mm 18mm;
+    margin: 15mm 18mm 15mm 18mm;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -93,64 +89,67 @@ export async function generateCertificatePDF(input) {
     direction: rtl;
     background: #fff;
     color: #000;
-    font-size: 13px;
-    line-height: 1.7;
+    font-size: 14px;
+    line-height: 2.2;
   }
   .page {
     width: 100%;
-    min-height: 277mm;
+    height: 100%;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
   }
   .header { 
     text-align: center; 
-    margin-bottom: 6px; 
-    font-size: 14px;
+    margin-bottom: 10px; 
+    font-size: 16px;
+    line-height: 1.8;
   }
   .header p { 
-    margin: 2px 0; 
-    font-size: 14px;
+    margin: 4px 0; 
+    font-size: 16px;
   }
   .header strong {
-    font-size: 15px;
+    font-size: 18px;
+    font-weight: bold;
   }
   .location { 
     text-align: right; 
-    font-size: 13px; 
-    margin-bottom: 10px; 
-    line-height: 1.8; 
+    font-size: 14px; 
+    margin-bottom: 15px; 
+    line-height: 2.0; 
   }
   .location p {
-    margin: 1px 0;
+    margin: 2px 0;
   }
   .title-block { 
     text-align: center; 
-    margin: 12px 0 6px; 
+    margin: 20px 0 15px; 
   }
   .title-block .box {
     border: 2px solid #000;
-    border-radius: 6px;
+    border-radius: 8px;
     display: inline-block;
-    padding: 8px 40px;
-    min-width: 240px;
+    padding: 12px 60px;
+    min-width: 300px;
   }
   .title-block h1 { 
-    font-size: 22px; 
+    font-size: 32px; 
     font-weight: bold; 
     margin: 0; 
   }
   .title-block .subtitle {
-    font-size: 11px;
-    margin-top: 3px;
+    font-size: 14px;
+    margin-top: 5px;
   }
   .content { 
-    font-size: 13px; 
-    line-height: 1.9; 
-    margin-top: 12px;
+    font-size: 14px; 
+    line-height: 2.4; 
+    margin-top: 20px;
     flex: 1;
   }
   .content p { 
-    margin-bottom: 6px; 
+    margin-bottom: 10px; 
     display: flex;
     align-items: flex-end;
     flex-wrap: wrap;
@@ -158,63 +157,63 @@ export async function generateCertificatePDF(input) {
   .dotted {
     border-bottom: 1px dotted #000;
     display: inline-block;
-    min-width: 80px;
-    padding: 0 5px;
+    min-width: 100px;
+    padding: 0 8px;
     font-weight: bold;
     text-align: center;
     flex: 1;
-    margin: 0 3px;
-    height: 16px;
+    margin: 0 5px;
+    height: 20px;
   }
   .dotted-fixed {
     border-bottom: 1px dotted #000;
     display: inline-block;
-    min-width: 120px;
-    padding: 0 5px;
+    min-width: 150px;
+    padding: 0 8px;
     font-weight: bold;
     text-align: center;
-    margin: 0 3px;
-    height: 16px;
+    margin: 0 5px;
+    height: 20px;
   }
   .cert-statement {
     text-align: center;
     font-weight: bold;
-    font-size: 15px;
-    margin: 15px 0 12px;
+    font-size: 20px;
+    margin: 25px 0 20px;
   }
   .footer { 
-    margin-top: 20px; 
-    font-size: 13px; 
-    line-height: 1.8; 
+    margin-top: 30px; 
+    font-size: 14px; 
+    line-height: 2.0; 
   }
   .footer p {
-    margin-bottom: 5px;
+    margin-bottom: 8px;
   }
   .footer .note { 
-    margin-top: 15px; 
-    font-size: 12px; 
+    margin-top: 20px; 
+    font-size: 13px; 
     border-top: 1px solid #ccc; 
-    padding-top: 8px; 
+    padding-top: 12px; 
   }
   .footer .note p {
-    margin: 3px 0;
+    margin: 5px 0;
   }
   .latin-line {
-    margin-top: 12px;
-    font-size: 12px;
+    margin-top: 15px;
+    font-size: 13px;
     border-top: 1px solid #ccc;
-    padding-top: 6px;
+    padding-top: 10px;
     text-align: right;
   }
   .latin-dotted {
     border-bottom: 1px dotted #000;
     display: inline-block;
-    min-width: 200px;
-    height: 16px;
-    margin-top: 4px;
+    min-width: 250px;
+    height: 20px;
+    margin-top: 5px;
   }
   .signature-area {
-    margin-top: 15px;
+    margin-top: 20px;
     text-align: left;
     direction: rtl;
   }
@@ -245,14 +244,14 @@ export async function generateCertificatePDF(input) {
     <p>المولود ب <span class="dotted">${v(d.lieuNaissance)}</span> بتاريخ <span class="dotted">${formatDate(d.dateNaissance)}</span></p>
     <p>الجنسية <span class="dotted">${v(d.nationalite, 'جزائرية')}</span> المهنة <span class="dotted">${v(d.profession)}</span></p>
     <p>السكن <span class="dotted">${v(d.adresse)}</span></p>
-    <p style="text-align: center; margin-top: 8px; display: block;">يقيم بنفس العنوان مُنْذُ أَكْثَرَ مِنْ سِتَّةِ (6) أَشْهُرٍ</p>
-    <p style="text-align: center; margin-top: 6px; display: block;">وَقَدْ سُلِّمَتْ لَهُ هَذِهِ الشَّهَادَةُ لِلْإِدْلَاءِ بِهَا فِي حُدُودِ مَا يَسْمَحُ بِهِ الْقَانُونُ</p>
+    <p style="text-align: center; margin-top: 12px; display: block;">يقيم بنفس العنوان مُنْذُ أَكْثَرَ مِنْ سِتَّةِ (6) أَشْهُرٍ</p>
+    <p style="text-align: center; margin-top: 10px; display: block;">وَقَدْ سُلِّمَتْ لَهُ هَذِهِ الشَّهَادَةُ لِلْإِدْلَاءِ بِهَا فِي حُدُودِ مَا يَسْمَحُ بِهِ الْقَانُونُ</p>
   </div>
   <div class="footer">
     <div class="signature-area">
       <p>حرر ب <strong>${d.commune}</strong> بتاريخ <strong>${today}</strong></p>
     </div>
-    <p style="text-align: center; margin-top: 8px; display: block;">وَالْغَرَضُ مِنْ مَنْحِ هَذِهِ الشَّهَادَةِ هُوَ إِثْبَاتُ السَّكَنِ</p>
+    <p style="text-align: center; margin-top: 12px; display: block;">وَالْغَرَضُ مِنْ مَنْحِ هَذِهِ الشَّهَادَةِ هُوَ إِثْبَاتُ السَّكَنِ</p>
     <div class="note">
       <p>(1) إِنَّ صَلَاحِيَّةَ الْعَمَلِ بِهَذِهِ الشَّهَادَةِ لَا يُمْكِنُ أَنْ تَتَجَاوَزَ سِتَّةَ (6) أَشْهُرٍ</p>
     </div>
@@ -297,7 +296,7 @@ export async function generateCertificatePDF(input) {
 <style>
   @page {
     size: A4;
-    margin: 10mm 15mm 12mm 15mm;
+    margin: 12mm 15mm 15mm 15mm;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { 
@@ -306,76 +305,77 @@ export async function generateCertificatePDF(input) {
     background: #fff; 
     color: #000; 
     font-size: 13px;
-    line-height: 1.4;
+    line-height: 1.6;
   }
   .page {
     width: 100%;
-    min-height: 277mm;
+    height: 100%;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
   }
   .header-top { 
     text-align: center; 
-    font-size: 16px; 
+    font-size: 18px; 
     font-weight: bold; 
-    margin-bottom: 4px;
-    letter-spacing: 0.3px;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
   }
   .header-right { 
     text-align: right; 
-    font-size: 12px; 
-    line-height: 1.6; 
-    margin-bottom: 10px;
-    margin-top: 6px;
+    font-size: 13px; 
+    line-height: 1.9; 
+    margin-bottom: 15px;
+    margin-top: 10px;
   }
   .title-block { 
     text-align: center; 
-    margin: 12px 0 6px; 
+    margin: 20px 0 10px; 
   }
   .title-block h1 { 
-    font-size: 24px; 
+    font-size: 36px; 
     font-weight: bold; 
-    margin-bottom: 3px;
+    margin-bottom: 5px;
   }
   .title-block .subtitle { 
-    font-size: 12px; 
-    margin-top: 2px;
+    font-size: 14px; 
+    margin-top: 4px;
   }
   .rows { 
-    margin-top: 20px;
+    margin-top: 30px;
     flex: 1;
   }
   .row { 
     display: flex; 
     align-items: flex-end; 
     width: 100%; 
-    margin-bottom: 8px; 
+    margin-bottom: 12px; 
     font-size: 13px;
-    min-height: 20px;
+    min-height: 24px;
   }
   .lbl { 
     white-space: nowrap; 
-    padding-left: 3px; 
+    padding-left: 4px; 
     padding-right: 2px; 
     font-size: 13px;
   }
   .dots { 
     flex: 1; 
     border-bottom: 1px dotted #000; 
-    min-width: 15px; 
-    margin: 0 3px 2px; 
-    height: 11px;
+    min-width: 20px; 
+    margin: 0 4px 3px; 
+    height: 14px;
   }
   .val { 
     white-space: nowrap; 
-    padding-left: 3px; 
+    padding-left: 4px; 
     padding-right: 2px; 
     font-size: 13px;
   }
   .row-split { 
     display: flex; 
     width: 100%; 
-    margin-bottom: 8px; 
+    margin-bottom: 12px; 
     font-size: 13px; 
     align-items: flex-end; 
     justify-content: space-between;
@@ -385,13 +385,14 @@ export async function generateCertificatePDF(input) {
     display: flex; 
     flex: 1; 
     align-items: flex-end;
-    gap: 5px; 
+    gap: 6px; 
     justify-content: flex-start; 
   }
   .row-split .left-label { 
     white-space: nowrap; 
-    padding-left: 6px;
-    font-size: 11.5px;
+    padding-left: 8px;
+    font-size: 12px;
+    font-weight: 500; 
   }
   .center-part {
     display: flex;
@@ -400,16 +401,16 @@ export async function generateCertificatePDF(input) {
   }
   .strong-name {
     font-weight: bold;
-    font-size: 13.5px;
+    font-size: 14px;
   }
   .extra-dots { 
     border-bottom: 1px dotted #000; 
     width: 100%; 
-    margin: 6px 0; 
-    height: 11px;
+    margin: 10px 0; 
+    height: 14px;
   }
   .footer-section-left {
-    margin-top: 15px;
+    margin-top: 25px;
     text-align: left;
     direction: rtl;
   }
@@ -417,34 +418,34 @@ export async function generateCertificatePDF(input) {
     display: flex;
     align-items: flex-end;
     justify-content: flex-start;
-    gap: 5px;
+    gap: 6px;
   }
   .footer-button-right {
-    margin-top: 15px;
+    margin-top: 20px;
     text-align: right;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
   .latin-line {
     text-align: right; 
-    margin-bottom: 5px; 
+    margin-bottom: 6px; 
     font-size: 12px;
   }
   .notes { 
     text-align: right; 
-    font-size: 11.5px; 
-    line-height: 1.6; 
-    margin-top: 5px; 
+    font-size: 12px; 
+    line-height: 1.8; 
+    margin-top: 6px; 
   }
   .bold-center { 
     text-align: center; 
     font-weight: bold; 
-    font-size: 12.5px; 
-    margin-top: 6px; 
+    font-size: 13px; 
+    margin-top: 8px; 
   }
   .ref { 
     text-align: center; 
-    font-size: 11.5px; 
-    margin-top: 3px;
+    font-size: 12px; 
+    margin-top: 4px;
   }
 </style>
 </head>
@@ -463,7 +464,7 @@ export async function generateCertificatePDF(input) {
     <div class="row-split">
       <div class="right-part">   
          <span class="lbl">رقم الشهادة</span> 
-         <span class="dots" style="min-width: 50px; flex: 0;"></span>
+         <span class="dots" style="min-width: 60px; flex: 0;"></span>
          <span class="val">${v(d.numeroChahada)}</span>
          <span class="dots" style="flex: 1;"></span>
          <span class="left-label">${formatDate(d.dateNaissance)}</span>
@@ -471,24 +472,24 @@ export async function generateCertificatePDF(input) {
     </div>
     <div class="row">
       <span class="lbl">في يوم</span>
-      <span class="dots" style="min-width: 70px; flex: 0;"></span>
+      <span class="dots" style="min-width: 80px; flex: 0;"></span>
       <span class="val">${formatDate(d.dateNaissance)}</span>
       <span class="dots" style="flex: 1;"></span>
       <span class="lbl">على الساعة</span>
-      <span class="dots" style="min-width: 35px; flex: 0;"></span>
+      <span class="dots" style="min-width: 40px; flex: 0;"></span>
       <span class="val">${formatTime(d.heureNaissance)}</span>
       <span class="dots" style="flex: 1;"></span>
       <span class="lbl">ولد(ت) ب</span>
-      <span class="dots" style="min-width: 70px; flex: 0;"></span>
+      <span class="dots" style="min-width: 80px; flex: 0;"></span>
       <span class="val">${v(d.communeNaissance)}</span>
     </div>
     <div class="row">
       <span class="lbl">بلدية</span>
-      <span class="dots" style="min-width: 90px; flex: 0;"></span>
+      <span class="dots" style="min-width: 100px; flex: 0;"></span>
       <span class="val">${v(d.communeNaissance)}</span> 
       <span class="dots" style="flex: 1;"></span>
       <span class="lbl">ولاية</span>  
-      <span class="dots" style="min-width: 90px; flex: 0;"></span>
+      <span class="dots" style="min-width: 100px; flex: 0;"></span>
       <span class="val">${v(d.wilayaNaissance)}</span>
       <span class="dots" style="flex: 1;"></span>
     </div>
@@ -502,63 +503,63 @@ export async function generateCertificatePDF(input) {
     </div>
     <div class="row">
       <span class="lbl">الجنس</span>
-      <span class="dots" style="min-width: 50px; flex: 0;"></span>
+      <span class="dots" style="min-width: 60px; flex: 0;"></span>
       <span class="val">${v(d.genre)}</span>
       <span class="dots" style="flex: 1;"></span>
     </div>
     <div class="row">
       <span class="lbl">ابن(ة)</span>
-      <span class="dots" style="min-width: 100px; flex: 0;"></span>
+      <span class="dots" style="min-width: 120px; flex: 0;"></span>
       <span class="val">${v(d.pereNomPrenom)}</span>
       <span class="dots" style="flex: 1;"></span>
       <span class="lbl">عمره</span>
-      <span class="dots" style="min-width: 25px; flex: 0;"></span>
+      <span class="dots" style="min-width: 30px; flex: 0;"></span>
       <span class="val">${v(d.pereAge, '/////')}</span>
       <span class="lbl">مهنة</span>
-      <span class="dots" style="min-width: 25px; flex: 0;"></span>
+      <span class="dots" style="min-width: 30px; flex: 0;"></span>
       <span class="val">${v(d.pereMetier, '/////')}</span>
       <span class="dots" style="flex: 1;"></span>
     </div>
     <div class="row">
       <span class="lbl">و</span>
-      <span class="dots" style="min-width: 100px; flex: 0;"></span>
+      <span class="dots" style="min-width: 120px; flex: 0;"></span>
       <span class="val">${v(d.mereNomPrenom)}</span>
       <span class="dots" style="flex: 1;"></span>
       <span class="lbl">عمرها</span>
-      <span class="dots" style="min-width: 25px; flex: 0;"></span>
+      <span class="dots" style="min-width: 30px; flex: 0;"></span>
       <span class="val">${v(d.mereAge, '/////')}</span>
       <span class="lbl">مهنتها</span>
-      <span class="dots" style="min-width: 25px; flex: 0;"></span>
+      <span class="dots" style="min-width: 30px; flex: 0;"></span>
       <span class="val">${v(d.mereMetier, '/////')}</span>
       <span class="dots" style="flex: 1;"></span>
     </div>
     <div class="row">
       <span class="lbl">الساكنين</span>
-      <span class="dots" style="min-width: 90px; flex: 0;"></span>
+      <span class="dots" style="min-width: 100px; flex: 0;"></span>
       <span class="val">${v(d.domicileCommune)}</span>
       <span class="dots" style="flex: 1;"></span>
       <span class="lbl">بلدية</span>
-      <span class="dots" style="min-width: 40px; flex: 0;"></span>
+      <span class="dots" style="min-width: 50px; flex: 0;"></span>
       <span class="val">${v(d.domicileCommune, '/////')}</span> 
       <span class="dots" style="flex: 1;"></span> 
       <span class="lbl">ولاية</span>   
-      <span class="dots" style="min-width: 40px; flex: 0;"></span>
+      <span class="dots" style="min-width: 50px; flex: 0;"></span>
       <span class="val">${v(d.domicileWilaya, '/////')}</span>
       <span class="dots" style="flex: 1;"></span>
     </div>
     <div class="row">
       <span class="lbl">حرر في</span>
-      <span class="dots" style="min-width: 90px; flex: 0;"></span>
+      <span class="dots" style="min-width: 100px; flex: 0;"></span>
       <span class="val">${v(d.communeNaissance)}</span>
       <span class="dots" style="flex: 1;"></span>
       <span class="lbl">على الساعة</span>
-      <span class="dots" style="min-width: 35px; flex: 0;"></span>
+      <span class="dots" style="min-width: 40px; flex: 0;"></span>
       <span class="val">${formatTime(d.heureRedaction)}</span>
       <span class="dots" style="flex: 1;"></span>
     </div>
     <div class="row">
       <span class="lbl">بإعلان أدلى به السيد(ة)</span>
-      <span class="dots" style="min-width: 120px; flex: 0;"></span>
+      <span class="dots" style="min-width: 150px; flex: 0;"></span>
       <span class="val">${v(d.declarePar)}</span>
       <span class="dots" style="flex: 1;"></span>
     </div>
@@ -567,16 +568,16 @@ export async function generateCertificatePDF(input) {
     </div>
     <div class="row">
       <span class="lbl">وبعد التلاوة وقع معنا نحن</span>
-      <span class="dots" style="min-width: 100px; flex: 0;"></span>
+      <span class="dots" style="min-width: 120px; flex: 0;"></span>
       <span class="val">${v(d.officierEtatCivil)}</span>
       <span class="dots" style="flex: 1;"></span>
       <span class="lbl">ضابط الحالة المدنية ببلدية</span>
-      <span class="dots" style="min-width: 70px; flex: 0;"></span>
+      <span class="dots" style="min-width: 80px; flex: 0;"></span>
       <span class="val">${v(d.communeNaissance)}</span>
     </div>
     <div class="row">
       <span class="lbl">البيانات الهامشية</span>
-      <span class="dots" style="min-width: 200px; flex: 0;"></span>
+      <span class="dots" style="min-width: 250px; flex: 0;"></span>
       <span class="val">${v(d.marginalNotes)}</span>
       <span class="dots" style="flex: 1;"></span>
     </div>
@@ -588,17 +589,17 @@ export async function generateCertificatePDF(input) {
   <div class="footer-section-left">
     <div class="row-left">
       <span class="lbl">حررت ب</span>
-      <span class="dots" style="min-width: 50px; flex: 0;"></span>
+      <span class="dots" style="min-width: 60px; flex: 0;"></span>
       <span class="val">${v(d.communeNaissance, 'مستغانم')}</span>
       <span class="lbl">في</span>
-      <span class="dots" style="min-width: 50px; flex: 0;"></span>
+      <span class="dots" style="min-width: 60px; flex: 0;"></span>
       <span class="val">${today}</span>
       <span class="lbl">.../.../...</span>
     </div>
   </div>
   <div class="footer-button-right">
     <div class="latin-line">الكتابة السابقة للاسم واللقب ب أحرف اللاتينية</div>
-    <div class="row" style="margin-top: 5px;">
+    <div class="row" style="margin-top: 6px;">
       <span class="dots" style="flex: 1;"></span>
     </div>
     <div class="notes">
