@@ -35,7 +35,6 @@ router.post('/login', async (req, res) => {
         role: 'municipal_agent',
         service: 'Administration Système',
         position: 'Administrateur Système',
-        phone: '',
         joinDate: new Date().toISOString()
       }
     });
@@ -164,7 +163,7 @@ router.put('/requests/:id/status', async (req, res) => {
       validated: "termine",
     };
 
-    const dbStatus = statusMap[status] || status; 
+    const dbStatus = statusMap[status] || status;
 
     // 🛡️ 1. Strict Enum Validation
     const allowedStatuses = ["en_attente", "en_cours", "refuse", "termine"];
@@ -241,9 +240,9 @@ router.get('/verify-email', async (req, res) => {
       .update({ email_verified: true })
       .eq('id', token);
 
-    return res.json({ 
-      success: true, 
-      name: `${data.prenom} ${data.nom}` 
+    return res.json({
+      success: true,
+      name: `${data.prenom} ${data.nom}`
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
