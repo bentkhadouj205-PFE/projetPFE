@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import pool from '../db.js'; 
+import pool from '../db.js';
 export const register = async (req, res) => {
   try {
     const {
@@ -28,6 +28,7 @@ export const register = async (req, res) => {
       });
     }
     // Check duplicate NIN
+
     const ninCheck = await pool.query(
       `SELECT id FROM users WHERE nin = $1`,
       [nin]
