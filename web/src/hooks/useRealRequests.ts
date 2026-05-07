@@ -15,6 +15,10 @@ export interface Request {
     commune?: string;
     actYear?: string;
     actNumber?: string;
+    cniFileUrl?: string | null;
+    factureFileUrl?: string | null;
+    selfiePath?: string | null;
+    dateNaissance?: string;
   };
   subject: string;
   description: string;
@@ -64,6 +68,13 @@ export function useRealRequests(employeeId: string) {
               email: req.email || '',
               commune: req.commune || '',
               wilaya: req.wilaya_naissance || '',
+              address: req.adresse || '',
+              cniFileUrl: req.cni_recto_path || req.cni_scan_path || null,
+              factureFileUrl: req.facture_resid_url || req.photo_domicile_path || null,
+              selfiePath: req.photo_selfie_url || req.photo_selfie_path || null,
+              dateNaissance: req.date_naissance || '',
+              actYear: req.annee_acte || '',
+              actNumber: req.num_acte || '',
             },
             subject: req.type_document,
             title: req.type_document,

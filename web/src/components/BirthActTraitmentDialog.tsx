@@ -21,6 +21,8 @@ export interface BirthActCitizenShape {
   commune?: string;
   actYear?: string;
   actNumber?: string;
+  cniFileUrl?: string | null;
+  selfiePath?: string | null;
 }
 interface BirthActTraitmentDialogProps {
   open: boolean;
@@ -260,6 +262,18 @@ export function BirthActTraitmentDialog({
                 <Input value={actNumber} onChange={(e) => setActNumber(e.target.value)} placeholder="—"
                   className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-600 font-mono" />
               </Row>
+              {citizen?.cniFileUrl && (
+                <div className="grid grid-cols-[minmax(140px,32%)_1fr] gap-3 items-start border-b border-slate-200 dark:border-slate-600 py-3">
+                  <Label className="text-sm font-medium text-slate-700 dark:text-slate-300 shrink-0">Scan CNI</Label>
+                  <div className="flex flex-col gap-2">
+                    <img 
+                      src={citizen.cniFileUrl} 
+                      alt="CNI" 
+                      className="max-h-40 rounded-lg border border-slate-200 dark:border-slate-700 object-contain bg-white" 
+                    />
+                  </div>
+                </div>
+              )}
               <Row label={tr.position}>
                 <Select value={position || undefined} onValueChange={setPosition}>
                   <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-600 w-full">

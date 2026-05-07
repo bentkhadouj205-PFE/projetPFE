@@ -101,10 +101,17 @@ export class PDFService {
   static async generateActeNaissance(data) {
     return new Promise((resolve, reject) => {
       try {
+        const arabicFontPath = path.join(__dirname, '../../fonts/NotoSansArabic-Regular.ttf');
+        const hasArabicFont = fs.existsSync(arabicFontPath);
+
         const doc = new PDFDocument({ 
           size: 'A4',
           margins: { top: 50, bottom: 50, left: 50, right: 50 }
         });
+
+        if (hasArabicFont) {
+          doc.registerFont('ArabicFont', arabicFontPath);
+        }
         const chunks = [];
         doc.on('data', chunk => chunks.push(chunk));
         doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -129,28 +136,33 @@ export class PDFService {
         // ========== HEADER ==========
         doc.rect(0, 0, 612, 85).fill(darkBlue);
         
+        if (hasArabicFont) {
+          doc.font('ArabicFont');
+        } else {
+          doc.font('Helvetica-Bold');
+        }
+
         doc.fillColor('#ffffff')
            .fontSize(13)
-           .font('Helvetica-Bold')
            .text('الجمهورية الجزائرية الديموقراطية الشعبية', 306, 20, { align: 'center', width: 500 });
         
-        doc.fontSize(9)
-           .font('Helvetica')
-           .text('وزارة الداخلية والجماعات المحلية', 306, 40, { align: 'center', width: 500 });
+        doc.fontSize(9);
+        if (!hasArabicFont) doc.font('Helvetica');
+        doc.text('وزارة الداخلية والجماعات المحلية', 306, 40, { align: 'center', width: 500 });
         
-        doc.fontSize(8)
-           .font('Helvetica-Bold')
-           .text(`ولاية: ${data.wilaya_naissance || '.............'}`, 480, 58)
-           .text(`دائرة: ${data.daira || '.............'}`, 480, 70)
-           .text(`بلدية: ${data.commune_naissance || '.............'}`, 480, 82);
+        doc.fontSize(8);
+        if (!hasArabicFont) doc.font('Helvetica-Bold');
+        doc.text(`ولاية: ${data.wilaya_naissance || '.............'}`, 40, 58, { align: 'right', width: 500 })
+           .text(`دائرة: ${data.daira || '.............'}`, 40, 70, { align: 'right', width: 500 })
+           .text(`بلدية: ${data.commune_naissance || '.............'}`, 40, 82, { align: 'right', width: 500 });
         
-        doc.fontSize(20)
-           .font('Helvetica-Bold')
-           .text('شهادة الميلاد', 306, 105, { align: 'center', width: 500 });
+        doc.fontSize(20);
+        if (!hasArabicFont) doc.font('Helvetica-Bold');
+        doc.text('شهادة الميلاد', 306, 105, { align: 'center', width: 500 });
         
-        doc.fontSize(10)
-           .font('Helvetica')
-           .text('نسخة الكترونية', 306, 130, { align: 'center', width: 500 });
+        doc.fontSize(10);
+        if (!hasArabicFont) doc.font('Helvetica');
+        doc.text('نسخة الكترونية', 306, 130, { align: 'center', width: 500 });
         
         // ========== CERTIFICATE NUMBER ==========
         y = 165;
@@ -161,21 +173,22 @@ export class PDFService {
         
         // ========== BIRTH DETAILS ==========
         y += 25;
-        doc.text(`في يوم: ${formatDate(data.date_naissance)}`, 50, y);
-        doc.text(`على الساعة: ${formatTime(data.heure_naissance)}`, 250, y);
+        if (!hasArabicFont) doc.font('Helvetica');
+        doc.text(`في يوم: ${formatDate(data.date_naissance)}`, 50, y, { align: 'right', width: 500 });
+        doc.text(`على الساعة: ${formatTime(data.heure_naissance)}`, 50, y, { align: 'right', width: 250 });
         
         y += 20;
-        doc.text(`ولد(ت) ب: ${data.lieu_naissance || '.............'}`, 50, y);
+        doc.text(`ولد(ت) ب: ${data.lieu_naissance || '.............'}`, 50, y, { align: 'right', width: 500 });
         
         y += 20;
-        doc.text(`بلدية: ${data.commune_naissance || '.............'}`, 50, y);
-        doc.text(`ولاية: ${data.wilaya_naissance || '.............'}`, 250, y);
+        doc.text(`بلدية: ${data.commune_naissance || '.............'}`, 50, y, { align: 'right', width: 500 });
+        doc.text(`ولاية: ${data.wilaya_naissance || '.............'}`, 50, y, { align: 'right', width: 250 });
         
         // ========== CHILD NAME ==========
         y += 30;
-        doc.font('Helvetica-Bold')
-           .fontSize(11)
-           .text(`المسمى(ة): ${data.nom_prenom || '..........................'}`, 50, y);
+        if (hasArabicFont) doc.font('ArabicFont'); else doc.font('Helvetica-Bold');
+        doc.fontSize(11)
+           .text(`المسمى(ة): ${data.nom_prenom || '..........................'}`, 50, y, { align: 'right', width: 500 });
         
         y += 20;
         doc.font('Helvetica')
@@ -184,31 +197,31 @@ export class PDFService {
         
         // ========== FATHER ==========
         y += 30;
-        doc.font('Helvetica-Bold')
-           .text(`ابن(ة): ${data.pere_nom_prenom || '........................'}`, 50, y);
+        if (hasArabicFont) doc.font('ArabicFont'); else doc.font('Helvetica-Bold');
+        doc.text(`ابن(ة): ${data.pere_nom_prenom || '........................'}`, 50, y, { align: 'right', width: 500 });
         
         y += 20;
-        doc.font('Helvetica')
-           .text(`عمره: ${data.pere_age || '.....'} سنة`, 50, y)
-           .text(`مهنة: ${data.pere_metier || '.....................'}`, 200, y);
+        if (!hasArabicFont) doc.font('Helvetica');
+        doc.text(`عمره: ${data.pere_age || '.....'} سنة`, 50, y, { align: 'right', width: 500 })
+           .text(`مهنة: ${data.pere_metier || '.....................'}`, 50, y, { align: 'right', width: 350 });
         
         y += 18;
-        doc.text(` domicilié à: ${data.pere_domicile_commune || '.............'}`, 50, y)
-           .text(`ولاية: ${data.pere_domicile_wilaya || '.............'}`, 250, y);
+        doc.text(` domicilié à: ${data.pere_domicile_commune || '.............'}`, 50, y, { align: 'right', width: 500 })
+           .text(`ولاية: ${data.pere_domicile_wilaya || '.............'}`, 50, y, { align: 'right', width: 300 });
         
         // ========== MOTHER ==========
         y += 28;
-        doc.font('Helvetica-Bold')
-           .text(`و: ${data.mere_nom_prenom || '........................'}`, 50, y);
+        if (hasArabicFont) doc.font('ArabicFont'); else doc.font('Helvetica-Bold');
+        doc.text(`و: ${data.mere_nom_prenom || '........................'}`, 50, y, { align: 'right', width: 500 });
         
         y += 20;
-        doc.font('Helvetica')
-           .text(`عمرها: ${data.mere_age || '.....'} سنة`, 50, y)
-           .text(`مهنتها: ${data.mere_metier || '.....................'}`, 200, y);
+        if (!hasArabicFont) doc.font('Helvetica');
+        doc.text(`عمرها: ${data.mere_age || '.....'} سنة`, 50, y, { align: 'right', width: 500 })
+           .text(`مهنتها: ${data.mere_metier || '.....................'}`, 50, y, { align: 'right', width: 350 });
         
         y += 18;
-        doc.text(` domiciliée à: ${data.mere_domicile_commune || '.............'}`, 50, y)
-           .text(`ولاية: ${data.mere_domicile_wilaya || '.............'}`, 250, y);
+        doc.text(` domiciliée à: ${data.mere_domicile_commune || '.............'}`, 50, y, { align: 'right', width: 500 })
+           .text(`ولاية: ${data.mere_domicile_wilaya || '.............'}`, 50, y, { align: 'right', width: 300 });
         
         // ========== FAMILY ADDRESS ==========
         y += 28;

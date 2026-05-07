@@ -63,13 +63,18 @@ export async function generateCertificatePDF(input) {
   let html = '';
 
   if (isResidenceCard) {
-    // ─── RESIDENCE CARD TEMPLATE ──────────────────────────────────────────────
+    // ─── RESIDENCE CARD TEMPLATE (بطاقة إقامة) ─────────────────────────────
     const d = {
       fullName: actes_naissance.fullName || actes_naissance.nom_prenom || `${actes_naissance.firstName || ''} ${actes_naissance.lastName || ''}`.trim(),
       dateNaissance: actes_naissance.date_naissance || actes_naissance.dateNaissance || '',
+      lieuNaissance: actes_naissance.lieu_naissance || actes_naissance.lieuNaissance || actes_naissance.commune_naissance || '',
       adresse: actes_naissance.adresse || actes_naissance.citizen_address || '',
       wilaya: actes_naissance.wilaya || actes_naissance.domicile_wilaya || 'مستغانم',
+      daira: actes_naissance.daira || actes_naissance.domicile_daira || 'مستغانم',
       commune: actes_naissance.commune || actes_naissance.domicile_commune || 'مستغانم',
+      nationalite: actes_naissance.nationalite || 'جزائرية',
+      profession: actes_naissance.profession || actes_naissance.metier || '',
+      presidentName: actes_naissance.president_name || actes_naissance.presidentName || 'ولد عابد مشري',
     };
 
     html = `<!DOCTYPE html>
@@ -78,124 +83,189 @@ export async function generateCertificatePDF(input) {
 <meta charset="UTF-8">
 <title>بطاقة إقامة</title>
 <style>
+  @page {
+    size: A4;
+    margin: 12mm 18mm 12mm 18mm;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: Arial, sans-serif;
+    font-family: 'Arial', 'DejaVu Sans', sans-serif;
     direction: rtl;
     background: #fff;
     color: #000;
-    font-size: 15px;
-    line-height: 2;
+    font-size: 13px;
+    line-height: 1.7;
   }
-  .container { width: 800px; margin: auto; padding: 40px 50px; }
- 
-  /* ── Header ── */
-  .header { text-align: center; margin-bottom: 10px; font-size: 14px; }
-  .header p { margin: 2px 0; }
- 
-  /* ── Wilaya / Daira / Baladiya ── */
-  .location { text-align: right; font-size: 14px; margin-bottom: 10px; line-height: 1.8; }
- 
-  /* ── Title ── */
-  .title-block { text-align: center; margin: 20px 0; }
+  .page {
+    width: 100%;
+    min-height: 277mm;
+    display: flex;
+    flex-direction: column;
+  }
+  .header { 
+    text-align: center; 
+    margin-bottom: 6px; 
+    font-size: 14px;
+  }
+  .header p { 
+    margin: 2px 0; 
+    font-size: 14px;
+  }
+  .header strong {
+    font-size: 15px;
+  }
+  .location { 
+    text-align: right; 
+    font-size: 13px; 
+    margin-bottom: 10px; 
+    line-height: 1.8; 
+  }
+  .location p {
+    margin: 1px 0;
+  }
+  .title-block { 
+    text-align: center; 
+    margin: 12px 0 6px; 
+  }
   .title-block .box {
     border: 2px solid #000;
+    border-radius: 6px;
     display: inline-block;
     padding: 8px 40px;
+    min-width: 240px;
   }
-  .title-block h1 { font-size: 22px; font-weight: bold; margin: 0; }
- 
-  /* ── Baladiya under title ── */
-  .baladiya { text-align: right; font-size: 14px; margin-bottom: 10px; }
- 
-  /* ── Body ── */
-  .content { font-size: 15px; line-height: 2.2; margin-top: 10px; }
-  .content p { margin-bottom: 6px; }
+  .title-block h1 { 
+    font-size: 22px; 
+    font-weight: bold; 
+    margin: 0; 
+  }
+  .title-block .subtitle {
+    font-size: 11px;
+    margin-top: 3px;
+  }
+  .content { 
+    font-size: 13px; 
+    line-height: 1.9; 
+    margin-top: 12px;
+    flex: 1;
+  }
+  .content p { 
+    margin-bottom: 6px; 
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
   .dotted {
     border-bottom: 1px dotted #000;
     display: inline-block;
-    min-width: 120px;
-    padding: 0 4px;
+    min-width: 80px;
+    padding: 0 5px;
     font-weight: bold;
     text-align: center;
+    flex: 1;
+    margin: 0 3px;
+    height: 16px;
   }
- 
-  /* ── Footer ── */
-  .footer { margin-top: 30px; font-size: 14px; line-height: 2; }
-  .footer .note { margin-top: 20px; font-size: 13px; border-top: 1px solid #ccc; padding-top: 10px; }
+  .dotted-fixed {
+    border-bottom: 1px dotted #000;
+    display: inline-block;
+    min-width: 120px;
+    padding: 0 5px;
+    font-weight: bold;
+    text-align: center;
+    margin: 0 3px;
+    height: 16px;
+  }
+  .cert-statement {
+    text-align: center;
+    font-weight: bold;
+    font-size: 15px;
+    margin: 15px 0 12px;
+  }
+  .footer { 
+    margin-top: 20px; 
+    font-size: 13px; 
+    line-height: 1.8; 
+  }
+  .footer p {
+    margin-bottom: 5px;
+  }
+  .footer .note { 
+    margin-top: 15px; 
+    font-size: 12px; 
+    border-top: 1px solid #ccc; 
+    padding-top: 8px; 
+  }
+  .footer .note p {
+    margin: 3px 0;
+  }
   .latin-line {
-    margin-top: 15px;
-    font-size: 13px;
+    margin-top: 12px;
+    font-size: 12px;
     border-top: 1px solid #ccc;
-    padding-top: 8px;
+    padding-top: 6px;
+    text-align: right;
   }
   .latin-dotted {
     border-bottom: 1px dotted #000;
     display: inline-block;
     min-width: 200px;
+    height: 16px;
+    margin-top: 4px;
+  }
+  .signature-area {
+    margin-top: 15px;
+    text-align: left;
+    direction: rtl;
   }
 </style>
 </head>
 <body>
-<div class="container">
- 
-  <!-- Header -->
+<div class="page">
   <div class="header">
     <p><strong>الجمهورية الجزائرية الديموقراطية الشعبية</strong></p>
     <p>وزارة الداخلية</p>
   </div>
- 
-  <!-- Wilaya / Daira -->
   <div class="location">
     <p>ولاية <strong>${d.wilaya}</strong></p>
-    <p>دائرة <strong>${d.commune}</strong></p>
-  </div>
- 
-  <!-- Title -->
-  <div class="title-block">
-    <div class="box"><h1>بطاقة اقامة</h1></div>
-  </div>
- 
-  <!-- Baladiya -->
-  <div class="baladiya">
+    <p>دائرة <strong>${d.daira}</strong></p>
     <p>بلدية <strong>${d.commune}</strong></p>
   </div>
- 
-  <!-- Body -->
-  <div class="content">
-    <p>نَحْنُ <span class="dotted">ولد عابد مشري</span></p>
-    <p>رَئِيسُ الْمَجْلِسِ الشَّعْبِيِّ الْبَلَدِيِّ لِبَلَدِيَّةِ: <span class="dotted">${d.commune}</span></p>
- 
-    <p style="text-align:center; font-weight:bold; margin: 15px 0;">نَشْهَدُ بِأَنَّ:</p>
- 
-    <p>السيد(ة) <span class="dotted">${d.fullName}</span></p>
-    <p>المولود ب <span class="dotted">................</span> بتاريخ <span class="dotted">${formatDate(d.dateNaissance)}</span></p>
-    <p>الجنسية <span class="dotted">جزائرية</span> المهنة <span class="dotted">................</span></p>
-    <p>السكن <span class="dotted">${d.adresse}</span></p>
-    <p>يقيم بنفس العنوان مُنْذُ أَكْثَرَ مِنْ سِتَّةِ (6) أَشْهُر</p>
-    <p>وَقَدْ سُلِّمَتْ لَهُ هَذِهِ الشَّهَادَةُ لِلْإِدْلَاءِ بِهَا فِي حُدُودِ مَا يَسْمَحُ بِهِ الْقَانُونُ</p>
+  <div class="title-block">
+    <div class="box">
+      <h1>بطاقة إقامة</h1>
+      <div class="subtitle">نسخة الكترونية</div>
+    </div>
   </div>
- 
-  <!-- Footer -->
+  <div class="content">
+    <p>نَحْنُ <span class="dotted">${v(d.presidentName, 'ولد عابد مشري')}</span></p>
+    <p>رَئِيسُ الْمَجْلِسِ الشَّعْبِيِّ الْبَلَدِيِّ لِبَلَدِيَّةِ: <span class="dotted-fixed">${d.commune}</span></p>
+    <div class="cert-statement">نَشْهَدُ بِأَنَّ:</div>
+    <p>السيد(ة) <span class="dotted">${d.fullName}</span></p>
+    <p>المولود ب <span class="dotted">${v(d.lieuNaissance)}</span> بتاريخ <span class="dotted">${formatDate(d.dateNaissance)}</span></p>
+    <p>الجنسية <span class="dotted">${v(d.nationalite, 'جزائرية')}</span> المهنة <span class="dotted">${v(d.profession)}</span></p>
+    <p>السكن <span class="dotted">${v(d.adresse)}</span></p>
+    <p style="text-align: center; margin-top: 8px; display: block;">يقيم بنفس العنوان مُنْذُ أَكْثَرَ مِنْ سِتَّةِ (6) أَشْهُرٍ</p>
+    <p style="text-align: center; margin-top: 6px; display: block;">وَقَدْ سُلِّمَتْ لَهُ هَذِهِ الشَّهَادَةُ لِلْإِدْلَاءِ بِهَا فِي حُدُودِ مَا يَسْمَحُ بِهِ الْقَانُونُ</p>
+  </div>
   <div class="footer">
-    <p>حرر ب <strong>${d.commune}</strong> بتاريخ <strong>${today}</strong></p>
-    <p>وَالْغَرَضُ مِنْ مَنْحِ هَذِهِ الشَّهَادَةِ هُوَ إِثْبَاتُ السَّكَنِ</p>
- 
+    <div class="signature-area">
+      <p>حرر ب <strong>${d.commune}</strong> بتاريخ <strong>${today}</strong></p>
+    </div>
+    <p style="text-align: center; margin-top: 8px; display: block;">وَالْغَرَضُ مِنْ مَنْحِ هَذِهِ الشَّهَادَةِ هُوَ إِثْبَاتُ السَّكَنِ</p>
     <div class="note">
       <p>(1) إِنَّ صَلَاحِيَّةَ الْعَمَلِ بِهَذِهِ الشَّهَادَةِ لَا يُمْكِنُ أَنْ تَتَجَاوَزَ سِتَّةَ (6) أَشْهُرٍ</p>
     </div>
- 
     <div class="latin-line">
       <p>الكتابة السابقة للاسم والقب</p>
       <p><span class="latin-dotted">&nbsp;</span></p>
     </div>
   </div>
- 
 </div>
 </body>
 </html>`;
   } else {
-    // ─── BIRTH ACT TEMPLATE ───────────────────────────────────────────────────
+    // ─── BIRTH CERTIFICATE TEMPLATE (شهادة الميلاد) ────────────────────────
     const d = {
       numeroChahada: actes_naissance.numero_chahada ?? actes_naissance.numeroChahada ?? actes_naissance.numeroActe,
       dateNaissance: actes_naissance.date_naissance ?? actes_naissance.dateNaissance,
@@ -225,179 +295,312 @@ export async function generateCertificatePDF(input) {
 <meta charset="UTF-8">
 <title>شهادة الميلاد</title>
 <style>
+  @page {
+    size: A4;
+    margin: 10mm 15mm 12mm 15mm;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; direction: rtl; background: #fff; color: #000; }
-  .container { width: 850px; margin: auto; padding: 40px 50px; }
-  .header-top { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 10px; }
-  .header-right { text-align: right; font-size: 14px; line-height: 1.9; margin-bottom: 20px; }
-  .title-block { text-align: center; margin: 20px 0 4px; }
-  .title-block h1 { font-size: 30px; font-weight: bold; }
-  .title-block .subtitle { font-size: 15px; margin-top: 4px; }
-  .rows { margin-top: 60px; }
-  .row { display: flex; align-items: flex-end; width: 100%; margin-bottom: 10px; font-size: 14.5px; }
-  .lbl { white-space: nowrap; padding-left: 4px; padding-right: 2px; }
-  .dots { flex: 1; border-bottom: 1px dotted #000; min-width: 30px; margin: 0 4px 3px; }
-  .val { white-space: nowrap; padding-left: 4px; padding-right: 2px; }
-  .row-split { display: flex; width: 100%; margin-bottom: 10px; font-size: 14.5px; align-items: flex-end; justify-content: space-between;direction: rtl; }
-  .row-split .right-part { display: flex; flex: 1; align-items: flex-end;gap: 8px; justify-content: flex-start; }
-  .row-split .left-label { white-space: nowrap; padding-left: 10px;padding-right: 0;font-size: 13px;font-weight: 500; }
-  .row-split .right-part .lbl { white-space: nowrap;}
-  .row-split .right-part .dots {flex: 1;border-bottom: 1px dashed #000;min-width: 60px;margin: 0 5px;}
-  .row-split .right-part .val { white-space: nowrap;}
-  .footer-section-right { margin-top: 30px; font-size: 14px; text-align: right; }
-  .footer-bottom-left { margin-top: 20px; font-size: 13.5px; text-align: right; }
-  .footer-bottom-left .latin-line { text-align: right; margin-bottom: 6px; }
-  .footer-bottom-left .notes { text-align: right; font-size: 13px; line-height: 1.9; margin-top: 6px; }
-  .footer-bottom-left .bold-center { text-align: center; font-weight: bold; font-size: 14px; margin-top: 6px; }
-  .footer-bottom-left .ref { text-align: center; font-size: 13px; }
-  .extra-dots { border-bottom: 1px dotted #000; width: 100%; margin: 8px 0; }
+  body { 
+    font-family: 'Arial', 'DejaVu Sans', sans-serif; 
+    direction: rtl; 
+    background: #fff; 
+    color: #000; 
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .page {
+    width: 100%;
+    min-height: 277mm;
+    display: flex;
+    flex-direction: column;
+  }
+  .header-top { 
+    text-align: center; 
+    font-size: 16px; 
+    font-weight: bold; 
+    margin-bottom: 4px;
+    letter-spacing: 0.3px;
+  }
+  .header-right { 
+    text-align: right; 
+    font-size: 12px; 
+    line-height: 1.6; 
+    margin-bottom: 10px;
+    margin-top: 6px;
+  }
+  .title-block { 
+    text-align: center; 
+    margin: 12px 0 6px; 
+  }
+  .title-block h1 { 
+    font-size: 24px; 
+    font-weight: bold; 
+    margin-bottom: 3px;
+  }
+  .title-block .subtitle { 
+    font-size: 12px; 
+    margin-top: 2px;
+  }
+  .rows { 
+    margin-top: 20px;
+    flex: 1;
+  }
+  .row { 
+    display: flex; 
+    align-items: flex-end; 
+    width: 100%; 
+    margin-bottom: 8px; 
+    font-size: 13px;
+    min-height: 20px;
+  }
+  .lbl { 
+    white-space: nowrap; 
+    padding-left: 3px; 
+    padding-right: 2px; 
+    font-size: 13px;
+  }
+  .dots { 
+    flex: 1; 
+    border-bottom: 1px dotted #000; 
+    min-width: 15px; 
+    margin: 0 3px 2px; 
+    height: 11px;
+  }
+  .val { 
+    white-space: nowrap; 
+    padding-left: 3px; 
+    padding-right: 2px; 
+    font-size: 13px;
+  }
+  .row-split { 
+    display: flex; 
+    width: 100%; 
+    margin-bottom: 8px; 
+    font-size: 13px; 
+    align-items: flex-end; 
+    justify-content: space-between;
+    direction: rtl; 
+  }
+  .row-split .right-part { 
+    display: flex; 
+    flex: 1; 
+    align-items: flex-end;
+    gap: 5px; 
+    justify-content: flex-start; 
+  }
+  .row-split .left-label { 
+    white-space: nowrap; 
+    padding-left: 6px;
+    font-size: 11.5px;
+  }
+  .center-part {
+    display: flex;
+    align-items: flex-end;
+    width: 100%;
+  }
+  .strong-name {
+    font-weight: bold;
+    font-size: 13.5px;
+  }
+  .extra-dots { 
+    border-bottom: 1px dotted #000; 
+    width: 100%; 
+    margin: 6px 0; 
+    height: 11px;
+  }
+  .footer-section-left {
+    margin-top: 15px;
+    text-align: left;
+    direction: rtl;
+  }
+  .row-left {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    gap: 5px;
+  }
+  .footer-button-right {
+    margin-top: 15px;
+    text-align: right;
+    margin-bottom: 8px;
+  }
+  .latin-line {
+    text-align: right; 
+    margin-bottom: 5px; 
+    font-size: 12px;
+  }
+  .notes { 
+    text-align: right; 
+    font-size: 11.5px; 
+    line-height: 1.6; 
+    margin-top: 5px; 
+  }
+  .bold-center { 
+    text-align: center; 
+    font-weight: bold; 
+    font-size: 12.5px; 
+    margin-top: 6px; 
+  }
+  .ref { 
+    text-align: center; 
+    font-size: 11.5px; 
+    margin-top: 3px;
+  }
 </style>
 </head>
 <body>
-<div class="container">
-
+<div class="page">
   <div class="header-top">الجمهورية الجزائرية الديموقراطية الشعبية</div>
   <div class="header-right">
     وزارة الداخلية والجماعات المحلية<br />
     السجل الوطني للحالة المدنية
   </div>
-
   <div class="title-block">
     <h1>شهادة الميلاد</h1>
     <div class="subtitle">نسخة الكترونية</div>
   </div>
-
-  <div class="rows-right">
-
+  <div class="rows">
     <div class="row-split">
       <div class="right-part">   
-         <span class="right-label">رقم الشهادة &nbsp; ${v(d.numeroChahada)}</span> 
-         <span class="right-label">${formatDate(d.dateNaissance)}</span>
+         <span class="lbl">رقم الشهادة</span> 
+         <span class="dots" style="min-width: 50px; flex: 0;"></span>
+         <span class="val">${v(d.numeroChahada)}</span>
+         <span class="dots" style="flex: 1;"></span>
+         <span class="left-label">${formatDate(d.dateNaissance)}</span>
       </div>
-</div>
-
+    </div>
     <div class="row">
       <span class="lbl">في يوم</span>
-      <span class="dots"></span>
+      <span class="dots" style="min-width: 70px; flex: 0;"></span>
+      <span class="val">${formatDate(d.dateNaissance)}</span>
+      <span class="dots" style="flex: 1;"></span>
       <span class="lbl">على الساعة</span>
+      <span class="dots" style="min-width: 35px; flex: 0;"></span>
       <span class="val">${formatTime(d.heureNaissance)}</span>
-      <span class="dots"></span>
-      <span class="lbl">ولد(ت)ب.</span>
+      <span class="dots" style="flex: 1;"></span>
+      <span class="lbl">ولد(ت) ب</span>
+      <span class="dots" style="min-width: 70px; flex: 0;"></span>
       <span class="val">${v(d.communeNaissance)}</span>
-      <span class="dots"></span>
     </div>
-
     <div class="row">
       <span class="lbl">بلدية</span>
+      <span class="dots" style="min-width: 90px; flex: 0;"></span>
       <span class="val">${v(d.communeNaissance)}</span> 
-      <span class="dots"></span>
-      <span class="lbl">ولاية.</span>  
+      <span class="dots" style="flex: 1;"></span>
+      <span class="lbl">ولاية</span>  
+      <span class="dots" style="min-width: 90px; flex: 0;"></span>
       <span class="val">${v(d.wilayaNaissance)}</span>
-    <span class="dots"></span>
+      <span class="dots" style="flex: 1;"></span>
     </div>
-
     <div class="row-split">
       <div class="center-part">
         <span class="lbl">المسمى(ة)</span>
-        <span class="val"><strong>${v(d.fullName)}</strong></span>
-        <span class="dots"></span>
-        <span class="dots"></span>
+        <span class="dots" style="min-width: 50px; flex: 0;"></span>
+        <span class="val strong-name">${v(d.fullName)}</span>
+        <span class="dots" style="flex: 1;"></span>
       </div>
     </div>
-
     <div class="row">
       <span class="lbl">الجنس</span>
+      <span class="dots" style="min-width: 50px; flex: 0;"></span>
       <span class="val">${v(d.genre)}</span>
-      <span class="dots"></span>
-      <span class="dots"></span>
+      <span class="dots" style="flex: 1;"></span>
     </div>
-
     <div class="row">
       <span class="lbl">ابن(ة)</span>
+      <span class="dots" style="min-width: 100px; flex: 0;"></span>
       <span class="val">${v(d.pereNomPrenom)}</span>
-      <span class="dots"></span>
-      <span class="dots"></span>
-      <span class="lbl">عمره.</span>
-      <span class="val">/////</span>
-      <span class="lbl">مهنة.</span>
-      <span class="val">/////</span>
-      <span class="dots"></span>
+      <span class="dots" style="flex: 1;"></span>
+      <span class="lbl">عمره</span>
+      <span class="dots" style="min-width: 25px; flex: 0;"></span>
+      <span class="val">${v(d.pereAge, '/////')}</span>
+      <span class="lbl">مهنة</span>
+      <span class="dots" style="min-width: 25px; flex: 0;"></span>
+      <span class="val">${v(d.pereMetier, '/////')}</span>
+      <span class="dots" style="flex: 1;"></span>
     </div>
-
     <div class="row">
       <span class="lbl">و</span>
+      <span class="dots" style="min-width: 100px; flex: 0;"></span>
       <span class="val">${v(d.mereNomPrenom)}</span>
-      <span class="dots"></span>
+      <span class="dots" style="flex: 1;"></span>
       <span class="lbl">عمرها</span>
-      <span class="val">/////</span>
-      <span class="lbl">مهنتها.</span>
-      <span class="val">/////</span>
-      <span class="dots"></span>
+      <span class="dots" style="min-width: 25px; flex: 0;"></span>
+      <span class="val">${v(d.mereAge, '/////')}</span>
+      <span class="lbl">مهنتها</span>
+      <span class="dots" style="min-width: 25px; flex: 0;"></span>
+      <span class="val">${v(d.mereMetier, '/////')}</span>
+      <span class="dots" style="flex: 1;"></span>
     </div>
-
     <div class="row">
-      <span class="lbl">الساكنين.</span>
+      <span class="lbl">الساكنين</span>
+      <span class="dots" style="min-width: 90px; flex: 0;"></span>
       <span class="val">${v(d.domicileCommune)}</span>
-      <span class="dots"></span>
-      <span class="lbl">بلدية.</span>
-      <span class="val">/////</span> 
-      <span class="dots"></span> 
-      <span class="lbl">ولاية.</span>   
-      <span class="val">/////</span>
-      <span class="dots"></span>
+      <span class="dots" style="flex: 1;"></span>
+      <span class="lbl">بلدية</span>
+      <span class="dots" style="min-width: 40px; flex: 0;"></span>
+      <span class="val">${v(d.domicileCommune, '/////')}</span> 
+      <span class="dots" style="flex: 1;"></span> 
+      <span class="lbl">ولاية</span>   
+      <span class="dots" style="min-width: 40px; flex: 0;"></span>
+      <span class="val">${v(d.domicileWilaya, '/////')}</span>
+      <span class="dots" style="flex: 1;"></span>
     </div>
-
     <div class="row">
       <span class="lbl">حرر في</span>
-      <span class="dots"></span>
-      <span class="lbl">على الساعة...</span>
+      <span class="dots" style="min-width: 90px; flex: 0;"></span>
+      <span class="val">${v(d.communeNaissance)}</span>
+      <span class="dots" style="flex: 1;"></span>
+      <span class="lbl">على الساعة</span>
+      <span class="dots" style="min-width: 35px; flex: 0;"></span>
       <span class="val">${formatTime(d.heureRedaction)}</span>
-      <span class="dots"></span>
+      <span class="dots" style="flex: 1;"></span>
     </div>
-
     <div class="row">
       <span class="lbl">بإعلان أدلى به السيد(ة)</span>
-      <span class="dots"></span>
+      <span class="dots" style="min-width: 120px; flex: 0;"></span>
       <span class="val">${v(d.declarePar)}</span>
-      <span class="dots"></span>
+      <span class="dots" style="flex: 1;"></span>
     </div>
-
-    <div class="row"><span class="dots"></span></div>
-
+    <div class="row">
+      <span class="dots" style="flex: 1;"></span>
+    </div>
     <div class="row">
       <span class="lbl">وبعد التلاوة وقع معنا نحن</span>
-      <span class="dots"></span>
+      <span class="dots" style="min-width: 100px; flex: 0;"></span>
       <span class="val">${v(d.officierEtatCivil)}</span>
-      <span class="dots"></span>
+      <span class="dots" style="flex: 1;"></span>
       <span class="lbl">ضابط الحالة المدنية ببلدية</span>
+      <span class="dots" style="min-width: 70px; flex: 0;"></span>
+      <span class="val">${v(d.communeNaissance)}</span>
     </div>
-
     <div class="row">
       <span class="lbl">البيانات الهامشية</span>
+      <span class="dots" style="min-width: 200px; flex: 0;"></span>
       <span class="val">${v(d.marginalNotes)}</span>
-      <span class="dots"></span>
-      <span class="dots"></span>
+      <span class="dots" style="flex: 1;"></span>
     </div>
-
     <div class="extra-dots"></div>
     <div class="extra-dots"></div>
     <div class="extra-dots"></div>
     <div class="extra-dots"></div>
-
   </div>
-
   <div class="footer-section-left">
     <div class="row-left">
-      <span class="lbl-left">حررت ب. مستغانم ......</span>
-      <span class="lbl">في...</span>
+      <span class="lbl">حررت ب</span>
+      <span class="dots" style="min-width: 50px; flex: 0;"></span>
+      <span class="val">${v(d.communeNaissance, 'مستغانم')}</span>
+      <span class="lbl">في</span>
+      <span class="dots" style="min-width: 50px; flex: 0;"></span>
       <span class="val">${today}</span>
       <span class="lbl">.../.../...</span>
     </div>
   </div>
-
-  <div class="footer-button -right">
+  <div class="footer-button-right">
     <div class="latin-line">الكتابة السابقة للاسم واللقب ب أحرف اللاتينية</div>
-      <span class="dots"></span>
+    <div class="row" style="margin-top: 5px;">
+      <span class="dots" style="flex: 1;"></span>
+    </div>
     <div class="notes">
       1- بكامل الحروف<br />
       2- اسم ولقب الولد
@@ -405,7 +608,6 @@ export async function generateCertificatePDF(input) {
     <div class="bold-center">مستخرج من السجل الوطني للحالة المدنية</div>
     <div class="ref">المرجع ج م 7</div>
   </div>
-
 </div>
 </body>
 </html>`;
@@ -415,9 +617,6 @@ export async function generateCertificatePDF(input) {
   try {
     const execPath = await chromium.executablePath();
     console.log(' [PDF] Launching Chromium from:', execPath);
-
-    // Optional: Sanity check for binary existence
-    // import fs from 'fs'; // Ensure fs is available if using this
 
     browser = await puppeteer.launch({
       args: [
@@ -435,7 +634,7 @@ export async function generateCertificatePDF(input) {
     });
 
     const page = await browser.newPage();
-    await page.setDefaultNavigationTimeout(60000); // 60s timeout
+    await page.setDefaultNavigationTimeout(60000);
     await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 });
 
     const pdfBuffer = await page.pdf({
@@ -457,10 +656,8 @@ export const emailService = {
 
     let pdfBuffer;
     if (Buffer.isBuffer(pdfBufferOrId)) {
-      // If it's already a Buffer, use it directly
       pdfBuffer = pdfBufferOrId;
     } else {
-      // If it's a string ID or data object, generate the PDF
       pdfBuffer = await generateCertificatePDF(pdfBufferOrId);
     }
 

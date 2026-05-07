@@ -224,11 +224,21 @@ export function CarteSejourTraitmentDialog({
       <Label className="text-sm font-medium text-slate-700 dark:text-slate-300 shrink-0">{label}</Label>
       <div className="min-w-0">
         {url ? (
-          <a href={url} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-2 text-blue-600 hover:underline text-sm">
-            <FileImage className="w-4 h-4" />
-            {language === 'fr' ? 'Voir le fichier' : 'View file'}
-          </a>
+          <div className="flex flex-col gap-2">
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 text-blue-600 hover:underline text-sm mb-1">
+              <FileImage className="w-4 h-4" />
+              {language === 'fr' ? 'Voir en plein écran' : 'View full screen'}
+            </a>
+            <img 
+              src={url} 
+              alt={label} 
+              className="max-h-48 rounded-lg border border-slate-200 dark:border-slate-700 object-contain bg-white"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          </div>
         ) : (
           <span className="text-slate-400 text-sm">{language === 'fr' ? 'Aucun fichier' : 'No file'}</span>
         )}
@@ -267,6 +277,10 @@ export function CarteSejourTraitmentDialog({
                   className="bg-white dark:bg-slate-900"
                 />
               </Row>
+              <FileRow
+                label={language === 'fr' ? 'Scan CNI' : 'CNI Scan'}
+                url={demandes?.cniFileUrl}
+              />
               <FileRow
                 label={language === 'fr' ? 'Justificatif (Photo)' : 'Proof of Residence (Photo)'}
                 url={demandes?.factureFileUrl}
