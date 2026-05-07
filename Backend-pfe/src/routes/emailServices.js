@@ -46,31 +46,115 @@ export async function generateCertificatePDF(input) {
   const formatTime = (t) => (t ? String(t).substring(0, 5) : '......');
   const v = (val, fallback = '..........') => (val ? String(val) : fallback);
 
-  // 2. Map DB column names → template variables
-  const d = {
-    numeroChahada: actes_naissance.numero_chahada ?? actes_naissance.numeroChahada ?? actes_naissance.numeroActe,
-    dateNaissance: actes_naissance.date_naissance ?? actes_naissance.dateNaissance,
-    heureNaissance: actes_naissance.heure_naissance ?? actes_naissance.heureNaissance,
-    communeNaissance: actes_naissance.commune_naissance ?? actes_naissance.communeNaissance,
-    wilayaNaissance: actes_naissance.wilaya_naissance ?? actes_naissance.wilayaNaissance,
-    fullName: actes_naissance.nom_prenom ?? actes_naissance.full_name ?? actes_naissance.fullName,
-    genre: actes_naissance.genre ?? actes_naissance.sexe,
-    pereNomPrenom: actes_naissance.pere_nom_prenom ?? actes_naissance.pereNomPrenom,
-    pereAge: actes_naissance.pere_age ?? actes_naissance.pereAge,
-    pereMetier: actes_naissance.pere_metier ?? actes_naissance.pereMetier,
-    mereNomPrenom: actes_naissance.mere_nom_prenom ?? actes_naissance.mereNomPrenom,
-    mereAge: actes_naissance.mere_age ?? actes_naissance.mereAge,
-    mereMetier: actes_naissance.mere_metier ?? actes_naissance.mereMetier,
-    domicileCommune: actes_naissance.domicile_commune ?? actes_naissance.domicileCommune,
-    domicileWilaya: actes_naissance.domicile_wilaya ?? actes_naissance.domicileWilaya,
-    heureRedaction: actes_naissance.heure_redaction ?? actes_naissance.heureRedaction,
-    declarePar: actes_naissance.declare_par ?? actes_naissance.declarePar,
-    officierEtatCivil: actes_naissance.officier_etat_civil ?? actes_naissance.officierEtatCivil,
-    marginalNotes: actes_naissance.marginal_notes ?? actes_naissance.marginalNotes,
-    fullNameLatin: actes_naissance.full_name_latin ?? actes_naissance.fullNameLatin,
-  };
+  // 2. Determine Document Type and Select Template
+  const isResidenceCard = 
+    (actes_naissance.subject && (actes_naissance.subject.includes('résidence') || actes_naissance.subject.includes('séjour'))) ||
+    (actes_naissance.type_document && (actes_naissance.type_document.includes('résidence') || actes_naissance.type_document.includes('séjour')));
 
-  const html = `<!DOCTYPE html>
+  let html = '';
+
+  if (isResidenceCard) {
+    // ─── RESIDENCE CARD TEMPLATE ──────────────────────────────────────────────
+    const d = {
+      fullName: actes_naissance.nom_prenom ?? `${actes_naissance.firstName ?? ''} ${actes_naissance.lastName ?? ''}`.trim() ?? actes_naissance.fullName,
+      dateNaissance: actes_naissance.date_naissance ?? actes_naissance.dateNaissance ?? '',
+      adresse: actes_naissance.adresse ?? actes_naissance.citizen_address ?? '',
+      wilaya: actes_naissance.wilaya ?? actes_naissance.domicile_wilaya ?? 'مستغانم',
+      commune: actes_naissance.commune ?? actes_naissance.domicile_commune ?? 'مستغانم',
+    };
+
+    html = `<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>بطاقة إقامة</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; direction: rtl; background: #fff; color: #000; }
+  .container { width: 850px; margin: auto; padding: 40px 50px; }
+  .header-top { text-align: right; font-size: 14px; margin-bottom: 5px; }
+  .header-top p { font-weight: bold; }
+  .location-info { text-align: right; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+  .title-block { text-align: center; margin: 30px 0; }
+  .title-block .box { border: 2px solid #000; display: inline-block; padding: 10px 30px; }
+  .title-block h1 { font-size: 24px; font-weight: bold; margin: 0; }
+  .content { font-size: 16px; line-height: 2.2; margin-top: 20px; }
+  .content p { margin-bottom: 10px; }
+  .content .dotted { border-bottom: 1px dotted #000; display: inline-block; min-width: 100px; padding: 0 5px; text-align: center; font-weight: bold; }
+  .footer { margin-top: 40px; font-size: 15px; }
+  .footer .sign-box { margin-top: 10px; border-top: 1px solid #eee; pt: 10px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header-top">
+    <p>الجمهورية الجزائرية الديموقراطية الشعبية</p>
+    <p>وزارة الداخلية</p>
+  </div>
+  
+  <div class="location-info">
+    <p>ولاية <span class="dotted">${d.wilaya}</span></p>
+    <p>دائرة <span class="dotted">${d.commune}</span></p>
+    <p>بلدية <span class="dotted">${d.commune}</span></p>
+  </div>
+
+  <div class="title-block">
+    <div class="box">
+      <h1>بطاقة اقامة</h1>
+    </div>
+  </div>
+
+  <div class="content">
+    <p>نَحْنُ <span class="dotted">ولد عابد مشري</span></p>
+    <p>رئيسُ المَجْلِس الشَّعْبِيّ البَلَدِيّ لِبَلَدِيَّةِ: <span class="dotted">${d.commune}</span></p>
+    
+    <div style="text-align: center; font-weight: bold; margin: 15px 0;">نَشْهَدُ بأَنَّ:</div>
+    
+    <p>السيد(ة) <span class="dotted">${d.fullName}</span></p>
+    <p>المولود ب <span class="dotted">................</span> بتاريخ <span class="dotted">${formatDate(d.dateNaissance)}</span></p>
+    <p>الجنسية <span class="dotted">جزائرية</span> المهنة <span class="dotted">................</span></p>
+    <p>السكن <span class="dotted">${d.adresse}</span></p>
+    <p>يقيم بنفس العنوان مُنذُ أكْثَر من سِتَّةِ (6) أَشْهُر</p>
+    <p>وَقَدْ سَلَّمَتْ لَهُ هَذِهِ الشَّهادَةُ لإِدْلاء بِها فِي حُدُودِ ما يَسْمَحُ بِهِ القَانُونُ</p>
+  </div>
+
+  <div class="footer">
+    <p>حرر ب <span class="dotted">${d.commune}</span> بتاريخ ${today}</p>
+    <p>وَالْغَرَضُ مِنْ مَنْح هَذِهِ الشَّهَادَةُ هُوَ إِثْباتُ السُّكْنِ</p>
+    
+    <div class="sign-box">
+      <p>(1) إِنَّ صَلاحِيَّةَ الْعَمَل بِهَذِهِ الشَّهَادَةِ لا يُمْكِنُ أَنْ تَتَجَاوَز سِتَّةَ (6) أَشْهُر</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
+  } else {
+    // ─── BIRTH ACT TEMPLATE ───────────────────────────────────────────────────
+    const d = {
+      numeroChahada: actes_naissance.numero_chahada ?? actes_naissance.numeroChahada ?? actes_naissance.numeroActe,
+      dateNaissance: actes_naissance.date_naissance ?? actes_naissance.dateNaissance,
+      heureNaissance: actes_naissance.heure_naissance ?? actes_naissance.heureNaissance,
+      communeNaissance: actes_naissance.commune_naissance ?? actes_naissance.communeNaissance,
+      wilayaNaissance: actes_naissance.wilaya_naissance ?? actes_naissance.wilayaNaissance,
+      fullName: actes_naissance.nom_prenom ?? actes_naissance.full_name ?? actes_naissance.fullName,
+      genre: actes_naissance.genre ?? actes_naissance.sexe,
+      pereNomPrenom: actes_naissance.pere_nom_prenom ?? actes_naissance.pereNomPrenom,
+      pereAge: actes_naissance.pere_age ?? actes_naissance.pereAge,
+      pereMetier: actes_naissance.pere_metier ?? actes_naissance.pereMetier,
+      mereNomPrenom: actes_naissance.mere_nom_prenom ?? actes_naissance.mereNomPrenom,
+      mereAge: actes_naissance.mere_age ?? actes_naissance.mereAge,
+      mereMetier: actes_naissance.mere_metier ?? actes_naissance.mereMetier,
+      domicileCommune: actes_naissance.domicile_commune ?? actes_naissance.domicileCommune,
+      domicileWilaya: actes_naissance.domicile_wilaya ?? actes_naissance.domicileWilaya,
+      heureRedaction: actes_naissance.heure_redaction ?? actes_naissance.heureRedaction,
+      declarePar: actes_naissance.declare_par ?? actes_naissance.declarePar,
+      officierEtatCivil: actes_naissance.officier_etat_civil ?? actes_naissance.officierEtatCivil,
+      marginalNotes: actes_naissance.marginal_notes ?? actes_naissance.marginalNotes,
+      fullNameLatin: actes_naissance.full_name_latin ?? actes_naissance.fullNameLatin,
+    };
+
+    html = `<!DOCTYPE html>
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
@@ -260,6 +344,7 @@ export async function generateCertificatePDF(input) {
 </div>
 </body>
 </html>`;
+  }
 
   let browser;
   try {

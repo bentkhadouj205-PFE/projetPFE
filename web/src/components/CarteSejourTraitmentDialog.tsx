@@ -9,10 +9,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, Mail, XCircle, FileImage } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/apiBase';
+import { CheckCircle, Mail, XCircle, FileImage, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface CarteSejourCitizenShape {
+  id?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -42,12 +44,14 @@ function ReviewStep({
   onApprove,
   onReject,
   onBack,
+  sending,
 }: {
   citizen: CarteSejourCitizenShape;
   language: 'fr' | 'en';
   onApprove: () => void;
   onReject: () => void;
   onBack: () => void;
+  sending: boolean;
 }) {
   const fr = language === 'fr';
 
@@ -82,12 +86,13 @@ function ReviewStep({
 
       {/* Actions */}
       <div className="flex gap-3 pt-1">
-        <Button type="button" variant="outline" onClick={onBack} className="w-24">
+        <Button type="button" variant="outline" onClick={onBack} disabled={sending} className="w-24">
           {fr ? 'Retour' : 'Back'}
         </Button>
         <Button
           type="button"
           onClick={onReject}
+          disabled={sending}
           className="flex-1 bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-1.5"
         >
           <XCircle className="w-4 h-4" />
@@ -96,9 +101,10 @@ function ReviewStep({
         <Button
           type="button"
           onClick={onApprove}
+          disabled={sending}
           className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-1.5"
         >
-          <CheckCircle className="w-4 h-4" />
+          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
           {fr ? 'Approuver' : 'Approve'}
         </Button>
       </div>
@@ -145,26 +151,56 @@ export function CarteSejourTraitmentDialog({
     setStep('form');
   }, [open, demandes]);
 
-  const handleApprove = () => {
-    const email = demandes?.email || '';
-    const subject = encodeURIComponent('بطاقة الإقامة - Fiche de Résidence');
-    const body = encodeURIComponent(
-      `Bonjour ${demandes?.firstName || ''} ${demandes?.lastName || ''},\n\nVeuillez trouver ci-joint votre Fiche de Résidence.\n\nCordialement,\nService d'état civil`
-    );
-    window.open(
-      `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${subject}&body=${body}`,
-      '_blank'
-    );
+  const [sending, setSending] = useState(false);
 
-    onValidate();
-    onOpenChange(false);
-    toast.success(tr.emailSent, {
-      icon: <Mail className="w-4 h-4 text-green-600" />,
-      duration: 4000,
-      description: demandes?.email
-        ? `${language === 'fr' ? 'Destinataire' : 'Recipient'}: ${demandes.email}`
-        : undefined,
-    });
+  const handleApprove = async () => {
+    if (!demandes?.email) {
+      toast.error(language === 'fr' ? 'Aucun email disponible' : 'No email available');
+      return;
+    }
+
+    setSending(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/email/generate-and-send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify({
+          citizenEmail: demandes?.email,
+          citizenFirstName: demandes?.firstName,
+          citizenLastName: demandes?.lastName,
+          requestSubject: language === 'fr' ? 'Fiche de Résidence' : 'Residence Card',
+          employeeName: 'Service État Civil',
+          requestId: demandes?.id,
+          wilaya: demandes?.wilaya,
+          commune: demandes?.commune,
+          adresse: adresse,
+          dateNaissance: demandes?.dateNaissance,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send email');
+      }
+
+      onValidate();
+      onOpenChange(false);
+      toast.success(tr.emailSent, {
+        icon: <Mail className="w-4 h-4 text-green-600" />,
+        duration: 4000,
+        description: demandes?.email
+          ? `${language === 'fr' ? 'Destinataire' : 'Recipient'}: ${demandes.email}`
+          : undefined,
+      });
+    } catch (error: any) {
+      console.error('Approval error:', error);
+      toast.error(language === 'fr' ? `Erreur: ${error.message}` : `Error: ${error.message}`);
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleReject = () => {
@@ -259,6 +295,7 @@ export function CarteSejourTraitmentDialog({
               onApprove={handleApprove}
               onReject={handleReject}
               onBack={() => setStep('form')}
+              sending={sending}
             />
           </>
         )}
