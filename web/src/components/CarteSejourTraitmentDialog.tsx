@@ -146,6 +146,16 @@ export function CarteSejourTraitmentDialog({
   }, [open, demandes]);
 
   const handleApprove = () => {
+    const email = demandes?.email || '';
+    const subject = encodeURIComponent('بطاقة الإقامة - Fiche de Résidence');
+    const body = encodeURIComponent(
+      `Bonjour ${demandes?.firstName || ''} ${demandes?.lastName || ''},\n\nVeuillez trouver ci-joint votre Fiche de Résidence.\n\nCordialement,\nService d'état civil`
+    );
+    window.open(
+      `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${subject}&body=${body}`,
+      '_blank'
+    );
+
     onValidate();
     onOpenChange(false);
     toast.success(tr.emailSent, {
