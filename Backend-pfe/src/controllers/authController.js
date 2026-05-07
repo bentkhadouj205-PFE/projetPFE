@@ -226,3 +226,120 @@ export const getMe = async (req, res) => {
     });
   }
 };
+
+// ─────────────────────────────────────────────────────────────
+// REGISTER EMPLOYEE (done by admin)
+// ─────────────────────────────────────────────────────────────
+export const registerEmployee = async (req, res) => {
+  try {
+    const {
+      email,
+      password,
+      first_name,
+      last_name,
+      role,
+      service,
+      position,
+      join_date,
+      status,
+      user_id
+    } = req.body;
+
+    // Check duplicate email
+    const emailCheck = await pool.query(
+      `SELECT id FROM employees WHERE email = $1`,
+      [email]
+    );
+
+    if (emailCheck.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email déjà utilisé',
+        field: 'email'
+      });
+    }
+
+    // ✅ bcrypt يولد salt مختلف تلقائياً لكل موظف
+    const password_hash = await bcrypt.hash(password, 10);
+
+    const { rows } = await pool.query(
+      `INSERT INTO employees
+        (email, password_hash, first_name, last_name, role, service, position, join_date, status, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, email, first_name, last_name, role, service, position, join_date, status`,
+      [email, password_hash, first_name, last_name, role, service, position, join_date, status, user_id]
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Employé créé avec succès',
+      employee: rows[0]
+    });
+
+  } catch (error) {
+    console.error('Erreur register employee:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur',
+      error: error.message
+    });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// LOGIN EMPLOYEE
+// ─────────────────────────────────────────────────────────────
+export const loginEmployee = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const { rows } = await pool.query(
+      `SELECT id, email, password_hash, first_name, last_name, role, service, position, status
+       FROM employees
+       WHERE email = $1`,
+      [email]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Email non trouvé'
+      });
+    }
+
+    const employee = rows[0];
+
+    // ✅ bcrypt.compare يستخرج الـ salt من الهاش تلقائياً
+    const isMatch = await bcrypt.compare(password, employee.password_hash);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Mot de passe incorrect'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Connexion réussie',
+      employee: {
+        id: employee.id,
+        email: employee.email,
+        first_name: employee.first_name,
+        last_name: employee.last_name,
+        role: employee.role,
+        service: employee.service,
+        position: employee.position,
+        status: employee.status
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur login employee:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur',
+      error: error.message
+    });
+  }
+};

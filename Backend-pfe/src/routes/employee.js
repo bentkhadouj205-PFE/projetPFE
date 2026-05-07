@@ -1,8 +1,12 @@
 import express from 'express';
 import pool from '../db.js'; // pg Pool
 import { supabase } from '../supabaseClient.js';
+import { registerEmployee, loginEmployee } from '../controllers/authController.js';
 
 const router = express.Router();
+
+router.post('/register', registerEmployee);
+router.post('/login', loginEmployee);
 // GET /employees/position/:position
 router.get('/position/:position', async (req, res) => {
   try {
