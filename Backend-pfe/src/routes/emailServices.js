@@ -49,14 +49,14 @@ export async function generateCertificatePDF(input) {
   // 2. Determine Document Type and Select Template
   const rawType = actes_naissance.subject || actes_naissance.type_document || actes_naissance.requestSubject || '';
   console.log(' [PDF Gen] Raw type received:', rawType);
-  
+
   // Normalize string: convert é -> e, etc.
   const dType = rawType.toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, ''); 
-  
+    .replace(/[\u0300-\u036f]/g, '');
+
   console.log(' [PDF Gen] Normalized type:', dType);
-  
+
   const isResidenceCard = dType.includes('residence') || dType.includes('sejour') || dType.includes('carte');
   console.log(' [PDF Gen] isResidenceCard:', isResidenceCard);
 
@@ -79,62 +79,118 @@ export async function generateCertificatePDF(input) {
 <title>بطاقة إقامة</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; direction: rtl; background: #fff; color: #000; }
-  .container { width: 850px; margin: auto; padding: 40px 50px; }
-  .header-top { text-align: right; font-size: 14px; margin-bottom: 5px; }
-  .header-top p { font-weight: bold; }
-  .location-info { text-align: right; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
-  .title-block { text-align: center; margin: 30px 0; }
-  .title-block .box { border: 2px solid #000; display: inline-block; padding: 10px 30px; }
-  .title-block h1 { font-size: 24px; font-weight: bold; margin: 0; }
-  .content { font-size: 16px; line-height: 2.2; margin-top: 20px; }
-  .content p { margin-bottom: 10px; }
-  .content .dotted { border-bottom: 1px dotted #000; display: inline-block; min-width: 100px; padding: 0 5px; text-align: center; font-weight: bold; }
-  .footer { margin-top: 40px; font-size: 15px; }
-  .footer .sign-box { margin-top: 10px; border-top: 1px solid #eee; pt: 10px; }
+  body {
+    font-family: Arial, sans-serif;
+    direction: rtl;
+    background: #fff;
+    color: #000;
+    font-size: 15px;
+    line-height: 2;
+  }
+  .container { width: 800px; margin: auto; padding: 40px 50px; }
+ 
+  /* ── Header ── */
+  .header { text-align: center; margin-bottom: 10px; font-size: 14px; }
+  .header p { margin: 2px 0; }
+ 
+  /* ── Wilaya / Daira / Baladiya ── */
+  .location { text-align: right; font-size: 14px; margin-bottom: 10px; line-height: 1.8; }
+ 
+  /* ── Title ── */
+  .title-block { text-align: center; margin: 20px 0; }
+  .title-block .box {
+    border: 2px solid #000;
+    display: inline-block;
+    padding: 8px 40px;
+  }
+  .title-block h1 { font-size: 22px; font-weight: bold; margin: 0; }
+ 
+  /* ── Baladiya under title ── */
+  .baladiya { text-align: right; font-size: 14px; margin-bottom: 10px; }
+ 
+  /* ── Body ── */
+  .content { font-size: 15px; line-height: 2.2; margin-top: 10px; }
+  .content p { margin-bottom: 6px; }
+  .dotted {
+    border-bottom: 1px dotted #000;
+    display: inline-block;
+    min-width: 120px;
+    padding: 0 4px;
+    font-weight: bold;
+    text-align: center;
+  }
+ 
+  /* ── Footer ── */
+  .footer { margin-top: 30px; font-size: 14px; line-height: 2; }
+  .footer .note { margin-top: 20px; font-size: 13px; border-top: 1px solid #ccc; padding-top: 10px; }
+  .latin-line {
+    margin-top: 15px;
+    font-size: 13px;
+    border-top: 1px solid #ccc;
+    padding-top: 8px;
+  }
+  .latin-dotted {
+    border-bottom: 1px dotted #000;
+    display: inline-block;
+    min-width: 200px;
+  }
 </style>
 </head>
 <body>
 <div class="container">
-  <div class="header-top">
-    <p>الجمهورية الجزائرية الديموقراطية الشعبية</p>
+ 
+  <!-- Header -->
+  <div class="header">
+    <p><strong>الجمهورية الجزائرية الديموقراطية الشعبية</strong></p>
     <p>وزارة الداخلية</p>
   </div>
-  
-  <div class="location-info">
-    <p>ولاية <span class="dotted">${d.wilaya}</span></p>
-    <p>دائرة <span class="dotted">${d.commune}</span></p>
-    <p>بلدية <span class="dotted">${d.commune}</span></p>
+ 
+  <!-- Wilaya / Daira -->
+  <div class="location">
+    <p>ولاية <strong>${d.wilaya}</strong></p>
+    <p>دائرة <strong>${d.commune}</strong></p>
   </div>
-
+ 
+  <!-- Title -->
   <div class="title-block">
-    <div class="box">
-      <h1>بطاقة اقامة</h1>
-    </div>
+    <div class="box"><h1>بطاقة اقامة</h1></div>
   </div>
-
+ 
+  <!-- Baladiya -->
+  <div class="baladiya">
+    <p>بلدية <strong>${d.commune}</strong></p>
+  </div>
+ 
+  <!-- Body -->
   <div class="content">
     <p>نَحْنُ <span class="dotted">ولد عابد مشري</span></p>
-    <p>رئيسُ المَجْلِس الشَّعْبِيّ البَلَدِيّ لِبَلَدِيَّةِ: <span class="dotted">${d.commune}</span></p>
-    
-    <div style="text-align: center; font-weight: bold; margin: 15px 0;">نَشْهَدُ بأَنَّ:</div>
-    
+    <p>رَئِيسُ الْمَجْلِسِ الشَّعْبِيِّ الْبَلَدِيِّ لِبَلَدِيَّةِ: <span class="dotted">${d.commune}</span></p>
+ 
+    <p style="text-align:center; font-weight:bold; margin: 15px 0;">نَشْهَدُ بِأَنَّ:</p>
+ 
     <p>السيد(ة) <span class="dotted">${d.fullName}</span></p>
     <p>المولود ب <span class="dotted">................</span> بتاريخ <span class="dotted">${formatDate(d.dateNaissance)}</span></p>
     <p>الجنسية <span class="dotted">جزائرية</span> المهنة <span class="dotted">................</span></p>
     <p>السكن <span class="dotted">${d.adresse}</span></p>
-    <p>يقيم بنفس العنوان مُنذُ أكْثَر من سِتَّةِ (6) أَشْهُر</p>
-    <p>وَقَدْ سَلَّمَتْ لَهُ هَذِهِ الشَّهادَةُ لإِدْلاء بِها فِي حُدُودِ ما يَسْمَحُ بِهِ القَانُونُ</p>
+    <p>يقيم بنفس العنوان مُنْذُ أَكْثَرَ مِنْ سِتَّةِ (6) أَشْهُر</p>
+    <p>وَقَدْ سُلِّمَتْ لَهُ هَذِهِ الشَّهَادَةُ لِلْإِدْلَاءِ بِهَا فِي حُدُودِ مَا يَسْمَحُ بِهِ الْقَانُونُ</p>
   </div>
-
+ 
+  <!-- Footer -->
   <div class="footer">
-    <p>حرر ب <span class="dotted">${d.commune}</span> بتاريخ ${today}</p>
-    <p>وَالْغَرَضُ مِنْ مَنْح هَذِهِ الشَّهَادَةُ هُوَ إِثْباتُ السُّكْنِ</p>
-    
-    <div class="sign-box">
-      <p>(1) إِنَّ صَلاحِيَّةَ الْعَمَل بِهَذِهِ الشَّهَادَةِ لا يُمْكِنُ أَنْ تَتَجَاوَز سِتَّةَ (6) أَشْهُر</p>
+    <p>حرر ب <strong>${d.commune}</strong> بتاريخ <strong>${today}</strong></p>
+    <p>وَالْغَرَضُ مِنْ مَنْحِ هَذِهِ الشَّهَادَةِ هُوَ إِثْبَاتُ السَّكَنِ</p>
+ 
+    <div class="note">
+      <p>(1) إِنَّ صَلَاحِيَّةَ الْعَمَلِ بِهَذِهِ الشَّهَادَةِ لَا يُمْكِنُ أَنْ تَتَجَاوَزَ سِتَّةَ (6) أَشْهُرٍ</p>
+    </div>
+ 
+    <div class="latin-line">
+      <p>الكتابة السابقة للاسم والقب</p>
+      <p><span class="latin-dotted">&nbsp;</span></p>
     </div>
   </div>
+ 
 </div>
 </body>
 </html>`;
@@ -432,8 +488,8 @@ export const emailService = {
       `,
       attachment: [{
         content: pdfBuffer.toString('base64'),
-        name: (requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence'))) 
-          ? 'Fiche_de_Residence.pdf' 
+        name: (requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence')))
+          ? 'Fiche_de_Residence.pdf'
           : 'Acte_de_Naissance.pdf',
       }],
     };

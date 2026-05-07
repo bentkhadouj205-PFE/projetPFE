@@ -52,8 +52,8 @@ router.post('/generate-and-send', async (req, res) => {
 
     // دمج البيانات
     const pdfData = {
-      ...req.body, // مرر كل الـ body أولاً لضمان وجود كل الحقول
-      subject: requestSubject || 'Fiche de Résidence', 
+      ...req.body,
+      subject: requestSubject || 'Fiche de Résidence',
       type_document: requestSubject || 'Fiche de Résidence',
       citizenEmail,
       citizenFirstName,
@@ -102,18 +102,33 @@ router.post('/generate-and-send', async (req, res) => {
     );
     console.timeEnd(' Brevo API Send');
 
-    // 4. Update status
+    // 4. Update status with fallback
     if (requestId) {
-      console.log(' Updating PostgreSQL requests status...');
       try {
-        await pool.query(
-          "UPDATE requests SET status = 'completed', document_status = 'approved' WHERE id = $1",
-          [requestId]
+        console.log(' [DB] Attempting PostgreSQL update for ID:', requestId);
+        const result = await pool.query(
+          "UPDATE requests SET status = 'completed', document_status = 'approved' WHERE id = $1::text OR id::text = $1",
+          [String(requestId)]
         );
+        
+        console.log(' ✅ PostgreSQL updated, rows affected:', result.rowCount);
+        
+        if (result.rowCount === 0) {
+          console.log(' ⚠️ No rows in PostgreSQL, trying Supabase (register schema)...');
+          const { error } = await supabase
+            .schema('register')
+            .from('requests')
+            .update({ status: 'completed', document_status: 'approved' })
+            .eq('id', requestId);
+            
+          if (error) {
+            console.error(' ❌ Supabase update error:', error.message);
+          } else {
+            console.log(' ✅ Supabase updated successfully');
+          }
+        }
       } catch (dbErr) {
-        console.error(' DB Status Update Error:', dbErr.message);
-        // We don't necessarily want to fail the whole request if only the status update fails, 
-        // but the user is seeing an error, so let's be careful.
+        console.error(' ❌ DB Status Update Error:', dbErr.message);
       }
     }
 
