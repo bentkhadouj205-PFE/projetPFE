@@ -226,3 +226,81 @@ export const getMe = async (req, res) => {
     });
   }
 };
+
+// ─────────────────────────────────────────────────────────────
+// REGISTER EMPLOYEE
+// ─────────────────────────────────────────────────────────────
+export const registerEmployee = async (req, res) => {
+  try {
+    const { first_name, last_name, email, password, role, service, position } = req.body;
+    
+    // Check duplicate email
+    const emailCheck = await pool.query(
+      `SELECT id FROM employees WHERE email = $1`,
+      [email]
+    );
+
+    if (emailCheck.rows.length > 0) {
+      return res.status(400).json({ success: false, message: 'Email déjà utilisé', field: 'email' });
+    }
+
+    const password_hash = await bcrypt.hash(password, 10);
+
+    const { rows } = await pool.query(
+      `INSERT INTO employees (first_name, last_name, email, password_hash, role, service, position, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')
+       RETURNING id, first_name, last_name, email, role, service, position`,
+      [first_name, last_name, email, password_hash, role || 'employee', service, position]
+    );
+
+    res.status(201).json({ success: true, message: 'Employé créé avec succès', user: rows[0] });
+  } catch (error) {
+    console.error('Erreur registerEmployee:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// LOGIN EMPLOYEE
+// ─────────────────────────────────────────────────────────────
+export const loginEmployee = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log('Tentative connexion employé:', email);
+
+    const { rows } = await pool.query(
+      `SELECT id, first_name, last_name, email, role, service, position, status, password_hash 
+       FROM employees WHERE email = $1`,
+      [email]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Email non trouvé' });
+    }
+
+    const user = rows[0];
+
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Mot de passe incorrect' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Connexion réussie',
+      user: {
+        id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+        role: user.role,
+        service: user.service,
+        position: user.position,
+        status: user.status
+      }
+    });
+  } catch (error) {
+    console.error('Erreur connexion employé:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
+  }
+};

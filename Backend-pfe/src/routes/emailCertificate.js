@@ -24,15 +24,15 @@ router.post('/generate-pdf', async (req, res) => {
 // Génère le PDF ET l'envoie par email au citoyen
 router.post('/generate-and-send', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  console.log('[Start] generate-and-send request received');
+  console.log('[Start] generate-and-send citizen request received');
   try {
     const {
-      citizenEmail, citizenFirstName, requestSubject,
-      employeeName, comment, requestId, citizen_id,
+      citizenEmail, citizenFirstName, citizenSubject,
+      employeeName, comment, citizen_id,
       wilaya, commune, actYear, actNumber,
     } = req.body;
 
-    const isResidenceCard = requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence') || requestSubject.toLowerCase().includes('séjour'));
+    const isResidenceCard = citizenSubject && (citizenSubject.toLowerCase().includes('résidence') || citizenSubject.toLowerCase().includes('residence') || citizenSubject.toLowerCase().includes('séjour'));
 
     // 1. جلب بيانات الأكت من Supabase (Only for birth certificates)
     let acte = null;
@@ -53,8 +53,8 @@ router.post('/generate-and-send', async (req, res) => {
     // دمج البيانات
     const pdfData = {
       ...req.body,
-      subject: requestSubject || 'Fiche de Résidence',
-      type_document: requestSubject || 'Fiche de Résidence',
+      subject: citizenSubject || 'Fiche de Résidence',
+      type_document: citizenSubject || 'Fiche de Résidence',
       citizenEmail,
       citizenFirstName,
       fullName: acte?.nom_prenom || `${citizenFirstName} ${req.body.citizenLastName || ''}`,
@@ -120,12 +120,12 @@ router.post('/generate-and-send', async (req, res) => {
     sendWithRetry().catch(err => console.error(' [Background Orchestration Error]:', err));
 
     // 4. Update status with fallback
-    if (requestId) {
+    if (citizen_id) {
       try {
-        console.log(' [DB] Attempting PostgreSQL update for ID:', requestId);
+        console.log(' [DB] Attempting PostgreSQL update for ID:', citizen_id);
         const result = await pool.query(
-          "UPDATE requests SET status = 'approuve', document_status = 'approved' WHERE id = $1",
-          [requestId]
+          "UPDATE citizens SET document_status = 'approved' WHERE id = $1",
+          [citizen_id]
         );
 
         console.log('  PostgreSQL updated, rows affected:', result.rowCount);
@@ -136,7 +136,7 @@ router.post('/generate-and-send', async (req, res) => {
             .schema('register')
             .from('citizens')
             .update({ status: 'approuve', document_status: 'approved' })
-            .eq('id', requestId);
+            .eq('id', citizen_id);
 
           if (error) {
             console.error('  Supabase update error:', error.message);
@@ -149,11 +149,11 @@ router.post('/generate-and-send', async (req, res) => {
         const io = req.app.get('io');
         if (io) {
           io.emit('status-update', {
-            id: requestId,
+            id: citizen_id,
             status: 'approuve',
             documentStatus: 'approved'
           });
-          console.log(`  WebSocket 'status-update' emitted for ID: ${requestId}`);
+          console.log(`  WebSocket 'status-update' emitted for ID: ${citizen_id}`);
         }
       } catch (dbErr) {
         console.error('  DB Status Update Error:', dbErr.message);
