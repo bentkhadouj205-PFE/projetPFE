@@ -128,7 +128,7 @@ export function CitizenRequestForm() {
         >
           <option>Fiche de Résidence</option>
           <option>Certificat de résidence</option>
-          <option>Acte de naissance</option>
+          <option>Certificat de Naissance</option>
           <option>Certificat de mariage</option>
         </select>
       </div>

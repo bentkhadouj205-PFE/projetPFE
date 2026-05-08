@@ -17,7 +17,7 @@ router.get('/:id/pdf', async (req, res) => {
       .single();
     
     if (error || !acteData) {
-      return res.status(404).json({ error: 'Acte de naissance not found' });
+      return res.status(404).json({ error: 'Certificat de naissance not found' });
     }
     
     // Generate PDF
@@ -25,7 +25,7 @@ router.get('/:id/pdf', async (req, res) => {
     
     // Send PDF response
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="acte_naissance_${acteData.numero_acte || acteData.numero_chahada}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="certificat_naissance_${acteData.numero_acte || acteData.numero_chahada}.pdf"`);
     res.send(pdfBuffer);
     
   } catch (error) {
@@ -48,13 +48,13 @@ router.get('/numero/:numero/pdf', async (req, res) => {
       .single();
     
     if (error || !acteData) {
-      return res.status(404).json({ error: 'Acte de naissance not found' });
+      return res.status(404).json({ error: 'Certificat de naissance not found' });
     }
     
     const pdfBuffer = await PDFService.generateActeNaissance(acteData);
     
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="acte_naissance_${numero}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="certificat_naissance_${numero}.pdf"`);
     res.send(pdfBuffer);
     
   } catch (error) {

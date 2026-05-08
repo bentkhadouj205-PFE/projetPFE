@@ -131,12 +131,12 @@ export function BirthActTraitmentDialog({
   const [step, setStep] = useState<'form' | 'demande' | 'certificate'>('form');
 
   const tr = useMemo(() => language === 'fr' ? {
-    title: 'Traitement — Acte de naissance',
+    title: 'Traitement — Certificat de Naissance',
     wilaya: 'Wilaya', commune: 'Commune', actYear: "Année de l'acte",
     actNumber: "N° de l'acte", position: 'Position', copies: 'Nbre de Copies',
     firstName: 'Prénom', lastName: 'Nom', validate: 'Valider', cancel: 'Annuler', select: 'Sélectionner',
   } : {
-    title: 'Processing — Birth certificate',
+    title: 'Processing — Birth Certificate',
     wilaya: 'Wilaya', commune: 'Municipality', actYear: 'Year of act',
     actNumber: 'Act number', position: 'Position', copies: 'Number of copies',
     firstName: 'First name', lastName: 'Last name', validate: 'Confirm', cancel: 'Cancel', select: 'Select',

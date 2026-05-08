@@ -96,225 +96,246 @@ export class PDFService {
       });
    }
 
-   // ========== BIRTH CERTIFICATE MATCHING YOUR DATABASE SCHEMA ==========
+   // ========== BIRTH CERTIFICATE - FRENCH VERSION ==========
 
    static async generateActeNaissance(data) {
       return new Promise((resolve, reject) => {
          try {
-            const arabicFontPath = path.join(__dirname, '../../fonts/NotoSansArabic-Regular.ttf');
-            const hasArabicFont = fs.existsSync(arabicFontPath);
-
             const doc = new PDFDocument({
                size: 'A4',
-               margins: { top: 50, bottom: 50, left: 50, right: 50 }
+               margins: { top: 20, bottom: 20, left: 20, right: 20 },
+               bufferPages: true,
             });
 
-            if (hasArabicFont) {
-               doc.registerFont('ArabicFont', arabicFontPath);
-            }
             const chunks = [];
             doc.on('data', chunk => chunks.push(chunk));
             doc.on('end', () => resolve(Buffer.concat(chunks)));
 
-            const darkBlue = '#1e3a5f';
-            const black = '#1f2937';
-            const gray = '#6b7280';
+            const black = '#000000';
+            const gray = '#666666';
+            const W = 595.28;  // A4 width in points
+            const H = 841.89;  // A4 height in points
+            const margin = 20;
 
-            const formatDate = (date) => {
-               if (!date) return '...../...../.....';
-               const d = new Date(date);
-               return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+            // ── helpers ──────────────────────────────────────────────────────
+            const formatDate = (d) => {
+               if (!d) return '../../..';
+               const dt = new Date(d);
+               return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+            };
+            const formatTime = (t) => (t ? String(t).substring(0, 5) : '......');
+            const v = (val, fallback = '..........') => (val ? String(val) : fallback);
+
+            const now = new Date();
+            const today = formatDate(now);
+
+            // Normalised data fields (mirrors emailService `d` object)
+            const d = {
+               numeroChahada: data.numero_chahada ?? data.numero_acte,
+               dateNaissance: data.date_naissance ?? data.dateNaissance,
+               heureNaissance: data.heure_naissance ?? data.heureNaissance,
+               communeNaissance: data.commune_naissance ?? data.communeNaissance,
+               wilayaNaissance: data.wilaya_naissance ?? data.wilayaNaissance,
+               fullName: data.nom_prenom ?? data.full_name ?? data.fullName,
+               genre: data.genre ?? data.sexe,
+               pereNomPrenom: data.pere_nom_prenom ?? data.pereNomPrenom,
+               pereAge: data.pere_age ?? data.pereAge,
+               pereMetier: data.pere_metier ?? data.pereMetier,
+               mereNomPrenom: data.mere_nom_prenom ?? data.mereNomPrenom,
+               mereAge: data.mere_age ?? data.mereAge,
+               mereMetier: data.mere_metier ?? data.mereMetier,
+               domicileCommune: data.domicile_commune ?? data.domicileCommune,
+               domicileWilaya: data.domicile_wilaya ?? data.domicileWilaya,
+               heureRedaction: data.heure_redaction ?? data.heureRedaction,
+               declarePar: data.declare_par ?? data.declarePar,
+               officierEtatCivil: data.officier_etat_civil ?? data.officierEtatCivil,
+               marginalNotes: data.marginal_notes ?? data.marginalNotes,
+               fullNameLatin: data.full_name_latin ?? data.fullNameLatin,
             };
 
-            const formatTime = (time) => {
-               if (!time) return '.....';
-               return time;
+            // ── DOUBLE BORDER ────────────────────────────────────────────────
+            doc.rect(margin, margin, W - margin * 2, H - margin * 2)
+               .lineWidth(2.5).stroke(black);
+            doc.rect(margin + 5, margin + 5, W - (margin + 5) * 2, H - (margin + 5) * 2)
+               .lineWidth(1).stroke(black);
+
+            let y = margin + 18;
+
+            // ── HEADER ───────────────────────────────────────────────────────
+            doc.fontSize(13).font('Helvetica-Bold').fillColor(black)
+               .text('RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
+            y += 18;
+            doc.fontSize(11).font('Helvetica-Bold')
+               .text("Ministère de l'Intérieur et des Collectivités Locales", margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
+            y += 16;
+            doc.fontSize(10).font('Helvetica')
+               .text("Registre National de l'État Civil", margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
+            y += 14;
+
+            // thick rule
+            doc.moveTo(margin + 10, y).lineTo(W - margin - 10, y).lineWidth(2).stroke(black);
+            y += 8;
+
+            // Main title
+            doc.fontSize(26).font('Helvetica-Bold')
+               .text('ACTE DE NAISSANCE', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
+            y += 32;
+            doc.fontSize(10).font('Helvetica').fillColor(gray)
+               .text('Version électronique', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
+            y += 14;
+
+            // thin rule
+            doc.moveTo(margin + 10, y).lineTo(W - margin - 10, y).lineWidth(1).stroke(black);
+            y += 10;
+
+            // ── helper: draw a labelled underline row ────────────────────────
+            const rowH = 22;
+            const lx = margin + 14;   // left content x
+            const rEdge = W - margin - 14;
+            const lineY = (baseY) => baseY + rowH - 4;
+
+            const drawField = (label, value, x, fieldWidth, baseY) => {
+               doc.fontSize(10).font('Helvetica').fillColor(black)
+                  .text(label, x, baseY, { lineBreak: false });
+               const lblW = doc.widthOfString(label) + 4;
+               const valX = x + lblW;
+               const valW = fieldWidth - lblW;
+               // dotted underline
+               doc.moveTo(valX, lineY(baseY))
+                  .lineTo(valX + valW, lineY(baseY))
+                  .lineWidth(0.5).dash(1, { space: 3 }).stroke(gray);
+               doc.undash();
+               // value text
+               doc.fontSize(10).font('Helvetica-Bold').fillColor(black)
+                  .text(v(value), valX + 2, baseY, { width: valW - 4, lineBreak: false });
+               // solid bottom rule for the whole row
+               doc.moveTo(x, lineY(baseY) + 1).lineTo(x + fieldWidth, lineY(baseY) + 1)
+                  .lineWidth(0.8).stroke(black);
             };
 
-            let y = doc.y;
+            // ── N° de l'acte  +  Le jour ─────────────────────────────────────
+            const fullW = rEdge - lx;
+            drawField("N° de l'acte  ", v(d.numeroChahada), lx, 160, y);
+            drawField('Le jour  ', formatDate(d.dateNaissance), lx + 180, fullW - 180, y);
+            y += rowH + 4;
 
-            // ========== HEADER ==========
-            doc.rect(0, 0, 612, 85).fill(darkBlue);
+            // ── heure + né(e) à ──────────────────────────────────────────────
+            drawField("à l'heure de  ", formatTime(d.heureNaissance), lx, 180, y);
+            drawField('est né(e) à  ', v(d.communeNaissance), lx + 200, fullW - 200, y);
+            y += rowH + 4;
 
-            if (hasArabicFont) {
-               doc.font('ArabicFont');
-            } else {
-               doc.font('Helvetica-Bold');
+            // ── commune + wilaya ─────────────────────────────────────────────
+            drawField('commune de  ', v(d.communeNaissance), lx, fullW / 2, y);
+            drawField('wilaya de  ', v(d.domicileWilaya), lx + fullW / 2, fullW / 2, y);
+            y += rowH + 4;
+
+            // ── date (repeat) + dénommé(e) ───────────────────────────────────
+            drawField('', formatDate(d.dateNaissance), lx, 100, y);
+            drawField('dénommé(e)  ', v(d.fullName), lx + 110, fullW - 110, y);
+            y += rowH + 4;
+
+            // ── sexe ─────────────────────────────────────────────────────────
+            drawField('sexe  ', v(d.genre), lx, fullW, y);
+            y += rowH + 4;
+
+            // ── père ─────────────────────────────────────────────────────────
+            drawField('fils / fille de  ', v(d.pereNomPrenom), lx, fullW * 0.55, y);
+            drawField('âge  ', v(d.pereAge, '///'), lx + fullW * 0.55, fullW * 0.2, y);
+            drawField('profession  ', v(d.pereMetier, '///'), lx + fullW * 0.75, fullW * 0.25, y);
+            y += rowH + 4;
+
+            // ── mère ─────────────────────────────────────────────────────────
+            drawField('et de  ', v(d.mereNomPrenom), lx, fullW * 0.55, y);
+            drawField('âge  ', v(d.mereAge, '///'), lx + fullW * 0.55, fullW * 0.2, y);
+            drawField('profession  ', v(d.mereMetier, '///'), lx + fullW * 0.75, fullW * 0.25, y);
+            y += rowH + 4;
+
+            // ── domicile ─────────────────────────────────────────────────────
+            drawField('demeurant à  ', v(d.domicileCommune), lx, fullW * 0.45, y);
+            drawField('commune  ', v(d.domicileCommune), lx + fullW * 0.45, fullW * 0.35, y);
+            drawField('wilaya  ', v(d.domicileWilaya, '///'), lx + fullW * 0.80, fullW * 0.20, y);
+            y += rowH + 4;
+
+            // ── dressé à ─────────────────────────────────────────────────────
+            drawField('Dressé à  ', v(d.communeNaissance), lx, fullW * 0.55, y);
+            drawField("à l'heure de  ", v(d.heureRedaction), lx + fullW * 0.55, fullW * 0.45, y);
+            y += rowH + 4;
+
+            // ── déclarant ────────────────────────────────────────────────────
+            drawField('sur déclaration de M./Mme  ', v(d.declarePar), lx, fullW, y);
+            y += rowH + 4;
+
+            // ── blank row ────────────────────────────────────────────────────
+            doc.moveTo(lx, y + rowH - 4).lineTo(rEdge, y + rowH - 4).lineWidth(0.8).stroke(black);
+            y += rowH + 4;
+
+            // ── officier ─────────────────────────────────────────────────────
+            drawField('Après lecture, signé avec nous  ', v(d.officierEtatCivil), lx, fullW * 0.5, y);
+            drawField("Officier de l'État Civil de la commune de  ", v(d.communeNaissance), lx + fullW * 0.5, fullW * 0.5, y);
+            y += rowH + 10;
+
+            // ── MENTIONS MARGINALES ──────────────────────────────────────────
+            doc.fontSize(10).font('Helvetica-Bold').fillColor(black)
+               .text('Mentions marginales', lx, y);
+            y += 14;
+
+            const marginalLines = d.marginalNotes ? d.marginalNotes.split('\n') : [''];
+            const totalMarginalLines = Math.max(6, marginalLines.length);
+            for (let i = 0; i < totalMarginalLines; i++) {
+               const lineVal = marginalLines[i] || '';
+               doc.fontSize(9).font('Helvetica').fillColor(black)
+                  .text(lineVal, lx, y, { width: fullW, lineBreak: false });
+               doc.moveTo(lx, y + 14).lineTo(rEdge, y + 14).lineWidth(0.8).stroke(black);
+               y += 18;
             }
+            y += 6;
 
-            doc.fillColor('#ffffff')
-               .fontSize(13)
-               .text('الجمهورية الجزائرية الديموقراطية الشعبية', 306, 20, { align: 'center', width: 500 });
+            // ── DRESSÉ À (footer line) ────────────────────────────────────────
+            doc.fontSize(10).font('Helvetica-Bold').fillColor(black)
+               .text(`Dressé à ${v(d.communeNaissance, 'Mostaganem')} le ${today}`, lx, y);
+            doc.moveTo(lx, y + 14).lineTo(rEdge, y + 14).lineWidth(0.8).stroke(black);
+            y += 22;
 
-            doc.fontSize(9);
-            if (!hasArabicFont) doc.font('Helvetica');
-            doc.text('وزارة الداخلية والجماعات المحلية', 306, 40, { align: 'center', width: 500 });
+            // ── LATIN TRANSCRIPTION ──────────────────────────────────────────
+            doc.moveTo(lx, y).lineTo(rEdge, y).lineWidth(1.5).stroke(black);
+            y += 8;
 
-            doc.fontSize(8);
-            if (!hasArabicFont) doc.font('Helvetica-Bold');
-            doc.text(`ولاية: ${data.wilaya_naissance || '.............'}`, 40, 58, { align: 'right', width: 500 })
-               .text(`دائرة: ${data.daira || '.............'}`, 40, 70, { align: 'right', width: 500 })
-               .text(`بلدية: ${data.commune_naissance || '.............'}`, 40, 82, { align: 'right', width: 500 });
+            doc.fontSize(10).font('Helvetica-Bold').fillColor(black)
+               .text('Transcription antérieure du nom et prénom en caractères latins', lx, y, { align: 'center', width: fullW });
+            y += 16;
 
-            doc.fontSize(20);
-            if (!hasArabicFont) doc.font('Helvetica-Bold');
-            doc.text('شهادة الميلاد', 306, 105, { align: 'center', width: 500 });
+            drawField('1- En toutes lettres  ', v(d.fullNameLatin), lx, fullW, y);
+            y += rowH + 4;
+            drawField("2- Nom et prénom de l'enfant  ", v(d.fullNameLatin), lx, fullW, y);
+            y += rowH + 14;
 
-            doc.fontSize(10);
-            if (!hasArabicFont) doc.font('Helvetica');
-            doc.text('نسخة الكترونية', 306, 130, { align: 'center', width: 500 });
+            // ── OFFICIAL BOX ─────────────────────────────────────────────────
+            const boxW = 280;
+            const boxX = (W - boxW) / 2;
+            doc.rect(boxX, y, boxW, 24).lineWidth(2).stroke(black);
+            doc.fontSize(9).font('Helvetica-Bold').fillColor(black)
+               .text("EXTRAIT DU REGISTRE NATIONAL DE L'ÉTAT CIVIL", boxX + 4, y + 7, { width: boxW - 8, align: 'center' });
+            y += 34;
 
-            // ========== CERTIFICATE NUMBER ==========
-            y = 165;
-            doc.fillColor(black)
-               .fontSize(10)
-               .font('Helvetica')
-               .text(`رقم الشهادة: ${data.numero_chahada || data.numero_acte || '...../...../.....'}`, 50, y);
+            // ── STAMP CIRCLE + REF ───────────────────────────────────────────
+            const stampR = 35;
+            doc.circle(lx + stampR, y + stampR, stampR).lineWidth(1).dash(3, { space: 3 }).stroke(black);
+            doc.undash();
+            doc.fontSize(7).font('Helvetica').fillColor(gray)
+               .text('Cachet', lx + stampR - 15, y + stampR - 5, { width: 30, align: 'center' });
 
-            // ========== BIRTH DETAILS ==========
-            y += 25;
-            if (!hasArabicFont) doc.font('Helvetica');
-            doc.text(`في يوم: ${formatDate(data.date_naissance)}`, 50, y, { align: 'right', width: 500 });
-            doc.text(`على الساعة: ${formatTime(data.heure_naissance)}`, 50, y, { align: 'right', width: 250 });
-
-            y += 20;
-            doc.text(`ولد(ت) ب: ${data.lieu_naissance || '.............'}`, 50, y, { align: 'right', width: 500 });
-
-            y += 20;
-            doc.text(`بلدية: ${data.commune_naissance || '.............'}`, 50, y, { align: 'right', width: 500 });
-            doc.text(`ولاية: ${data.wilaya_naissance || '.............'}`, 50, y, { align: 'right', width: 250 });
-
-            // ========== CHILD NAME ==========
-            y += 30;
-            if (hasArabicFont) doc.font('ArabicFont'); else doc.font('Helvetica-Bold');
-            doc.fontSize(11)
-               .text(`المسمى(ة): ${data.nom_prenom || '..........................'}`, 50, y, { align: 'right', width: 500 });
-
-            y += 20;
-            doc.font('Helvetica')
-               .fontSize(10)
-               .text(`الجنس: ${data.sexe === 'M' ? 'ذكر' : data.sexe === 'F' ? 'أنثى' : '.....'}`, 50, y);
-
-            // ========== FATHER ==========
-            y += 30;
-            if (hasArabicFont) doc.font('ArabicFont'); else doc.font('Helvetica-Bold');
-            doc.text(`ابن(ة): ${data.pere_nom_prenom || '........................'}`, 50, y, { align: 'right', width: 500 });
-
-            y += 20;
-            if (!hasArabicFont) doc.font('Helvetica');
-            doc.text(`عمره: ${data.pere_age || '.....'} سنة`, 50, y, { align: 'right', width: 500 })
-               .text(`مهنة: ${data.pere_metier || '.....................'}`, 50, y, { align: 'right', width: 350 });
-
-            y += 18;
-            doc.text(` domicilié à: ${data.pere_domicile_commune || '.............'}`, 50, y, { align: 'right', width: 500 })
-               .text(`ولاية: ${data.pere_domicile_wilaya || '.............'}`, 50, y, { align: 'right', width: 300 });
-
-            // ========== MOTHER ==========
-            y += 28;
-            if (hasArabicFont) doc.font('ArabicFont'); else doc.font('Helvetica-Bold');
-            doc.text(`و: ${data.mere_nom_prenom || '........................'}`, 50, y, { align: 'right', width: 500 });
-
-            y += 20;
-            if (!hasArabicFont) doc.font('Helvetica');
-            doc.text(`عمرها: ${data.mere_age || '.....'} سنة`, 50, y, { align: 'right', width: 500 })
-               .text(`مهنتها: ${data.mere_metier || '.....................'}`, 50, y, { align: 'right', width: 350 });
-
-            y += 18;
-            doc.text(` domiciliée à: ${data.mere_domicile_commune || '.............'}`, 50, y, { align: 'right', width: 500 })
-               .text(`ولاية: ${data.mere_domicile_wilaya || '.............'}`, 50, y, { align: 'right', width: 300 });
-
-            // ========== FAMILY ADDRESS ==========
-            y += 28;
-            doc.font('Helvetica-Bold')
-               .text(`الساكنين:`, 50, y);
-
-            y += 20;
-            doc.font('Helvetica')
-               .text(`بلدية: ${data.domicile_commune || '.............'}`, 50, y)
-               .text(`ولاية: ${data.domicile_wilaya || '.............'}`, 250, y);
-
-            // ========== ISSUANCE DETAILS ==========
-            y += 35;
-            doc.text(`حرر في: ${formatDate(data.date_acte)}`, 50, y);
-            doc.text(`على الساعة: ${formatTime(data.heure_redaction)}`, 250, y);
-
-            y += 20;
-            doc.text(`بإعلان أدلى به السيد(ة): ${data.declare_par || '........................'}`, 50, y);
-
-            // ========== OFFICER SIGNATURE ==========
-            y += 50;
-            doc.text(`وبعد التلاوة وقع معنا نحن:`, 50, y);
-
-            y += 20;
-            doc.text(`..................................................`, 50, y);
-
-            y += 20;
-            doc.font('Helvetica-Bold')
-               .text(`${data.officier_etat_civil || 'ضابط الحالة المدنية'}`, 50, y);
-            doc.font('Helvetica')
-               .text(`ببلدية: ${data.officier_commune || data.commune_naissance || '.............'}`, 200, y);
-
-            // ========== MARGINAL NOTES ==========
-            y += 45;
-            doc.font('Helvetica-Bold')
-               .text(`البيانات الهامشية:`, 50, y);
-
-            y += 20;
-            doc.font('Helvetica')
-               .fontSize(9)
-               .fillColor(gray);
-
-            if (data.marginal_notes) {
-               const lines = data.marginal_notes.split('\n');
-               for (const line of lines) {
-                  doc.text(line, 50, y, { width: 500 });
-                  y += 15;
-               }
-            } else {
-               for (let i = 0; i < 4; i++) {
-                  doc.text('.........................................................................', 50, y + (i * 15));
-               }
-               y += 60;
-            }
-
-            // ========== FOOTER ==========
-            doc.fillColor(black);
-            const today = new Date();
-            const dateStr = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
-
-            y += 30;
-            doc.font('Helvetica')
-               .fontSize(10)
-               .text(`حررت ب. ${data.wilaya_delivrance || 'مستغانم'} في ${formatDate(data.date_delivrance) || dateStr}`, 306, y, { align: 'center', width: 500 });
-
-            // ========== LATIN TRANSCRIPTION ==========
-            y += 30;
-            doc.fontSize(9)
-               .fillColor(gray)
-               .text(`الكتابة السابقة للاسم واللقب بالحروف اللاتينية:`, 50, y);
-
-            y += 18;
-            doc.fillColor(black)
-               .fontSize(9)
-               .text(`1- بكامل الحروف: ${(data.nom_prenom || '').toUpperCase()}`, 50, y);
-
-            y += 18;
-            doc.text(`2- اسم ولقب الولادة: ${(data.pere_nom_prenom || '').toUpperCase()}`, 50, y);
-
-            // ========== FINAL REFERENCE ==========
-            y += 35;
-            doc.font('Helvetica-Bold')
-               .fontSize(10)
-               .fillColor(darkBlue)
-               .text(`مستخرج من السجل الوطني للحالة المدنية - المرجع ج م 7`, 306, y, { align: 'center', width: 500 });
+            doc.fontSize(8).font('Helvetica').fillColor(black)
+               .text('Réf. J.M. 7', rEdge - 50, y + stampR * 2 - 10);
 
             doc.end();
          } catch (error) {
-            console.error('Error generating Acte de Naissance:', error);
+            console.error('Error generating Acte de Naissance (FR):', error);
             reject(error);
          }
       });
    }
+
+   // ========== RESIDENCE CARD ==========
 
    static generateCarteSejour(data) {
       return new Promise((resolve, reject) => {
@@ -325,8 +346,10 @@ export class PDFService {
             doc.on('end', () => resolve(Buffer.concat(chunks)));
             const W = 595;
             doc.rect(0, 0, W, 90).fill('#1e3a5f');
-            doc.fillColor('#ffffff').fontSize(15).font('Helvetica-Bold').text('الجمهورية الجزائرية الديموقراطية الشعبية', 50, 18, { align: 'center', width: W - 100 });
-            doc.fillColor('#1f2937').fontSize(22).font('Helvetica-Bold').text('CARTE DE RÉSIDENCE', 50, 105, { align: 'center', width: W - 100 });
+            doc.fillColor('#ffffff').fontSize(15).font('Helvetica-Bold')
+               .text('RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE', 50, 18, { align: 'center', width: W - 100 });
+            doc.fillColor('#1f2937').fontSize(22).font('Helvetica-Bold')
+               .text('CARTE DE RÉSIDENCE', 50, 105, { align: 'center', width: W - 100 });
             doc.end();
          } catch (err) { reject(err); }
       });

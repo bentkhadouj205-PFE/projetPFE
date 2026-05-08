@@ -30,6 +30,19 @@ export async function generateCertificatePDF(input) {
     actes_naissance = await fetchActeNaissance(input);
   } else {
     actes_naissance = input || {};
+    
+    // Fallback: fetch full record from actes_naissance if needed
+    if (!actes_naissance.pere_nom_prenom && (actes_naissance.citizen_id || actes_naissance.citizen_nin)) {
+      const { data: fullRecord } = await supabase
+        .schema('register')
+        .from('actes_naissance')
+        .select('*')
+        .or(`citizen_id.eq.${actes_naissance.citizen_id},numero_chahada.eq.${actes_naissance.actNumber}`)
+        .maybeSingle();
+      if (fullRecord) {
+        actes_naissance = { ...fullRecord, ...actes_naissance };
+      }
+    }
   }
 
   const now = new Date();
@@ -47,15 +60,17 @@ export async function generateCertificatePDF(input) {
   const rawType = actes_naissance.subject || actes_naissance.type_document || actes_naissance.requestSubject || '';
   console.log(' [PDF Gen] Raw type received:', rawType);
 
+  // FIX 1: Use single backslash \u so the unicode range actually works
   const dType = rawType.toLowerCase()
     .normalize('NFD')
-    .replace(/[\\u0300-\\u036f]/g, '');
+    .replace(/[\u0300-\u036f]/g, '');
 
   console.log(' [PDF Gen] Normalized type:', dType);
 
   const isResidenceCard = dType.includes('residence') || dType.includes('sejour') || dType.includes('carte');
   console.log(' [PDF Gen] isResidenceCard:', isResidenceCard);
 
+  // FIX 2: Declare html with let at top level so both branches can assign to it
   let html = '';
 
   if (isResidenceCard) {
@@ -266,21 +281,21 @@ export async function generateCertificatePDF(input) {
   } else {
     // ─── BIRTH CERTIFICATE TEMPLATE (شهادة الميلاد) ────────────────────────
     const d = {
-      numeroChahada: actes_naissance.numero_chahada ?? actes_naissance.numeroChahada ?? actes_naissance.numeroActe,
+      numeroChahada: actes_naissance.numero_chahada ?? actes_naissance.numeroChahada ?? actes_naissance.numero_acte ?? '///',
       dateNaissance: actes_naissance.date_naissance ?? actes_naissance.dateNaissance,
       heureNaissance: actes_naissance.heure_naissance ?? actes_naissance.heureNaissance,
-      communeNaissance: actes_naissance.commune_naissance ?? actes_naissance.communeNaissance,
-      wilayaNaissance: actes_naissance.wilaya_naissance ?? actes_naissance.wilayaNaissance,
-      fullName: actes_naissance.nom_prenom ?? actes_naissance.full_name ?? actes_naissance.fullName,
+      communeNaissance: actes_naissance.commune_naissance ?? actes_naissance.communeNaissance ?? actes_naissance.commune,
+      wilayaNaissance: actes_naissance.wilaya_naissance ?? actes_naissance.wilayaNaissance ?? actes_naissance.wilaya,
+      fullName: actes_naissance.nom_prenom ?? actes_naissance.full_name ?? actes_naissance.fullName ?? `${actes_naissance.prenom || ''} ${actes_naissance.nom || ''}`.trim(),
       genre: actes_naissance.genre ?? actes_naissance.sexe,
       pereNomPrenom: actes_naissance.pere_nom_prenom ?? actes_naissance.pereNomPrenom,
       pereAge: actes_naissance.pere_age ?? actes_naissance.pereAge,
-      pereMetier: actes_naissance.pere_metier ?? actes_naissance.pereMetier,
+      pereMetier: actes_naissance.pere_metier ?? actes_naissance.pereMetier ?? actes_naissance.pereProfession,
       mereNomPrenom: actes_naissance.mere_nom_prenom ?? actes_naissance.mereNomPrenom,
       mereAge: actes_naissance.mere_age ?? actes_naissance.mereAge,
-      mereMetier: actes_naissance.mere_metier ?? actes_naissance.mereMetier,
-      domicileCommune: actes_naissance.domicile_commune ?? actes_naissance.domicileCommune,
-      domicileWilaya: actes_naissance.domicile_wilaya ?? actes_naissance.domicileWilaya,
+      mereMetier: actes_naissance.mere_metier ?? actes_naissance.mereMetier ?? actes_naissance.mereProfession,
+      domicileCommune: actes_naissance.domicile_commune ?? actes_naissance.domicileCommune ?? actes_naissance.commune,
+      domicileWilaya: actes_naissance.domicile_wilaya ?? actes_naissance.domicileWilaya ?? actes_naissance.wilaya,
       heureRedaction: actes_naissance.heure_redaction ?? actes_naissance.heureRedaction,
       declarePar: actes_naissance.declare_par ?? actes_naissance.declarePar,
       officierEtatCivil: actes_naissance.officier_etat_civil ?? actes_naissance.officierEtatCivil,
@@ -288,12 +303,13 @@ export async function generateCertificatePDF(input) {
       fullNameLatin: actes_naissance.full_name_latin ?? actes_naissance.fullNameLatin,
     };
 
-    const html = ` <!DOCTYPE html>
+    // FIX 2: assign to outer `html` (no `const` here)
+    html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Acte de Naissance - Version Électronique</title>
+  <title>Certificat de Naissance - Version Électronique</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Times+New+Roman&display=swap');
 
@@ -319,7 +335,6 @@ export async function generateCertificatePDF(input) {
       color: #000;
     }
 
-    /* Double border frame like original */
     .outer-border {
       position: absolute;
       top: 6px; left: 6px; right: 6px; bottom: 6px;
@@ -333,7 +348,6 @@ export async function generateCertificatePDF(input) {
       pointer-events: none;
     }
 
-    /* ── HEADER ── */
     .header {
       text-align: center;
       margin-bottom: 4px;
@@ -372,12 +386,10 @@ export async function generateCertificatePDF(input) {
       margin-bottom: 8px;
     }
 
-    /* ── FIELD ROWS ── */
     .field-block {
       margin-top: 4px;
     }
 
-    /* Each line is a flex row with label + dotted fill */
     .row {
       display: flex;
       align-items: flex-end;
@@ -407,7 +419,6 @@ export async function generateCertificatePDF(input) {
     .dots.short { max-width: 90px; flex: none; width: 90px; }
     .dots.med   { max-width: 160px; flex: none; width: 160px; }
 
-    /* cert number + date top row */
     .top-meta {
       display: flex;
       align-items: flex-end;
@@ -427,7 +438,6 @@ export async function generateCertificatePDF(input) {
       border-bottom: 1px dotted #666;
     }
 
-    /* Marginal notes */
     .margin-section {
       margin-top: 10px;
     }
@@ -443,7 +453,6 @@ export async function generateCertificatePDF(input) {
       width: 100%;
     }
 
-    /* Footer */
     .footer-drafted {
       font-size: 11pt;
       margin-top: 12px;
@@ -452,7 +461,6 @@ export async function generateCertificatePDF(input) {
       padding-bottom: 4px;
     }
 
-    /* Latin section at bottom */
     .latin-section {
       margin-top: 10px;
       border-top: 1.5px solid #000;
@@ -473,7 +481,6 @@ export async function generateCertificatePDF(input) {
     }
     .latin-row .dots { border-bottom: 1px solid #666; }
 
-    /* Official stamp box */
     .official-box {
       text-align: center;
       border: 2px solid #000;
@@ -505,7 +512,6 @@ export async function generateCertificatePDF(input) {
       align-self: flex-end;
     }
 
-    /* Filled value style */
     .value {
       font-weight: bold;
       font-size: 11pt;
@@ -526,16 +532,29 @@ export async function generateCertificatePDF(input) {
   <div class="outer-border"></div>
   <div class="inner-border"></div>
 
-  <div class="header">
-    <div class="republic">RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE</div>
-    <div class="ministry">Ministère de l'Intérieur et des Collectivités Locales</div>
-    <div class="registry">Registre National de l'État Civil</div>
+  <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="text-align: left;">
+      <div class="republic">RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE</div>
+      <div class="ministry">Ministère de l'Intérieur et des Collectivités Locales</div>
+      <div class="registry">Registre National de l'État Civil</div>
+    </div>
+    <div style="text-align: right; font-family: 'Arial', sans-serif; direction: rtl;">
+      <div style="font-size: 15pt; font-weight: bold;">الجمهورية الجزائرية الديمقراطية الشعبية</div>
+      <div style="font-size: 12pt; font-weight: bold;">وزارة الداخلية والجماعات المحلية</div>
+      <div style="font-size: 11pt;">السجل الوطني للحالة المدنية</div>
+    </div>
   </div>
 
   <hr class="thick">
 
-  <div class="main-title">ACTE DE NAISSANCE</div>
-  <div class="sub-title">Version électronique</div>
+  <div class="main-title" style="display: flex; justify-content: center; align-items: center; gap: 40px;">
+    <span>CERTIFICAT DE NAISSANCE</span>
+    <span style="font-family: 'Arial', sans-serif;">شهادة الميلاد</span>
+  </div>
+  <div class="sub-title" style="display: flex; justify-content: center; gap: 20px;">
+    <span>Version électronique</span>
+    <span>نسخة إلكترونية</span>
+  </div>
 
   <hr class="thin">
 
@@ -562,7 +581,7 @@ export async function generateCertificatePDF(input) {
       <span class="lbl">commune de</span>
       <div class="dots"><span class="value">${v(d.communeNaissance)}</span></div>
       <span class="lbl">wilaya de</span>
-      <div class="dots med"><span class="value">${v(d.domicileWilaya)}</span></div>
+      <div class="dots med"><span class="value">${v(d.wilayaNaissance)}</span></div>
     </div>
 
     <div class="row">
@@ -583,7 +602,7 @@ export async function generateCertificatePDF(input) {
       <span class="lbl">âge</span>
       <div class="dots short"><span class="value">${v(d.pereAge, '///')}</span></div>
       <span class="lbl">profession</span>
-      <div class="dots med"><span class="value">${v(d.pereProfession, '///')}</span></div>
+      <div class="dots med"><span class="value">${v(d.pereMetier, '///')}</span></div>
     </div>
 
     <div class="row">
@@ -592,7 +611,7 @@ export async function generateCertificatePDF(input) {
       <span class="lbl">âge</span>
       <div class="dots short"><span class="value">${v(d.mereAge, '///')}</span></div>
       <span class="lbl">profession</span>
-      <div class="dots med"><span class="value">${v(d.mereProfession, '///')}</span></div>
+      <div class="dots med"><span class="value">${v(d.mereMetier, '///')}</span></div>
     </div>
 
     <div class="row">
@@ -655,8 +674,9 @@ export async function generateCertificatePDF(input) {
       <div class="dots"><span class="value">${v(d.fullNameLatin)}</span></div>
     </div>
 
-    <div style="text-align:center; margin-top:10px;">
-      <span class="official-box">EXTRAIT DU REGISTRE NATIONAL DE L'ÉTAT CIVIL</span>
+    <div style="text-align:center; margin-top:10px; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+      <span class="official-box">CERTIFICAT DU REGISTRE NATIONAL DE L'ÉTAT CIVIL</span>
+      <span style="font-family: 'Arial', sans-serif; font-size: 11pt; font-weight: bold; border: 2px solid #000; padding: 5px 14px;">مستخرج من السجل الوطني للحالة المدنية</span>
     </div>
 
     <div class="bottom-row">
@@ -667,8 +687,7 @@ export async function generateCertificatePDF(input) {
 
 </div>
 </body>
-</html>
-`;
+</html>`;
   }
 
   let browser;
@@ -722,7 +741,7 @@ export const emailService = {
     const payload = {
       sender: { name: 'Baladiya Digital', email: 'baladiyadigital27@gmail.com' },
       to: [{ email: citizenEmail, name: citizenFirstName }],
-      subject: `Votre document est prêt - ${requestSubject || 'Acte de Naissance'}`,
+      subject: `Votre document est prêt - ${requestSubject || 'Certificat de Naissance'}`,
       htmlContent: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden;direction:rtl;text-align:right">
           <div style="background:#00782B;padding:20px;text-align:center">
@@ -731,7 +750,7 @@ export const emailService = {
           </div>
           <div style="padding:24px">
             <p style="font-size:16px">Bonjour <strong>${citizenFirstName || ''}</strong>،</p>
-            <p>Votre demande a été acceptée par nos services <span style="color:#00782B;font-weight:bold">${requestSubject || 'Acte de Naissance'}</span>.</p>
+            <p>Votre demande a été acceptée par nos services <span style="color:#00782B;font-weight:bold">${requestSubject || 'Certificat de Naissance'}</span>.</p>
             <p>Votre document officiel est joint en format PDF.</p>
             ${comment ? `<p style="background:#f0faf4;padding:12px;border-radius:6px;font-style:italic;border-left:4px solid #00782B;color:#00782B">Remarque : ${comment}</p>` : ''}
             <p style="color:#888;font-size:13px;margin-top:20px">Traité par : <strong>${employeeName || "service d'état civil"}</strong></p>
@@ -745,7 +764,7 @@ export const emailService = {
         content: pdfBuffer.toString('base64'),
         name: (requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence')))
           ? 'Fiche_de_Residence.pdf'
-          : 'Acte_de_Naissance.pdf',
+          : 'Certificat_de_Naissance.pdf',
       }],
     };
 
