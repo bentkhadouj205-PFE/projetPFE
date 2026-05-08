@@ -530,6 +530,7 @@ export async function generateCertificatePDF(input) {
   </div>
 </body>
 </html>
+`;
   }
 
   let browser;
@@ -583,7 +584,7 @@ export const emailService = {
     const payload = {
       sender: { name: 'Baladiya Digital', email: 'baladiyadigital27@gmail.com' },
       to: [{ email: citizenEmail, name: citizenFirstName }],
-      subject: `Votre document est prêt - ${ requestSubject || 'Acte de Naissance' } `,
+      subject: `Votre document est prêt - ${requestSubject || 'Acte de Naissance'}`,
       htmlContent: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden;direction:rtl;text-align:right">
           <div style="background:#00782B;padding:20px;text-align:center">
@@ -600,7 +601,7 @@ export const emailService = {
           <div style="background:#f9f9f9;padding:12px;text-align:center;font-size:11px;color:#aaa">
             Baladiya Digital — Document généré automatiquement
           </div>
-        </div >
+        </div>
       `,
       attachment: [{
         content: pdfBuffer.toString('base64'),
