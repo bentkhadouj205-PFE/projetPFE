@@ -24,11 +24,11 @@ router.post('/generate-pdf', async (req, res) => {
 // Génère le PDF ET l'envoie par email au citoyen
 router.post('/generate-and-send', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  console.log('[Start] generate-and-send citizen request received');
+  console.log('[Start] generate-and-send request received');
   try {
     const {
       citizenEmail, citizenFirstName, requestSubject,
-      employeeName, comment, citizen_id,
+      employeeName, comment, requestId, citizen_id,
       wilaya, commune, actYear, actNumber,
     } = req.body;
 
@@ -120,12 +120,12 @@ router.post('/generate-and-send', async (req, res) => {
     sendWithRetry().catch(err => console.error(' [Background Orchestration Error]:', err));
 
     // 4. Update status with fallback
-    if (citizen_id) {
+    if (requestId) {
       try {
-        console.log(' [DB] Attempting PostgreSQL update for ID:', citizen_id);
+        console.log(' [DB] Attempting PostgreSQL update for ID:', requestId);
         const result = await pool.query(
-          "UPDATE citizens SET document_status = 'approved' WHERE id = $1",
-          [citizen_id]
+          "UPDATE requests SET status = 'approuve', document_status = 'approved' WHERE id = $1",
+          [requestId]
         );
 
         console.log('  PostgreSQL updated, rows affected:', result.rowCount);
@@ -134,9 +134,9 @@ router.post('/generate-and-send', async (req, res) => {
           console.log('  No rows in PostgreSQL, trying Supabase (register schema)...');
           const { error } = await supabase
             .schema('register')
-            .from('citizens')
+            .from('requests')
             .update({ status: 'approuve', document_status: 'approved' })
-            .eq('id', citizen_id);
+            .eq('id', requestId);
 
           if (error) {
             console.error('  Supabase update error:', error.message);
@@ -149,11 +149,11 @@ router.post('/generate-and-send', async (req, res) => {
         const io = req.app.get('io');
         if (io) {
           io.emit('status-update', {
-            id: citizen_id,
+            id: requestId,
             status: 'approuve',
             documentStatus: 'approved'
           });
-          console.log(`  WebSocket 'status-update' emitted for ID: ${citizen_id}`);
+          console.log(`  WebSocket 'status-update' emitted for ID: ${requestId}`);
         }
       } catch (dbErr) {
         console.error('  DB Status Update Error:', dbErr.message);
