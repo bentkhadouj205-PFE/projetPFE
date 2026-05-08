@@ -30,7 +30,7 @@
     "pdfkit": "^0.18.0",
     "pg": "^8.20.0",
     "puppeteer-core": "^24.43.0",
-    "resend": "^6.12.2",
+    "resend": "^6.12.3",
     "sequelize": "^6.37.8",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",

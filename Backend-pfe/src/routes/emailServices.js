@@ -1,9 +1,9 @@
 import { supabase } from '../supabaseClient.js';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import PDFService from '../server/pdfservice.js';
 
 export async function initializeEmail() {
-  console.log('Email Service ready (PDFKit)');
+  console.log('Email Service ready (Resend + PDFKit)');
   return true;
 }
 
@@ -45,7 +45,7 @@ export async function generateCertificatePDF(input) {
   const dType = rawType.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const isResidenceCard = dType.includes('residence') || dType.includes('sejour') || dType.includes('carte');
 
-  console.log(`[PDF] Type détecté: "${rawType}" → ${isResidenceCard ? 'Résidence' : 'Naissance'}`);
+  console.log(`[PDF] Type: "${rawType}" → ${isResidenceCard ? 'Résidence' : 'Naissance'}`);
 
   if (isResidenceCard) {
     return await PDFService.generateCarteSejour(data);
@@ -54,23 +54,14 @@ export async function generateCertificatePDF(input) {
   }
 }
 
-let transporter = null;
+let resendClient = null;
 
-function getTransporter() {
-  if (transporter) return transporter;
-
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  console.log(`[SMTP CONFIG] user=${user} | pass=${pass ? '***set***' : 'MISSING!'}`);
-
-  transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: { user, pass },
-    tls: { rejectUnauthorized: false },
-  });
-  return transporter;
+function getResend() {
+  if (resendClient) return resendClient;
+  const apiKey = process.env.RESEND_API_KEY;
+  console.log(`[RESEND] API Key: ${apiKey ? '***set***' : 'MISSING!'}`);
+  resendClient = new Resend(apiKey);
+  return resendClient;
 }
 
 export const emailService = {
@@ -107,20 +98,20 @@ export const emailService = {
     );
     const attachmentName = isResidence ? 'Fiche_de_Residence.pdf' : 'Certificat_de_Naissance.pdf';
 
-    const mailOptions = {
-      from: `"Baladiya Digital" <${process.env.SMTP_USER}>`,
+    const resend = getResend();
+    const { data, error } = await resend.emails.send({
+      from: 'Baladiya Digital <onboarding@resend.dev>',
       to: citizenEmail,
       subject: `Votre document est prêt - ${requestSubject || 'Certificat de Naissance'}`,
       html: htmlContent,
       attachments: [{
         filename: attachmentName,
-        content: pdfBuffer,
+        content: pdfBuffer.toString('base64'),
       }],
-    };
+    });
 
-    const currentTransporter = getTransporter();
-    const info = await currentTransporter.sendMail(mailOptions);
-    console.log(' [Nodemailer Success]:', info.messageId);
-    return { messageId: info.messageId };
+    if (error) throw new Error(error.message);
+    console.log(' [Resend Success] messageId:', data.id);
+    return { messageId: data.id };
   }
 };

@@ -91,65 +91,45 @@ router.post('/generate-and-send', async (req, res) => {
     const pdfBuffer = await generateCertificatePDF(pdfData);
     console.timeEnd(' PDF Generation');
 
-    // 3. Send email — awaited so real errors are visible in logs
-    console.log(` [EMAIL DEBUG] Sending to: "${citizenEmail}" | Subject: "${requestSubject}"`);
-    try {
-      const info = await emailService.sendValidationEmailWithPDF(
-        citizenEmail, citizenFirstName,
-        requestSubject || 'Acte de Naissance',
-        employeeName || 'Service État Civil',
-        comment || '',
-        pdfBuffer
-      );
+    // 3. Fire-and-forget email — respond to frontend immediately
+    console.log(` [EMAIL] Sending in background to: "${citizenEmail}"`);
+    emailService.sendValidationEmailWithPDF(
+      citizenEmail, citizenFirstName,
+      requestSubject || 'Acte de Naissance',
+      employeeName || 'Service État Civil',
+      comment || '',
+      pdfBuffer
+    ).then(info => {
       console.log(` [EMAIL SUCCESS] Sent to ${citizenEmail} | messageId:`, info?.messageId);
-    } catch (emailErr) {
+    }).catch(emailErr => {
       console.error(` [EMAIL ERROR] Failed to send to ${citizenEmail}:`, emailErr.message);
-      // Don't throw — still update DB status below
-    }
+    });
 
-    // 4. Update status — using demandes table and citizen_id
+    // 4. Update status in DB
     const updateId = citizen_id || requestId;
     if (updateId) {
       try {
-        console.log(' [DB] Attempting PostgreSQL update for ID:', updateId);
         const result = await pool.query(
           "UPDATE demandes SET statut = 'approuve' WHERE id = $1",
           [updateId]
         );
-
-        console.log('  PostgreSQL updated, rows affected:', result.rowCount);
-
         if (result.rowCount === 0) {
-          console.log('  No rows in PostgreSQL, trying Supabase...');
-          const { error } = await supabase
+          await supabase
             .schema('register')
             .from('demandes')
             .update({ statut: 'approuve' })
             .eq('id', updateId);
-
-          if (error) {
-            console.error('  Supabase update error:', error.message);
-          } else {
-            console.log('  Supabase updated successfully');
-          }
         }
-
-        // Broadcast real-time status update
         const io = req.app.get('io');
         if (io) {
-          io.emit('status-update', {
-            id: updateId,
-            status: 'approuve',
-            documentStatus: 'approved'
-          });
-          console.log(`  WebSocket 'status-update' emitted for ID: ${updateId}`);
+          io.emit('status-update', { id: updateId, status: 'approuve', documentStatus: 'approved' });
         }
       } catch (dbErr) {
         console.error('  DB Status Update Error:', dbErr.message);
       }
     }
 
-    console.log(' [Success] Email sent and status updated');
+    // Respond immediately — email sends in background
     res.json({ success: true });
 
   } catch (err) {
