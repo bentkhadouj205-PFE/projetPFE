@@ -529,7 +529,8 @@ export async function generateCertificatePDF(input) {
 
   <hr class="thick">
 
-  
+  <div class="main-title">CERTIFICAT DE NAISSANCE</div>
+  <div class="sub-title">Version électronique</div>
   <hr class="thin">
 
   <div class="top-meta">
@@ -714,14 +715,14 @@ export const emailService = {
       to: [{ email: citizenEmail, name: citizenFirstName }],
       subject: `Votre document est prêt - ${requestSubject || 'Certificat de Naissance'}`,
       htmlContent: `
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden;direction:rtl;text-align:right">
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden;direction:ltr;text-align:left">
           <div style="background:#00782B;padding:20px;text-align:center">
             <h1 style="color:#fff;margin:0;font-size:22px">Baladiya Digital</h1>
             <p style="color:#c8f5d8;margin:4px 0 0">Service d'état civil en ligne</p>
           </div>
           <div style="padding:24px">
-            <p style="font-size:16px">Bonjour <strong>${citizenFirstName || ''}</strong>،</p>
-            <p>Votre demande a été acceptée par nos services <span style="color:#00782B;font-weight:bold">${requestSubject || 'Certificat de Naissance'}</span>.</p>
+            <p style="font-size:16px">Bonjour <strong>${citizenFirstName || ''}</strong>,</p>
+            <p>Votre demande a été acceptée par nos services : <span style="color:#00782B;font-weight:bold">${requestSubject || 'Certificat de Naissance'}</span>.</p>
             <p>Votre document officiel est joint en format PDF.</p>
             ${comment ? `<p style="background:#f0faf4;padding:12px;border-radius:6px;font-style:italic;border-left:4px solid #00782B;color:#00782B">Remarque : ${comment}</p>` : ''}
             <p style="color:#888;font-size:13px;margin-top:20px">Traité par : <strong>${employeeName || "service d'état civil"}</strong></p>
