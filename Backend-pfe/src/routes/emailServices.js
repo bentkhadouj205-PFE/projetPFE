@@ -1,6 +1,7 @@
 import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
 import { supabase } from '../supabaseClient.js';
+import nodemailer from 'nodemailer';
 
 export async function initializeEmail() {
   console.log('Brevo API Service ready');
@@ -23,448 +24,258 @@ export async function fetchActeNaissance(requestId) {
   return data;
 }
 
-// ── Generate PDF from DB row or Object ──────────────────────────────────────
-export async function generateCertificatePDF(input) {
-  let actes_naissance;
-  if (typeof input === 'string') {
-    actes_naissance = await fetchActeNaissance(input);
-  } else {
-    actes_naissance = input || {};
+let browserInstance = null;
 
-    // Fallback: fetch full record from actes_naissance if needed
-    if (!actes_naissance.pere_nom_prenom && (actes_naissance.citizen_id || actes_naissance.citizen_nin)) {
+async function getBrowser() {
+  if (browserInstance && browserInstance.connected) {
+    return browserInstance;
+  }
+  
+  const execPath = await chromium.executablePath();
+  browserInstance = await puppeteer.launch({
+    args: [
+      ...chromium.args,
+      '--disable-dev-shm-usage',
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-gpu',
+      '--no-zygote',
+      '--single-process'
+    ],
+    defaultViewport: chromium.defaultViewport,
+    executablePath: execPath,
+    headless: chromium.headless,
+  });
+  return browserInstance;
+}
+
+export async function generateCertificatePDF(input) {
+  let data;
+  if (typeof input === 'string') {
+    data = await fetchActeNaissance(input);
+  } else {
+    data = input || {};
+    if (!data.pere_nom_prenom && (data.citizen_id || data.citizen_nin)) {
       const { data: fullRecord } = await supabase
         .schema('register')
         .from('actes_naissance')
         .select('*')
-        .or(`citizen_id.eq.${actes_naissance.citizen_id},numero_chahada.eq.${actes_naissance.actNumber}`)
+        .or(`citizen_id.eq.${data.citizen_id},numero_chahada.eq.${data.actNumber}`)
         .maybeSingle();
       if (fullRecord) {
-        actes_naissance = { ...fullRecord, ...actes_naissance };
+        data = { ...fullRecord, ...data };
       }
     }
   }
 
-  const now = new Date();
-  const today = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
-
+  const v = (val, fallback = '') => (val ? String(val) : fallback);
   const formatDate = (d) => {
     if (!d) return '../../..';
     const dt = new Date(d);
     return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
   };
 
-  const formatTime = (t) => (t ? String(t).substring(0, 5) : '......');
-  const v = (val, fallback = '..........') => (val ? String(val) : fallback);
-
-  const rawType = actes_naissance.subject || actes_naissance.type_document || actes_naissance.requestSubject || '';
-  console.log(' [PDF Gen] Raw type received:', rawType);
-
-  // FIX 1: Use single backslash \u so the unicode range actually works
-  const dType = rawType.toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-
-  console.log(' [PDF Gen] Normalized type:', dType);
-
+  const rawType = data.subject || data.type_document || data.requestSubject || '';
+  const dType = rawType.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const isResidenceCard = dType.includes('residence') || dType.includes('sejour') || dType.includes('carte');
-  console.log(' [PDF Gen] isResidenceCard:', isResidenceCard);
 
-  // FIX 2: Declare html with let at top level so both branches can assign to it
   let html = '';
-
   if (isResidenceCard) {
-    // ─── RESIDENCE CARD TEMPLATE  ─────────────────────────────
     const d = {
-      fullName: actes_naissance.fullName || actes_naissance.nom_prenom || `${actes_naissance.firstName || ''} ${actes_naissance.lastName || ''}`.trim(),
-      dateNaissance: actes_naissance.date_naissance || actes_naissance.dateNaissance || '',
-      lieuNaissance: actes_naissance.lieu_naissance || actes_naissance.lieuNaissance || actes_naissance.commune_naissance || '',
-      adresse: actes_naissance.adresse || actes_naissance.citizen_address || '',
-      wilaya: actes_naissance.wilaya || actes_naissance.domicile_wilaya || 'Mostaganem',
-      daira: actes_naissance.daira || actes_naissance.domicile_daira || 'Mostaganem',
-      commune: actes_naissance.commune || actes_naissance.domicile_commune || 'Mostaganem',
-      nationalite: actes_naissance.nationalite || 'Algerian',
-      profession: actes_naissance.profession || actes_naissance.metier || '',
-      presidentName: actes_naissance.president_name || actes_naissance.presidentName || 'Ould Abed Meshri',
+      fullName: data.fullName || data.nom_prenom || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+      dateNaissance: data.date_naissance || data.dateNaissance || '',
+      lieuNaissance: data.lieu_naissance || data.lieuNaissance || data.commune_naissance || '',
+      adresse: data.adresse || data.citizen_address || '',
+      wilaya: data.wilaya || data.domicile_wilaya || 'Mostaganem',
+      daira: data.daira || data.domicile_daira || 'Mostaganem',
+      commune: data.commune || data.domicile_commune || 'Mostaganem',
+      presidentName: data.president_name || data.presidentName || 'Ould Abed Meshri',
     };
 
     html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificat de Résidence</title>
     <style>
-        body {font-family: "Times New Roman", Times, serif;background-color: white;color: black;margin: 0;padding: 20px;line-height: 1.4;}
-        .container {max-width: 800px;margin: auto;border: 1.5px solid black;padding: 30px;position: relative;}
-        .header {text-align: center;margin-bottom: 30px;font-weight: bold;text-transform: uppercase;}
-        .header h1 {font-size: 18px;margin: 5px 0;}
-        .header h2 {font-size: 16px;margin: 3px 0;}
-        .header-left {text-align: left;font-weight: normal;text-transform: uppercase;margin-bottom: 20px;}
-        .header-left h2 {font-size: 13px;margin: 3px 0;font-weight: normal;}
-        .title-box {text-align: center;margin: 20px auto;border: 1.5px solid black;border-radius: 12px;padding: 15px 40px;display: table;}
-        .title-box h3 {font-size: 24px;margin: 0;text-transform: uppercase;letter-spacing: 2px;}
-        .content-section {margin-top: 20px;}
-        .row {margin-bottom: 10px;display: flex;align-items: baseline;}
+        body {font-family: "Times New Roman", Times, serif;background-color: white;color: black;margin: 0;padding: 10px;line-height: 1.8;}
+        .container {max-width: 800px;margin: auto;border: 1.5px solid black;padding: 40px;position: relative; min-height: 1050px; box-sizing: border-box;}
+        .header {text-align: center;margin-bottom: 40px;font-weight: bold;text-transform: uppercase;}
+        .header h1 {font-size: 20px;margin: 5px 0;}
+        .header h2 {font-size: 18px;margin: 3px 0;}
+        .header-left {text-align: left;font-weight: normal;text-transform: uppercase;margin-bottom: 30px;}
+        .header-left h2 {font-size: 15px;margin: 5px 0;font-weight: normal;}
+        .title-box {text-align: center;margin: 40px auto;border: 2px solid black;border-radius: 12px;padding: 20px 50px;display: table;}
+        .title-box h3 {font-size: 32px;margin: 0;text-transform: uppercase;letter-spacing: 3px;}
+        .content-section {margin-top: 30px; font-size: 18px;}
+        .row {margin-bottom: 25px;display: flex;align-items: baseline;}
         .label {font-weight: normal;margin-right: 10px;white-space: nowrap;}
-        .dots {flex-grow: 1;border-bottom: 0.5px dotted #888;height: 18px;padding-left: 10px;padding-bottom: 2px;}
-        .grid-row {display: grid;grid-template-columns: 1fr 1fr;gap: 20px;}
-        .footer {margin-top: 50px;display: flex;justify-content: space-between;}
-        .validity-note {margin-top: 30px;font-size: 12px;font-style: italic;border-top: 1px solid black;padding-top: 10px;}
+        .dots {flex-grow: 1;border-bottom: 0.5px dotted #888;height: 22px;padding-left: 10px;}
+        .grid-row {display: grid;grid-template-columns: 1fr 1fr;gap: 30px;}
+        .footer {margin-top: 60px;display: flex;justify-content: space-between; font-size: 18px;}
+        .validity-note {position: absolute; bottom: 20px; left: 40px; right: 40px; font-size: 14px; font-style: italic; border-top: 1px solid black; padding-top: 10px;}
         .dynamic-val { font-family: Arial, sans-serif;font-weight: normal;}
-        @media print {body {padding: 0;}.container {border: none;}}
     </style>
 </head>
 <body>
-
 <div class="container">
     <div class="header">
         <h1>République Algérienne Démocratique et Populaire</h1>
         <h2>Ministère de l'Intérieur</h2>
     </div>
-
     <div class="header-left">
-        <h2>Wilaya de : <span class="dynamic-val">${v(d.domicileWilaya)}</span></h2>
-        <h2>Daïra de : <span class="dynamic-val">${v(d.domicileDaira || 'Mostaganem')}</span></h2>
-        <h2>Commune de : <span class="dynamic-val">${v(d.domicileCommune)}</span></h2>
+        <h2>Wilaya de : <span class="dynamic-val">${v(d.wilaya)}</span></h2>
+        <h2>Daïra de : <span class="dynamic-val">${v(d.daira)}</span></h2>
+        <h2>Commune de : <span class="dynamic-val">${v(d.commune)}</span></h2>
     </div>
-
     <div class="title-box">
         <h3>Certificat de Résidence</h3>
     </div>
-
     <div style="text-align: center; margin-top: 20px; font-size: 18px; line-height: 1.5;">
         Nous,<br>
         <strong>${v(d.presidentName)}</strong><br>
-        <strong>${v(d.domicileCommune)}</strong>
+        <strong>${v(d.commune)}</strong>
     </div>
-
     <div class="content-section">
-        
+        <div class="row"><span class="label">M. / Mme / Mlle :</span><span class="dots dynamic-val">${v(d.fullName)}</span></div>
         <div class="row">
-            <span class="label">M. / Mme / Mlle :</span>
-            <span class="dots dynamic-val">${v(d.fullName)}</span>
+            <span class="label">Né(e) le :</span><span class="dots dynamic-val">${v(d.dateNaissance)}</span>
+            <span class="label" style="margin-left: 10px;">à :</span><span class="dots dynamic-val">${v(d.lieuNaissance)}</span>
         </div>
-
-        <div class="row">
-            <span class="label">Né(e) le :</span>
-            <span class="dots dynamic-val">${v(d.dateNaissance)}</span>
-            <span class="label" style="margin-left: 10px;">à :</span>
-            <span class="dots dynamic-val">${v(d.communeNaissance)}</span>
-        </div>
-
-        <div class="grid-row">
-            <div class="row">
-                <span class="label">Profession :</span>
-                <span class="dots dynamic-val">${v(d.pereMetier || '///')}</span>
-            </div>
-            <div class="row">
-                <span class="label">Nationalité :</span>
-                <span class="dots dynamic-val">Algérienne</span>
-            </div>
-        </div>
-
-        <div class="row">
-            <span class="label">Demeurant à :</span>
-            <span class="dots dynamic-val">${v(d.domicileCommune)}</span>
-        </div>
-
-        <div class="row">
-            <span class="label">Adresse complète :</span>
-            <span class="dots dynamic-val">${v(d.adresseComplete || '///')}</span>
-        </div>
-
+        <div class="row"><span class="label">Demeurant à :</span><span class="dots dynamic-val">${v(d.commune)}</span></div>
+        <div class="row"><span class="label">Adresse complète :</span><span class="dots dynamic-val">${v(d.adresse)}</span></div>
         <p style="margin-top: 20px;">Réside dans la commune depuis plus de six (06) mois.</p>
-        
-        <p>Cette attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit dans les limites de ce qui n'est pas interdit par la loi.</p>
-
-        <div style="margin-top: 30px; text-align: center;">
-             <p>Le Président de l'Assemblée Populaire Communale de la commune de <span class="dynamic-val"><strong>${v(d.domicileCommune)}</strong></span>, certifie que les renseignements ci-dessus sont exacts.</p>
-        </div>
+        <p>Cette attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.</p>
     </div>
-
     <div class="footer">
-        <div>
-            Fait à : <strong>${v(d.domicileCommune)}</strong><br>
-            Le : <span class="dynamic-val">${formatDate(new Date())}</span>
-        </div>
-        <div></div>
+        <div>Fait à : <strong>${v(d.commune)}</strong><br>Le : <span class="dynamic-val">${formatDate(new Date())}</span></div>
     </div>
-
-    <div style="text-align: center; margin-top: 15px; font-size: 14px; text-transform: uppercase;">
-        L'OBJET DE LA DÉLIVRANCE DE CETTE ATTESTATION EST DE JUSTIFIER LE DOMICILE
-    </div>
-
-    <div class="validity-note">
-        (1) La validité de la présente attestation ne peut excéder six (6) mois
-    </div>
+    <div class="validity-note">(1) La validité de la présente attestation ne peut excéder six (6) mois</div>
 </div>
-
 </body>
 </html>`;
   } else {
-    // ─── BIRTH CERTIFICATE TEMPLATE  ────────────────────────
     const d = {
-      numeroChahada: actes_naissance.numero_chahada ?? actes_naissance.numeroChahada ?? actes_naissance.numero_acte ?? '///',
-      dateNaissance: actes_naissance.date_naissance ?? actes_naissance.dateNaissance,
-      heureNaissance: actes_naissance.heure_naissance ?? actes_naissance.heureNaissance,
-      communeNaissance: actes_naissance.commune_naissance ?? actes_naissance.communeNaissance ?? actes_naissance.commune,
-      wilayaNaissance: actes_naissance.wilaya_naissance ?? actes_naissance.wilayaNaissance ?? actes_naissance.wilaya,
-      fullName: actes_naissance.nom_prenom ?? actes_naissance.full_name ?? actes_naissance.fullName ?? `${actes_naissance.prenom || ''} ${actes_naissance.nom || ''}`.trim(),
-      genre: actes_naissance.genre ?? actes_naissance.sexe,
-      pereNomPrenom: actes_naissance.pere_nom_prenom ?? actes_naissance.pereNomPrenom,
-      pereAge: actes_naissance.pere_age ?? actes_naissance.pereAge,
-      pereMetier: actes_naissance.pere_metier ?? actes_naissance.pereMetier ?? actes_naissance.pereProfession,
-      mereNomPrenom: actes_naissance.mere_nom_prenom ?? actes_naissance.mereNomPrenom,
-      mereAge: actes_naissance.mere_age ?? actes_naissance.mereAge,
-      mereMetier: actes_naissance.mere_metier ?? actes_naissance.mereMetier ?? actes_naissance.mereProfession,
-      domicileCommune: actes_naissance.domicile_commune ?? actes_naissance.domicileCommune ?? actes_naissance.commune,
-      domicileWilaya: actes_naissance.domicile_wilaya ?? actes_naissance.domicileWilaya ?? actes_naissance.wilaya,
-      heureRedaction: actes_naissance.heure_redaction ?? actes_naissance.heureRedaction,
-      declarePar: actes_naissance.declare_par ?? actes_naissance.declarePar,
-      officierEtatCivil: actes_naissance.officier_etat_civil ?? actes_naissance.officierEtatCivil,
-      marginalNotes: actes_naissance.marginal_notes ?? actes_naissance.marginalNotes,
+      numeroActe: data.numero_acte || data.numeroChahada || '',
+      dateNaissance: data.date_naissance || '',
+      heureNaissance: data.heure_naissance || '',
+      communeNaissance: data.commune_naissance || '',
+      wilayaNaissance: data.wilaya_naissance || '',
+      fullName: data.nom_prenom_enfant || data.fullName || '',
+      genre: data.genre_enfant || data.sexe || '',
+      pereNomPrenom: data.nom_prenom_pere || '',
+      mereNomPrenom: data.nom_prenom_mere || '',
+      domicileCommune: data.domicile_commune || '',
+      dateRedaction: data.date_redaction || data.dateDelivrance || '',
+      heureRedaction: data.heure_redaction || '',
+      declarePar: data.declare_par || '',
+      officierEtatCivil: data.officier_etat_civil || '',
     };
 
     html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificat de Naissance</title>
     <style>
-        body {font-family: "Times New Roman", Times, serif;background-color: white;color: black;margin: 0;padding: 20px;line-height: 1.4;}
-        .container {max-width: 800px;margin: auto;border: 1.5px solid black;padding: 30px;position: relative;}
-        .header {text-align: center;margin-bottom: 30px;font-weight: bold;text-transform: uppercase;}
-        .header h1 {font-size: 18px;margin: 5px 0;}
-        .header h2 {font-size: 16px;margin: 5px 0;}
-        .title-box {text-align: center;margin: 20px 0;padding: 10px 0;}
-        .title-box h3 {font-size: 24px;margin: 0;text-transform: uppercase;letter-spacing: 2px;}
-        .title-box p {margin: 5px 0 0 0;font-style: italic;}
-        .content-section {margin-top: 15px;}
-        .row {margin-bottom: 10px;display: flex;align-items: baseline;}
-        .label {font-weight: normal;margin-right: 10px;white-space: nowrap;}
-        .dots {flex-grow: 1;border-bottom: 0.5px dotted #888;height: 14px;padding-left: 10px;}
-        .grid-row {display: grid;grid-template-columns: 1fr 1fr;gap: 20px;}
-        .marginal-notes {margin-top: 40px;border: 1px solid black;min-height: 100px;padding: 10px;}
-        .marginal-notes-title {font-weight: bold;text-decoration: underline;margin-bottom: 10px;}
-        .footer {margin-top: 40px;display: flex;justify-content: space-between;}
-        .latin-spelling {margin-top: 30px;border-top: 1px solid black;padding-top: 10px;font-size: 14px;}
-        .reference {text-align: right;font-size: 12px;margin-top: 20px;}
-        .dynamic-val {font-family: Arial, sans-serif;font-weight: normal;}
-        @media print {body { padding: 0; }.container { border: none; }}
+        body { font-family: 'Times New Roman', serif; margin: 0; padding: 20px; background: #fff; color: #000; line-height: 1.4; }
+        .container { border: 2px solid #000; padding: 30px; position: relative; max-width: 800px; margin: auto; min-height: 1050px; box-sizing: border-box; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 18px; margin: 5px 0; text-transform: uppercase; }
+        .header h2 { font-size: 16px; margin: 5px 0; }
+        .title-box { text-align: center; margin: 20px 0; padding: 10px 0; }
+        .title-box h3 { font-size: 24px; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+        .content-section { margin-top: 15px; }
+        .row { margin-bottom: 10px; display: flex; align-items: baseline; }
+        .label { font-weight: normal; margin-right: 10px; white-space: nowrap; }
+        .dots { flex-grow: 1; border-bottom: 0.5px dotted #888; height: 14px; padding-left: 10px; }
+        .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .dynamic-val { font-family: Arial, sans-serif; font-weight: normal; }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <div style="position: absolute; top: 15px; left: 15px; font-size: 10px; text-align: left; font-weight: normal; text-transform: none; line-height: 1.2; color: #333;">
-        Extrait du Registre National de l'État Civil<br>
-        Référence : 7 M.G.
-    </div>
     <div class="header">
         <h1>République Algérienne Démocratique et Populaire</h1>
         <h2>Ministère de l'Intérieur et des Collectivités Locales</h2>
         <h2>Registre National de l'État Civil</h2>
     </div>
-
     <div class="title-box">
         <h3>Certificat de Naissance</h3>
-        <p>Copie Électronique</p>
+        <p style="text-align: left; font-size: 11px; font-style: italic; color: #555; margin: 0 0 0 10px; font-weight: normal;">Copie Électronique</p>
     </div>
-
-    
+    <div style="text-align: center; margin: 20px 0;"><h2 style="font-size: 28px; font-weight: bold; text-transform: uppercase; margin: 0;">Certifie que</h2></div>
     <div class="content-section">
+        <div class="row"><span class="label">Acte N° :</span><span class="dots dynamic-val">${v(d.numeroActe)}</span></div>
         <div class="row">
-            <span class="label">Acte N° :</span>
-            <span class="dots dynamic-val">${v(d.numeroChahada)}</span>
-        </div>
-
-        <div class="row">
-            <span class="label">Le jour du :</span>
-            <span class="dots dynamic-val">${v(d.dateNaissance)}</span>
-            <span class="label" style="margin-left: 10px;">à :</span>
-            <span class="dots dynamic-val">${v(d.heureNaissance)}</span>
+            <span class="label">Le jour du :</span><span class="dots dynamic-val">${v(d.dateNaissance)}</span>
+            <span class="label" style="margin-left: 10px;">à :</span><span class="dots dynamic-val">${v(d.heureNaissance)}</span>
             <span class="label" style="margin-left: 5px;">heures</span>
         </div>
-
-        <div class="row">
-            <span class="label">Est né(e) à :</span>
-            <span class="dots dynamic-val">${v(d.communeNaissance)}</span>
-        </div>
-
+        <div class="row"><span class="label">Est né(e) à :</span><span class="dots dynamic-val">${v(d.communeNaissance)}</span></div>
         <div class="grid-row">
-            <div class="row">
-                <span class="label">Commune :</span>
-                <span class="dots dynamic-val">${v(d.communeNaissance)}</span>
-            </div>
-            <div class="row">
-                <span class="label">Wilaya :</span>
-                <span class="dots dynamic-val">${v(d.wilayaNaissance)}</span>
-            </div>
+            <div class="row"><span class="label">Commune :</span><span class="dots dynamic-val">${v(d.communeNaissance)}</span></div>
+            <div class="row"><span class="label">Wilaya :</span><span class="dots dynamic-val">${v(d.wilayaNaissance)}</span></div>
         </div>
-
-        <div class="row">
-            <span class="label">Le :</span>
-            <span class="dots dynamic-val">${v(d.dateNaissance)}</span>
+        <div class="row"><span class="label">Dénommé(e) :</span><span class="dots dynamic-val">${v(d.fullName)}</span></div>
+        <div class="row"><span class="label">Sexe :</span><span class="dots dynamic-val">${v(d.genre)}</span></div>
+        <div class="row"><span class="label">Fils / Fille de :</span><span class="dots dynamic-val">${v(d.pereNomPrenom)}</span></div>
+        <div class="row"><span class="label">Et de :</span><span class="dots dynamic-val">${v(d.mereNomPrenom)}</span></div>
+        <div class="row" style="margin-top: 20px; display: block;">
+            <p style="margin: 0; line-height: 1.8;">
+                Dressé le <span style="display:inline-block; min-width:100px; border-bottom: 1px dotted black;" class="dynamic-val">${v(d.dateRedaction)}</span> 
+                à <span style="display:inline-block; min-width:60px; border-bottom: 1px dotted black;" class="dynamic-val">${v(d.heureRedaction)}</span> heures, 
+                sur la déclaration de : <span style="display:inline-block; min-width:200px; border-bottom: 1px dotted black;" class="dynamic-val">${v(d.declarePar)}</span>
+            </p>
         </div>
-
-        <div class="row">
-            <span class="label">Nom et Prénom :</span>
-            <span class="dots dynamic-val">${v(d.fullName)}</span>
+        <div class="row" style="margin-top: 15px; display: flex; align-items: baseline;">
+            <span class="label">Le Président de l'Assemblée Populaire Communale de la commune de :</span>
+            <span class="dots dynamic-val" style="flex-grow: 1;">${v(d.domicileCommune)}</span>
         </div>
-
-        <div class="row">
-            <span class="label">Sexe :</span>
-            <span class="dots dynamic-val">${v(d.genre)}</span>
-        </div>
-
-        <div class="row">
-            <span class="label">Fils / Fille de :</span>
-            <span class="dots dynamic-val">${v(d.pereNomPrenom)}</span>
-        </div>
-
-        <div class="grid-row">
-            <div class="row">
-                <span class="label">Âge :</span>
-                <span class="dots dynamic-val">${v(d.pereAge)}</span>
-            </div>
-            <div class="row">
-                <span class="label">Profession :</span>
-                <span class="dots dynamic-val">${v(d.pereMetier)}</span>
-            </div>
-        </div>
-
-        <div class="row">
-            <span class="label">Et de :</span>
-            <span class="dots dynamic-val">${v(d.mereNomPrenom)}</span>
-        </div>
-
-        <div class="grid-row">
-            <div class="row">
-                <span class="label">Âge :</span>
-                <span class="dots dynamic-val">${v(d.mereAge)}</span>
-            </div>
-            <div class="row">
-                <span class="label">Profession :</span>
-                <span class="dots dynamic-val">${v(d.mereMetier)}</span>
-            </div>
-        </div>
-
-        <div class="row">
-            <span class="label">Domiciliés à :</span>
-            <span class="dots dynamic-val">${v(d.domicileCommune)}</span>
-        </div>
-
-        <div class="grid-row">
-            <div class="row">
-                <span class="label">Commune :</span>
-                <span class="dots dynamic-val">${v(d.domicileCommune)}</span>
-            </div>
-            <div class="row">
-                <span class="label">Wilaya :</span>
-                <span class="dots dynamic-val">${v(d.domicileWilaya)}</span>
-            </div>
-        </div>
-
-        <div class="row" style="margin-top: 20px;">
-            <p style="margin: 0;">Dressé le <span style="display:inline-block; width:100px; border-bottom: 1px dotted black;" class="dynamic-val">${v(d.dateNaissance)}</span> à <span style="display:inline-block; width:60px; border-bottom: 1px dotted black;" class="dynamic-val">${v(d.heureRedaction)}</span> heures, sur la déclaration de :</p>
-        </div>
-        <div class="row">
-            <span class="dots dynamic-val">${v(d.declarePar)}</span>
-        </div>
-
-        <div class="row" style="margin-top: 10px;">
-            <p style="margin: 0;">Lequel, après lecture, a signé avec nous :</p>
-        </div>
-
-        <div class="row">
-            <span class="label">Nous,</span>
-            <span class="dots dynamic-val">${v(d.officierEtatCivil)}</span>
-            <span class="label" style="margin-left: 10px;">Officier de l'État Civil de la commune de :</span>
-        </div>
-        <div class="row">
-            <span class="dots dynamic-val">${v(d.domicileCommune)}</span>
-        </div>
-
-        <div style="margin-top: 20px; text-align: left;">
-            <p style="margin: 5px 0;">Fait à : <strong>${v(d.domicileCommune)}</strong></p>
-            <p style="margin: 5px 0;">Le : <span style="display:inline-block; width:120px; border-bottom: 1px dotted black;" class="dynamic-val">${v(new Date().toLocaleDateString())}</span></p>
-        </div>
-
-        <div style="margin-top: 15px;">
-            <p style="font-weight: bold; text-decoration: underline; margin-bottom: 5px;">Mentions Marginales :</p>
-            <div class="dynamic-val" style="padding-left: 10px; min-height: 40px; font-size: 14px;">
-                ${v(d.marginalNotes, 'NÉANT')}
-            </div>
-        </div>
-        <div style="margin: 10px 0; font-size: 14px;">
-        <div class="row">
-            <span class="label">1- En toutes lettres </span>
-  
-        </div>
-        <div class="row">
-            <span class="label">2- Nom et Prénom de l'enfant </span>
-        </div>
+        <div style="margin-top: 20px;"><p style="font-weight: bold; margin-bottom: 10px;">Mentions marginales</p><div style="border-top: 1px solid black; margin-bottom: 15px;"></div><div style="border-top: 1px solid black; margin-bottom: 15px;"></div></div>
+        <div style="position: absolute; bottom: 15px; left: 15px; font-size: 10px; text-align: left; font-weight: normal; text-transform: none; line-height: 1.2; color: #333;">Extrait du Registre National de l'État Civil<br>Référence : 7 M.G.</div>
     </div>
-
-    </div>
-
-
-
-
-
-
-
-
 </div>
-
 </body>
-</html>
-`;
+</html>`;
   }
 
   let browser;
   try {
-    const execPath = await chromium.executablePath();
-    console.log(' [PDF] Launching Chromium from:', execPath);
-
-    browser = await puppeteer.launch({
-      args: [
-        ...chromium.args,
-        '--disable-dev-shm-usage',
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-gpu',
-        '--no-zygote',
-        '--single-process'
-      ],
-      defaultViewport: chromium.defaultViewport,
-      executablePath: execPath,
-      headless: chromium.headless,
-    });
-
+    browser = await getBrowser();
     const page = await browser.newPage();
-    await page.setDefaultNavigationTimeout(60000);
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 });
-
+    await page.setContent(html, { waitUntil: 'networkidle0' });
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
     });
-
+    await page.close();
     return Buffer.from(pdfBuffer);
-  } finally {
-    if (browser) await browser.close();
+  } catch (err) {
+    console.error('PDF Generation Error:', err);
+    throw err;
   }
+}
+
+let transporter = null;
+
+function getTransporter() {
+  if (transporter) return transporter;
+  
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+  return transporter;
 }
 
 // ── Email sender ─────────────────────────────────────────────────────────────
 export const emailService = {
   async sendValidationEmailWithPDF(citizenEmail, citizenFirstName, requestSubject, employeeName, comment, pdfBufferOrId) {
-    const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.BREVO_SMTP_PASS;
-
     let pdfBuffer;
     if (Buffer.isBuffer(pdfBufferOrId)) {
       pdfBuffer = pdfBufferOrId;
@@ -472,11 +283,7 @@ export const emailService = {
       pdfBuffer = await generateCertificatePDF(pdfBufferOrId);
     }
 
-    const payload = {
-      sender: { name: 'Baladiya Digital', email: 'baladiyadigital27@gmail.com' },
-      to: [{ email: citizenEmail, name: citizenFirstName }],
-      subject: `Votre document est prêt - ${requestSubject || 'Certificat de Naissance'}`,
-      htmlContent: `
+    const htmlContent = `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden;direction:ltr;text-align:left">
           <div style="background:#00782B;padding:20px;text-align:center">
             <h1 style="color:#fff;margin:0;font-size:22px">Baladiya Digital</h1>
@@ -493,30 +300,25 @@ export const emailService = {
             Baladiya Digital — Document généré automatiquement
           </div>
         </div>
-      `,
-      attachment: [{
-        content: pdfBuffer.toString('base64'),
-        name: (requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence')))
-          ? 'Fiche_de_Residence.pdf'
-          : 'Certificat_de_Naissance.pdf',
+    `;
+
+    const isResidence = (requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence')));
+    const attachmentName = isResidence ? 'Fiche_de_Residence.pdf' : 'Certificat_de_Naissance.pdf';
+
+    const mailOptions = {
+      from: `"Baladiya Digital" <${process.env.SMTP_USER}>`,
+      to: citizenEmail,
+      subject: `Votre document est prêt - ${requestSubject || 'Certificat de Naissance'}`,
+      html: htmlContent,
+      attachments: [{
+        filename: attachmentName,
+        content: pdfBuffer,
       }],
     };
 
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'api-key': BREVO_API_KEY,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const result = await response.json();
-    if (!response.ok) {
-      console.error(' Brevo API Error:', result);
-      throw new Error(result.message || 'Failed to send email via Brevo');
-    }
-    return { messageId: result.messageId };
-  },
+    const currentTransporter = getTransporter();
+    const info = await currentTransporter.sendMail(mailOptions);
+    console.log(' [Nodemailer Success]:', info.messageId);
+    return { messageId: info.messageId };
+  }
 };

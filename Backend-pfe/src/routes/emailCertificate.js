@@ -91,16 +91,19 @@ router.post('/generate-and-send', async (req, res) => {
     const pdfBuffer = await generateCertificatePDF(pdfData);
     console.timeEnd(' PDF Generation');
 
-    // 3. Send Email
-    console.time(' Brevo API Send');
-    await emailService.sendValidationEmailWithPDF(
+    // 3. Send Email (Background)
+    console.log(' [Background] Starting email dispatch...');
+    emailService.sendValidationEmailWithPDF(
       citizenEmail, citizenFirstName,
       requestSubject || 'Acte de Naissance',
       employeeName || 'Service État Civil',
       comment || '',
       pdfBuffer
-    );
-    console.timeEnd(' Brevo API Send');
+    ).then(info => {
+      console.log(' [Background Success] Email sent:', info?.messageId);
+    }).catch(err => {
+      console.error(' [Background Error] Email failed:', err.message);
+    });
 
     // 4. Update status with fallback
     if (requestId) {

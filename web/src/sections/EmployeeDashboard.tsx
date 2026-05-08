@@ -452,13 +452,7 @@ export function EmployeeDashboard({
           {/* Tasks Tab */}
           {activeTab === 'tasks' && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input placeholder={language === 'fr' ? 'Rechercher par nom, email, NIN...' : 'Search by name, email, NIN...'}
-                    value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 dark:bg-slate-900 dark:border-slate-700" />
-                </div>
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-end bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-slate-500" />
                   <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}

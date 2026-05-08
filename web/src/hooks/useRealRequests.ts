@@ -109,7 +109,6 @@ export function useRealRequests(employeeId: string) {
       });
       if (response.ok) {
         setRequests(prev => prev.map(r => r.id === taskId ? { ...r, status: 'completed' } : r));
-        toast.success(employeeId ? 'Demande approuvée' : 'Statut mis à jour');
       } else {
         throw new Error('Failed to update status');
       }

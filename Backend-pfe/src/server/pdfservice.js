@@ -170,9 +170,13 @@ export class PDFService {
             y += 8;
 
             // Main title
-            doc.fontSize(26).font('Helvetica-Bold')
-               .text('CERTIFICAT DE NAISSANCE', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
-            y += 32;
+             doc.fontSize(22).font('Helvetica-Bold')
+                .text('Certificat de Naissance', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
+             y += 30;
+
+             doc.fontSize(20).font('Helvetica-Bold')
+                .text('CERTIFIE QUE', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
+             y += 25;
 
             // ── LATIN TRANSCRIPTION LINES ────────────────────────────────────
             doc.fontSize(10).font('Helvetica').fillColor(black)
@@ -247,14 +251,15 @@ export class PDFService {
             y += rowH + 4;
 
             // ── demeure ──────────────────────────────────────────────────────
-            drawField('demeurant à  ', v(d.domicileCommune), lx, fullW * 0.55, y);
-            drawField('commune  ', v(d.domicileCommune), lx + fullW * 0.55, fullW * 0.2, y);
-            drawField('wilaya  ', v(d.domicileWilaya, '///'), lx + fullW * 0.75, fullW * 0.25, y);
+            drawField('demeurant à  ', v(d.domicile), lx, fullW, y);
+            y += rowH + 4;
+            drawField('commune de  ', v(d.domicileCommune), lx, fullW * 0.5, y);
+            drawField('wilaya de  ', v(d.domicileWilaya), lx + fullW * 0.5, fullW * 0.5, y);
             y += rowH + 4;
 
             // ── dressé à ─────────────────────────────────────────────────────
-            drawField('Dressé à  ', v(d.communeNaissance), lx, fullW * 0.55, y);
-            drawField("à l'heure de  ", v(d.heureRedaction), lx + fullW * 0.55, fullW * 0.45, y);
+            drawField('Dressé le  ', formatDate(d.dateNaissance), lx, 140, y);
+            drawField('à  ', v(d.heureRedaction), lx + 150, 80, y);
             y += rowH + 4;
 
             // ── déclarant ────────────────────────────────────────────────────
@@ -266,16 +271,15 @@ export class PDFService {
             y += rowH + 4;
 
             // ── officier ─────────────────────────────────────────────────────
-            drawField('Après lecture, signé avec nous  ', v(d.officierEtatCivil), lx, fullW * 0.5, y);
-            drawField("Officier de l'État Civil de la commune de  ", v(d.communeNaissance), lx + fullW * 0.5, fullW * 0.5, y);
-            y += rowH + 10;
-            doc.fontSize(10).font('Helvetica').text(`Fait à : ${v(d.domicileCommune)}`, lx, y);
-            y += 14;
-            doc.text(`Le : ${new Date().toLocaleDateString()}`, lx, y);
-            y += 25;
-            doc.font('Helvetica-Bold').text('Mentions marginales :', lx, y, { underline: true });
-            y += 16;
-            doc.font('Helvetica').fontSize(9).text(d.marginalNotes || 'NÉANT', lx + 10, y, { width: fullW - 10 });
+            drawField("Le Président de l'Assemblée Populaire Communale de la commune de ", v(d.domicileCommune), lx, fullW, y);
+            y += rowH + 20;
+
+            doc.font('Helvetica-Bold').fontSize(10).text('Mentions marginales', lx, y);
+            y += 15;
+            for (let i = 0; i < 5; i++) {
+                doc.moveTo(lx, y).lineTo(rEdge, y).lineWidth(0.5).stroke(black);
+                y += 15;
+            }
             y += 40;
             y += 6;
 
