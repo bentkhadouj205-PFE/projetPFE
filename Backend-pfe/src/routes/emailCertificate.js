@@ -91,52 +91,41 @@ router.post('/generate-and-send', async (req, res) => {
     const pdfBuffer = await generateCertificatePDF(pdfData);
     console.timeEnd(' PDF Generation');
 
-    // 3. Robust Background Email Sending with Retries
-    const sendWithRetry = async (maxRetries = 3) => {
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          const info = await emailService.sendValidationEmailWithPDF(
-            citizenEmail, citizenFirstName,
-            requestSubject || 'Acte de Naissance',
-            employeeName || 'Service État Civil',
-            comment || '',
-            pdfBuffer
-          );
-          console.log(` [Background Success] Email sent (Attempt ${attempt}):`, info?.messageId);
-          return;
-        } catch (err) {
-          console.error(` [Background Attempt ${attempt} Failed]:`, err);
-          if (attempt < maxRetries) {
-            const delay = attempt * 5000; // 5s, 10s delay
-            await new Promise(r => setTimeout(r, delay));
-          } else {
-            console.error(' [Background Critical] Email permanently failed after', maxRetries, 'attempts');
-          }
-        }
-      }
-    };
+    // 3. Send email — awaited so real errors are visible in logs
+    console.log(` [EMAIL DEBUG] Sending to: "${citizenEmail}" | Subject: "${requestSubject}"`);
+    try {
+      const info = await emailService.sendValidationEmailWithPDF(
+        citizenEmail, citizenFirstName,
+        requestSubject || 'Acte de Naissance',
+        employeeName || 'Service État Civil',
+        comment || '',
+        pdfBuffer
+      );
+      console.log(` [EMAIL SUCCESS] Sent to ${citizenEmail} | messageId:`, info?.messageId);
+    } catch (emailErr) {
+      console.error(` [EMAIL ERROR] Failed to send to ${citizenEmail}:`, emailErr.message);
+      // Don't throw — still update DB status below
+    }
 
-    // Trigger the background task without await
-    sendWithRetry().catch(err => console.error(' [Background Orchestration Error]:', err));
-
-    // 4. Update status with fallback
-    if (requestId) {
+    // 4. Update status — using demandes table and citizen_id
+    const updateId = citizen_id || requestId;
+    if (updateId) {
       try {
-        console.log(' [DB] Attempting PostgreSQL update for ID:', requestId);
+        console.log(' [DB] Attempting PostgreSQL update for ID:', updateId);
         const result = await pool.query(
-          "UPDATE requests SET status = 'approuve', document_status = 'approved' WHERE id = $1",
-          [requestId]
+          "UPDATE demandes SET statut = 'approuve' WHERE id = $1",
+          [updateId]
         );
 
         console.log('  PostgreSQL updated, rows affected:', result.rowCount);
 
         if (result.rowCount === 0) {
-          console.log('  No rows in PostgreSQL, trying Supabase (register schema)...');
+          console.log('  No rows in PostgreSQL, trying Supabase...');
           const { error } = await supabase
             .schema('register')
-            .from('requests')
-            .update({ status: 'approuve', document_status: 'approved' })
-            .eq('id', requestId);
+            .from('demandes')
+            .update({ statut: 'approuve' })
+            .eq('id', updateId);
 
           if (error) {
             console.error('  Supabase update error:', error.message);
@@ -145,15 +134,15 @@ router.post('/generate-and-send', async (req, res) => {
           }
         }
 
-        // Broadcast real-time status update to all connected clients
+        // Broadcast real-time status update
         const io = req.app.get('io');
         if (io) {
           io.emit('status-update', {
-            id: requestId,
+            id: updateId,
             status: 'approuve',
             documentStatus: 'approved'
           });
-          console.log(`  WebSocket 'status-update' emitted for ID: ${requestId}`);
+          console.log(`  WebSocket 'status-update' emitted for ID: ${updateId}`);
         }
       } catch (dbErr) {
         console.error('  DB Status Update Error:', dbErr.message);
