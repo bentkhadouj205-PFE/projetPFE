@@ -312,3 +312,15 @@ server.listen(PORT, '0.0.0.0', () => {
 server.on('error', (err) => {
   console.error(' Server error:', err);
 });
+
+// ── Keep-Alive: Prevent Render free tier cold start ──────────────────────────
+// Pings itself every 10 minutes so the server never sleeps
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+setInterval(async () => {
+  try {
+    await fetch(`${RENDER_URL}/`);
+    console.log('[Keep-Alive] Ping sent to', RENDER_URL);
+  } catch (e) {
+    // Ignore ping errors silently
+  }
+}, 10 * 60 * 1000); // every 10 minutes
