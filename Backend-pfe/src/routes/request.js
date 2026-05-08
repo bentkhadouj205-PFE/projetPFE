@@ -37,7 +37,7 @@ router.post('/submit', async (req, res) => {
     const empFullName = `${emp.first_name} ${emp.last_name}`;
 
     const { rows } = await pool.query(
-      `INSERT INTO requests
+      `INSERT INTO demandes
          (citizen_first_name, citizen_last_name, citizen_email, citizen_nin,
            citizen_address,
           subject, description,
@@ -50,7 +50,7 @@ router.post('/submit', async (req, res) => {
         citizenData.lastName,
         citizenData.email,
         citizenData.nin,
-        citizenData.address  ?? null,
+        citizenData.address ?? null,
         subject,
         description,
         emp.id,
@@ -75,10 +75,10 @@ router.post('/submit', async (req, res) => {
       message: 'Demande soumise avec succès',
       requestId: newRequest.id,
       assignedTo: {
-        id:       emp.id,
-        name:     empFullName,
+        id: emp.id,
+        name: empFullName,
         position: emp.position,
-        service:  emp.service
+        service: emp.service
       }
     });
   } catch (error) {
@@ -120,13 +120,13 @@ router.post('/login', async (req, res) => {
     res.json({
       message: 'Connexion réussie',
       employee: {
-        id:        emp.id,  // returns Supabase UUID
-        email:     emp.email,
+        id: emp.id,  // returns Supabase UUID
+        email: emp.email,
         firstName: emp.first_name,
-        lastName:  emp.last_name,
-        role:      emp.role,
-        service:   emp.service,
-        position:  emp.position
+        lastName: emp.last_name,
+        role: emp.role,
+        service: emp.service,
+        position: emp.position
       }
     });
   } catch (error) {
@@ -134,7 +134,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ── GET /requests (all or filtered by service) ────────────────────────────────
+// ── GET /demandes (all or filtered by service) ────────────────────────────────
 router.get('/', async (req, res) => {
   try {
     const { service } = req.query;
@@ -229,7 +229,7 @@ router.get('/my-requests/:employeeId', async (req, res) => {
 router.get('/all-requests', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM requests ORDER BY created_at DESC`
+      `SELECT * FROM demandes ORDER BY created_at DESC`
     );
     res.json({ count: rows.length, requests: rows });
   } catch (error) {
@@ -241,7 +241,7 @@ router.get('/all-requests', async (req, res) => {
 router.get('/status/:status', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM requests WHERE status = $1 ORDER BY created_at DESC`,
+      `SELECT * FROM demandes WHERE status = $1 ORDER BY created_at DESC`,
       [req.params.status]
     );
     res.json({ count: rows.length, requests: rows });
@@ -342,7 +342,7 @@ router.put('/validate-with-pdf/:requestId', async (req, res) => {
     // 4. Send email (Fetch email from users table if missing)
     let emailSent = false;
     let targetEmail = updated.email || updated.citizen_email;
-    
+
     if (!targetEmail && updated.user_id) {
       const { data: userData } = await supabase
         .from('users')
@@ -384,7 +384,7 @@ router.put('/validate-with-pdf/:requestId', async (req, res) => {
 router.get('/:requestId/download-pdf', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM requests WHERE id = $1`,
+      `SELECT * FROM demandes  WHERE id = $1`,
       [req.params.requestId]
     );
     if (rows.length === 0) {
@@ -419,7 +419,7 @@ router.put('/:requestId/status', async (req, res) => {
 
     const { data, error } = await supabase
       .from('demandes')
-      .update({ 
+      .update({
         status: dbStatus,
         commentaire: comment || undefined
       })
@@ -442,7 +442,7 @@ router.put('/:requestId/status', async (req, res) => {
 router.delete('/:requestId', async (req, res) => {
   try {
     const { rowCount } = await pool.query(
-      `DELETE FROM requests WHERE id = $1`,
+      `DELETE FROM demandes WHERE id = $1`,
       [req.params.requestId]
     );
     if (rowCount === 0) {

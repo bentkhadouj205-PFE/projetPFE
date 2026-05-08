@@ -122,7 +122,7 @@ export function CarteSejourTraitmentDialog({
   const tr = useMemo(() => language === 'fr' ? {
     title: 'Traitement — Fiche de Résidence',
     subtitle: 'Vérifiez les informations du dossier avant de poursuivre.',
-    adresse: 'Adresse / سكن',
+    adresse: 'Adresse ',
     validate: 'Valider',
     cancel: 'Annuler',
     firstName: 'Prénom',
@@ -134,7 +134,7 @@ export function CarteSejourTraitmentDialog({
   } : {
     title: 'Processing — Residence Card',
     subtitle: 'Review the file information before continuing.',
-    adresse: 'Address / سكن',
+    adresse: 'Address ',
     validate: 'Confirm',
     cancel: 'Cancel',
     firstName: 'First name',
@@ -230,9 +230,9 @@ export function CarteSejourTraitmentDialog({
               <FileImage className="w-4 h-4" />
               {language === 'fr' ? 'Voir en plein écran' : 'View full screen'}
             </a>
-            <img 
-              src={url} 
-              alt={label} 
+            <img
+              src={url}
+              alt={label}
               className="max-h-48 rounded-lg border border-slate-200 dark:border-slate-700 object-contain bg-white"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
