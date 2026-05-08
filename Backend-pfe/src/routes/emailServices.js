@@ -74,208 +74,116 @@ export async function generateCertificatePDF(input) {
   let html = '';
 
   if (isResidenceCard) {
-    // ─── RESIDENCE CARD TEMPLATE (بطاقة إقامة) ─────────────────────────────
+    // ─── RESIDENCE CARD TEMPLATE  ─────────────────────────────
     const d = {
       fullName: actes_naissance.fullName || actes_naissance.nom_prenom || `${actes_naissance.firstName || ''} ${actes_naissance.lastName || ''}`.trim(),
       dateNaissance: actes_naissance.date_naissance || actes_naissance.dateNaissance || '',
       lieuNaissance: actes_naissance.lieu_naissance || actes_naissance.lieuNaissance || actes_naissance.commune_naissance || '',
       adresse: actes_naissance.adresse || actes_naissance.citizen_address || '',
-      wilaya: actes_naissance.wilaya || actes_naissance.domicile_wilaya || 'مستغانم',
-      daira: actes_naissance.daira || actes_naissance.domicile_daira || 'مستغانم',
-      commune: actes_naissance.commune || actes_naissance.domicile_commune || 'مستغانم',
-      nationalite: actes_naissance.nationalite || 'جزائرية',
+      wilaya: actes_naissance.wilaya || actes_naissance.domicile_wilaya || 'Mostaganem',
+      daira: actes_naissance.daira || actes_naissance.domicile_daira || 'Mostaganem',
+      commune: actes_naissance.commune || actes_naissance.domicile_commune || 'Mostaganem',
+      nationalite: actes_naissance.nationalite || 'Algerian',
       profession: actes_naissance.profession || actes_naissance.metier || '',
-      presidentName: actes_naissance.president_name || actes_naissance.presidentName || 'ولد عابد مشري',
+      presidentName: actes_naissance.president_name || actes_naissance.presidentName || 'Ould abed CHri',
     };
 
     html = `<!DOCTYPE html>
-<html lang="ar">
+<html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>بطاقة إقامة</title>
-<style>
-  @page {
-    size: A4;
-    margin: 15mm 18mm 15mm 18mm;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Arial', 'DejaVu Sans', sans-serif;
-    direction: rtl;
-    background: #fff;
-    color: #000;
-    font-size: 14px;
-    line-height: 2.2;
-  }
-  .page {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-  .header { 
-    text-align: center; 
-    margin-bottom: 10px; 
-    font-size: 16px;
-    line-height: 1.8;
-  }
-  .header p { 
-    margin: 4px 0; 
-    font-size: 16px;
-  }
-  .header strong {
-    font-size: 18px;
-    font-weight: bold;
-  }
-  .location { 
-    text-align: right; 
-    font-size: 14px; 
-    margin-bottom: 15px; 
-    line-height: 2.0; 
-  }
-  .location p {
-    margin: 2px 0;
-  }
-  .title-block { 
-    text-align: center; 
-    margin: 20px 0 15px; 
-  }
-  .title-block .box {
-    border: 2px solid #000;
-    border-radius: 8px;
-    display: inline-block;
-    padding: 12px 60px;
-    min-width: 300px;
-  }
-  .title-block h1 { 
-    font-size: 32px; 
-    font-weight: bold; 
-    margin: 0; 
-  }
-  .title-block .subtitle {
-    font-size: 14px;
-    margin-top: 5px;
-  }
-  .content { 
-    font-size: 14px; 
-    line-height: 2.4; 
-    margin-top: 20px;
-    flex: 1;
-  }
-  .content p { 
-    margin-bottom: 10px; 
-    display: flex;
-    align-items: flex-end;
-    flex-wrap: wrap;
-  }
-  .dotted {
-    border-bottom: 1px dotted #000;
-    display: inline-block;
-    min-width: 100px;
-    padding: 0 8px;
-    font-weight: bold;
-    text-align: center;
-    flex: 1;
-    margin: 0 5px;
-    height: 20px;
-  }
-  .dotted-fixed {
-    border-bottom: 1px dotted #000;
-    display: inline-block;
-    min-width: 150px;
-    padding: 0 8px;
-    font-weight: bold;
-    text-align: center;
-    margin: 0 5px;
-    height: 20px;
-  }
-  .cert-statement {
-    text-align: center;
-    font-weight: bold;
-    font-size: 20px;
-    margin: 25px 0 20px;
-  }
-  .footer { 
-    margin-top: 30px; 
-    font-size: 14px; 
-    line-height: 2.0; 
-  }
-  .footer p {
-    margin-bottom: 8px;
-  }
-  .footer .note { 
-    margin-top: 20px; 
-    font-size: 13px; 
-    border-top: 1px solid #ccc; 
-    padding-top: 12px; 
-  }
-  .footer .note p {
-    margin: 5px 0;
-  }
-  .latin-line {
-    margin-top: 15px;
-    font-size: 13px;
-    border-top: 1px solid #ccc;
-    padding-top: 10px;
-    text-align: right;
-  }
-  .latin-dotted {
-    border-bottom: 1px dotted #000;
-    display: inline-block;
-    min-width: 250px;
-    height: 20px;
-    margin-top: 5px;
-  }
-  .signature-area {
-    margin-top: 20px;
-    text-align: left;
-    direction: rtl;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificat de Résidence</title>
+    <style>
+        body {font-family: "Times New Roman", Times, serif;background-color: white;color: black;margin: 0;padding: 40px;line-height: 1.6;}
+        .container {max-width: 800px;margin: auto;border: 2px solid black;padding: 40px;position: relative;}
+        .header {text-align: center;margin-bottom: 30px;font-weight: bold;text-transform: uppercase;}
+        .header h1 {font-size: 18px;margin: 5px 0;}
+        .header h2 {font-size: 16px;margin: 3px 0;}
+        .title-box {text-align: center;margin: 20px 0;border-top: 1px solid black;border-bottom: 1px solid black;padding: 10px 0;}
+        .title-box h3 {font-size: 24px;margin: 0;text-transform: uppercase;letter-spacing: 2px;}
+        .content-section {margin-top: 30px;}
+        .row {margin-bottom: 15px;display: flex;align-items: baseline;}
+        .label {font-weight: bold;margin-right: 10px;white-space: nowrap;}
+        .dots {flex-grow: 1;border-bottom: 1px dotted black;height: 14px;padding-left: 10px;}
+        .grid-row {display: grid;grid-template-columns: 1fr 1fr;gap: 20px;}
+        .footer {margin-top: 50px;display: flex;justify-content: space-between;}
+        .validity-note {margin-top: 30px;font-size: 12px;font-style: italic;border-top: 1px solid black;padding-top: 10px;}
+        .dynamic-val { font-family: Arial, sans-serif;font-weight: normal;}
+        @media print {body {padding: 0;}.container {border: none;}}
+    </style>
 </head>
 <body>
-<div class="page">
-  <div class="header">
-    <p><strong>الجمهورية الجزائرية الديموقراطية الشعبية</strong></p>
-    <p>وزارة الداخلية</p>
-  </div>
-  <div class="location">
-    <p>ولاية <strong>${d.wilaya}</strong></p>
-    <p>دائرة <strong>${d.daira}</strong></p>
-    <p>بلدية <strong>${d.commune}</strong></p>
-  </div>
-  <div class="title-block">
-    <div class="box">
-      <h1>بطاقة إقامة</h1>
-      <div class="subtitle">نسخة الكترونية</div>
+
+<div class="container">
+    <div class="header">
+        <h1>République Algérienne Démocratique et Populaire</h1>
+        <h2>Ministère de l'Intérieur</h2>
+        <h2>Wilaya de : <span class="dynamic-val">${v(d.domicileWilaya)}</span></h2>
+        <h2>Daïra de : <span class="dynamic-val">${v(d.domicileDaira || 'Mostaganem')}</span></h2>
+        <h2>Commune de : <span class="dynamic-val">${v(d.domicileCommune)}</span></h2>
     </div>
-  </div>
-  <div class="content">
-    <p>نَحْنُ <span class="dotted">${v(d.presidentName, 'ولد عابد مشري')}</span></p>
-    <p>رَئِيسُ الْمَجْلِسِ الشَّعْبِيِّ الْبَلَدِيِّ لِبَلَدِيَّةِ: <span class="dotted-fixed">${d.commune}</span></p>
-    <div class="cert-statement">نَشْهَدُ بِأَنَّ:</div>
-    <p>السيد(ة) <span class="dotted">${d.fullName}</span></p>
-    <p>المولود ب <span class="dotted">${v(d.lieuNaissance)}</span> بتاريخ <span class="dotted">${formatDate(d.dateNaissance)}</span></p>
-    <p>الجنسية <span class="dotted">${v(d.nationalite, 'جزائرية')}</span> المهنة <span class="dotted">${v(d.profession)}</span></p>
-    <p>السكن <span class="dotted">${v(d.adresse)}</span></p>
-    <p style="text-align: center; margin-top: 12px; display: block;">يقيم بنفس العنوان مُنْذُ أَكْثَرَ مِنْ سِتَّةِ (6) أَشْهُرٍ</p>
-    <p style="text-align: center; margin-top: 10px; display: block;">وَقَدْ سُلِّمَتْ لَهُ هَذِهِ الشَّهَادَةُ لِلْإِدْلَاءِ بِهَا فِي حُدُودِ مَا يَسْمَحُ بِهِ الْقَانُونُ</p>
-  </div>
-  <div class="footer">
-    <div class="signature-area">
-      <p>حرر ب <strong>${d.commune}</strong> بتاريخ <strong>${today}</strong></p>
+
+    <div class="title-box">
+        <h3>Certificat de Résidence</h3>
     </div>
-    <p style="text-align: center; margin-top: 12px; display: block;">وَالْغَرَضُ مِنْ مَنْحِ هَذِهِ الشَّهَادَةِ هُوَ إِثْبَاتُ السَّكَنِ</p>
-    <div class="note">
-      <p>(1) إِنَّ صَلَاحِيَّةَ الْعَمَلِ بِهَذِهِ الشَّهَادَةِ لَا يُمْكِنُ أَنْ تَتَجَاوَزَ سِتَّةَ (6) أَشْهُرٍ</p>
+
+    <div class="content-section">
+        <p>Le Président de l'Assemblée Populaire Communale de la commune de <span class="dynamic-val"><strong>${v(d.domicileCommune)}</strong></span>, certifie que :</p>
+        
+        <div class="row">
+            <span class="label">M. / Mme / Mlle :</span>
+            <span class="dots dynamic-val">${v(d.fullName)}</span>
+        </div>
+
+        <div class="row">
+            <span class="label">Né(e) le :</span>
+            <span class="dots dynamic-val">${v(d.dateNaissance)}</span>
+            <span class="label" style="margin-left: 10px;">à :</span>
+            <span class="dots dynamic-val">${v(d.communeNaissance)}</span>
+        </div>
+
+        <div class="grid-row">
+            <div class="row">
+                <span class="label">Profession :</span>
+                <span class="dots dynamic-val">${v(d.pereMetier || '///')}</span>
+            </div>
+            <div class="row">
+                <span class="label">Nationalité :</span>
+                <span class="dots dynamic-val">Algérienne</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <span class="label">Demeurant à :</span>
+            <span class="dots dynamic-val">${v(d.domicileCommune)}</span>
+        </div>
+
+        <div class="row">
+            <span class="label">Adresse complète :</span>
+            <span class="dots dynamic-val">${v(d.adresseComplete || '///')}</span>
+        </div>
+
+        <p style="margin-top: 20px;">Réside dans la commune depuis plus de six (06) mois.</p>
+        
+        <p>Cette attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit dans les limites de ce qui n'est pas interdit par la loi.</p>
     </div>
-    <div class="latin-line">
-      <p>الكتابة السابقة للاسم والقب</p>
-      <p><span class="latin-dotted">&nbsp;</span></p>
+
+    <div class="footer">
+        <div>
+            Fait à : <strong>${v(d.domicileCommune)}</strong><br>
+            Le : <span style="display:inline-block; width:120px; border-bottom: 1px dotted black;" class="dynamic-val">${v(new Date().toLocaleDateString())}</span>
+        </div>
+        <div style="text-align: center;">
+            Sceau et Signature de l'Officier
+        </div>
     </div>
-  </div>
+
+    <div class="validity-note">
+        (1) La durée de validité de ce certificat ne peut excéder six (06) mois à compter de sa date de délivrance.
+    </div>
 </div>
+
 </body>
 </html>`;
   } else {
@@ -303,363 +211,193 @@ export async function generateCertificatePDF(input) {
       fullNameLatin: actes_naissance.full_name_latin ?? actes_naissance.fullNameLatin,
     };
 
-    // FIX 2: assign to outer `html` (no `const` here)
     html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Certificat de Naissance - Version Électronique</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Times+New+Roman&display=swap');
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      background: #c8c8c8;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      padding: 30px 20px;
-      font-family: 'Times New Roman', Times, serif;
-    }
-
-    .page {
-      background: #ffffff;
-      width: 210mm;
-      min-height: 297mm;
-      padding: 14mm 16mm 14mm 16mm;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.3);
-      position: relative;
-      color: #000;
-    }
-
-
-
-    .header {
-      text-align: center;
-      margin-bottom: 4px;
-    }
-    .header .republic {
-      font-size: 15pt;
-      font-weight: bold;
-      letter-spacing: 0.5px;
-      line-height: 1.5;
-    }
-    .header .ministry {
-      font-size: 12pt;
-      font-weight: bold;
-      line-height: 1.5;
-    }
-    .header .registry {
-      font-size: 11pt;
-      line-height: 1.5;
-    }
-
-    hr.thick { border: none; border-top: 2px solid #000; margin: 6px 0; }
-    hr.thin  { border: none; border-top: 1px solid #000; margin: 4px 0; }
-
-    .main-title {
-      text-align: center;
-      font-size: 28pt;
-      font-weight: bold;
-      letter-spacing: 1px;
-      line-height: 1.3;
-      margin: 4px 0 2px;
-    }
-    .sub-title {
-      text-align: center;
-      font-size: 11pt;
-      font-style: italic;
-      margin-bottom: 8px;
-    }
-
-    .field-block {
-      margin-top: 4px;
-    }
-
-    .row {
-      display: flex;
-      align-items: flex-end;
-      min-height: 26px;
-      border-bottom: 1px solid #000;
-      margin-bottom: 4px;
-      padding-bottom: 2px;
-      gap: 4px;
-      font-size: 11pt;
-    }
-    .row.no-line { border-bottom: none; }
-
-    .lbl {
-      white-space: nowrap;
-      font-weight: normal;
-      font-size: 11pt;
-      line-height: 1;
-    }
-    .lbl.bold { font-weight: bold; }
-
-    .dots {
-      flex: 1;
-      border-bottom: 1px dotted #666;
-      min-height: 16px;
-      margin-bottom: -1px;
-    }
-    .dots.short { max-width: 90px; flex: none; width: 90px; }
-    .dots.med   { max-width: 160px; flex: none; width: 160px; }
-
-    .top-meta {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-bottom: 4px;
-      font-size: 11pt;
-      border-bottom: 1px solid #000;
-      padding-bottom: 2px;
-    }
-    .cert-num {
-      font-size: 10pt;
-      white-space: nowrap;
-    }
-    .cert-num span {
-      display: inline-block;
-      min-width: 60px;
-      border-bottom: 1px dotted #666;
-    }
-
-    .margin-section {
-      margin-top: 10px;
-    }
-    .margin-title {
-      font-size: 11pt;
-      font-weight: bold;
-      margin-bottom: 4px;
-    }
-    .blank-line {
-      border-bottom: 1px solid #000;
-      min-height: 20px;
-      margin-bottom: 4px;
-      width: 100%;
-    }
-
-    .footer-drafted {
-      font-size: 11pt;
-      margin-top: 12px;
-      font-weight: bold;
-      border-bottom: 1px solid #000;
-      padding-bottom: 4px;
-    }
-
-    .latin-section {
-      margin-top: 10px;
-      border-top: 1.5px solid #000;
-      padding-top: 8px;
-    }
-    .latin-title {
-      font-size: 10.5pt;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 6px;
-    }
-    .latin-row {
-      display: flex;
-      align-items: flex-end;
-      gap: 6px;
-      margin-bottom: 6px;
-      font-size: 10.5pt;
-    }
-    .latin-row .dots { border-bottom: 1px solid #666; }
-
-    .official-box {
-      text-align: center;
-      border: 2px solid #000;
-      padding: 5px 14px;
-      font-size: 11pt;
-      font-weight: bold;
-      display: inline-block;
-      margin-top: 8px;
-    }
-    .bottom-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-top: 10px;
-    }
-    .stamp-circle {
-      width: 75px;
-      height: 75px;
-      border: 1.5px dashed #000;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 8pt;
-      color: #555;
-    }
-    .ref {
-      font-size: 9pt;
-      align-self: flex-end;
-    }
-
-    .value {
-      font-weight: bold;
-      font-size: 11pt;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-    }
-
-    @media print {
-      body { background: #fff; padding: 0; }
-      .page { box-shadow: none; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificat de Naissance</title>
+    <style>
+        body {font-family: "Times New Roman", Times, serif;background-color: white;color: black;margin: 0;padding: 40px;line-height: 1.6;}
+        .container {max-width: 800px;margin: auto;border: 2px solid black;padding: 40px;position: relative;}
+        .header {text-align: center;margin-bottom: 30px;font-weight: bold;text-transform: uppercase;}
+        .header h1 {font-size: 18px;margin: 5px 0;}
+        .header h2 {font-size: 16px;margin: 5px 0;}
+        .title-box {text-align: center;margin: 20px 0;border-top: 1px solid black;border-bottom: 1px solid black;padding: 10px 0;}
+        .title-box h3 {font-size: 24px;margin: 0;text-transform: uppercase;letter-spacing: 2px;}
+        .title-box p {margin: 5px 0 0 0;font-style: italic;}
+        .content-section {margin-top: 20px;}
+        .row {margin-bottom: 15px;display: flex;align-items: baseline;}
+        .label {font-weight: bold;margin-right: 10px;white-space: nowrap;}
+        .dots {flex-grow: 1;border-bottom: 1px dotted black;height: 14px;padding-left: 10px;}
+        .grid-row {display: grid;grid-template-columns: 1fr 1fr;gap: 20px;}
+        .marginal-notes {margin-top: 40px;border: 1px solid black;min-height: 100px;padding: 10px;}
+        .marginal-notes-title {font-weight: bold;text-decoration: underline;margin-bottom: 10px;}
+        .footer {margin-top: 40px;display: flex;justify-content: space-between;}
+        .latin-spelling {margin-top: 30px;border-top: 1px solid black;padding-top: 10px;font-size: 14px;}
+        .reference {text-align: right;font-size: 12px;margin-top: 20px;}
+        .dynamic-val {font-family: Arial, sans-serif;font-weight: normal;}
+        @media print {body { padding: 0; }.container { border: none; }}
+    </style>
 </head>
 <body>
-<div class="page">
 
-  <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
-    <div style="text-align: left;">
-      <div class="republic">RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE</div>
-      <div class="ministry">Ministère de l'Intérieur et des Collectivités Locales</div>
-      <div class="registry">Registre National de l'État Civil</div>
-    </div>
-  </div>
-
-  <hr class="thick">
-
-  <div class="main-title">CERTIFICAT DE NAISSANCE</div>
-  <div class="sub-title">Version électronique</div>
-  <hr class="thin">
-
-  <div class="top-meta">
-    <div class="cert-num">
-      N° de l'acte&nbsp;&nbsp;<span class="value">${v(d.numeroChahada)}</span>
-    </div>
-    <div style="flex:1; display:flex; align-items:flex-end; gap:4px; padding-left:20px;">
-      <span class="lbl">Le jour</span>
-      <div class="dots"><span class="value">${formatDate(d.dateNaissance)}</span></div>
-    </div>
-  </div>
-
-  <div class="field-block">
-
-    <div class="row">
-      <span class="lbl">à l'heure de</span>
-      <div class="dots med"><span class="value">${formatTime(d.heureNaissance)}</span></div>
-      <span class="lbl">est né(e) à</span>
-      <div class="dots"><span class="value">${v(d.communeNaissance)}</span></div>
+<div class="container">
+    <div class="header">
+        <h1>République Algérienne Démocratique et Populaire</h1>
+        <h2>Ministère de l'Intérieur et des Collectivités Locales</h2>
+        <h2>Registre National de l'État Civil</h2>
     </div>
 
-    <div class="row">
-      <span class="lbl">commune de</span>
-      <div class="dots"><span class="value">${v(d.communeNaissance)}</span></div>
-      <span class="lbl">wilaya de</span>
-      <div class="dots med"><span class="value">${v(d.wilayaNaissance)}</span></div>
+    <div class="title-box">
+        <h3>Certificat de Naissance</h3>
+        <p>Copie Électronique</p>
     </div>
 
-    <div class="row">
-      <span class="lbl" style="font-family:monospace; font-size:10.5pt;">${formatDate(d.dateNaissance)}</span>
-      <div class="dots short"></div>
-      <span class="lbl">dénommé(e)</span>
-      <div class="dots"><span class="value">${v(d.fullName)}</span></div>
+    <div class="content-section">
+        <div class="row">
+            <span class="label">Acte N° :</span>
+            <span class="dots dynamic-val">${v(d.numeroChahada)}</span>
+        </div>
+
+        <div class="row">
+            <span class="label">Le jour du :</span>
+            <span class="dots dynamic-val">${v(d.dateNaissance)}</span>
+            <span class="label" style="margin-left: 10px;">à :</span>
+            <span class="dots dynamic-val">${v(d.heureNaissance)}</span>
+            <span class="label" style="margin-left: 5px;">heures</span>
+        </div>
+
+        <div class="row">
+            <span class="label">Est né(e) à :</span>
+            <span class="dots dynamic-val">${v(d.communeNaissance)}</span>
+        </div>
+
+        <div class="grid-row">
+            <div class="row">
+                <span class="label">Commune :</span>
+                <span class="dots dynamic-val">${v(d.communeNaissance)}</span>
+            </div>
+            <div class="row">
+                <span class="label">Wilaya :</span>
+                <span class="dots dynamic-val">${v(d.wilayaNaissance)}</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <span class="label">Le :</span>
+            <span class="dots dynamic-val">${v(d.dateNaissance)}</span>
+        </div>
+
+        <div class="row">
+            <span class="label">Nom et Prénom :</span>
+            <span class="dots dynamic-val">${v(d.fullName)}</span>
+        </div>
+
+        <div class="row">
+            <span class="label">Sexe :</span>
+            <span class="dots dynamic-val">${v(d.genre)}</span>
+        </div>
+
+        <div class="row">
+            <span class="label">Fils / Fille de :</span>
+            <span class="dots dynamic-val">${v(d.pereNomPrenom)}</span>
+        </div>
+
+        <div class="grid-row">
+            <div class="row">
+                <span class="label">Âge :</span>
+                <span class="dots dynamic-val">${v(d.pereAge)}</span>
+            </div>
+            <div class="row">
+                <span class="label">Profession :</span>
+                <span class="dots dynamic-val">${v(d.pereMetier)}</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <span class="label">Et de :</span>
+            <span class="dots dynamic-val">${v(d.mereNomPrenom)}</span>
+        </div>
+
+        <div class="grid-row">
+            <div class="row">
+                <span class="label">Âge :</span>
+                <span class="dots dynamic-val">${v(d.mereAge)}</span>
+            </div>
+            <div class="row">
+                <span class="label">Profession :</span>
+                <span class="dots dynamic-val">${v(d.mereMetier)}</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <span class="label">Domiciliés à :</span>
+            <span class="dots dynamic-val">${v(d.domicileCommune)}</span>
+        </div>
+
+        <div class="grid-row">
+            <div class="row">
+                <span class="label">Commune :</span>
+                <span class="dots dynamic-val">${v(d.domicileCommune)}</span>
+            </div>
+            <div class="row">
+                <span class="label">Wilaya :</span>
+                <span class="dots dynamic-val">${v(d.domicileWilaya)}</span>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 20px;">
+            <p style="margin: 0;">Dressé le <span style="display:inline-block; width:100px; border-bottom: 1px dotted black;" class="dynamic-val">${v(d.dateNaissance)}</span> à <span style="display:inline-block; width:60px; border-bottom: 1px dotted black;" class="dynamic-val">${v(d.heureRedaction)}</span> heures, sur la déclaration de :</p>
+        </div>
+        <div class="row">
+            <span class="dots dynamic-val">${v(d.declarePar)}</span>
+        </div>
+
+        <div class="row" style="margin-top: 10px;">
+            <p style="margin: 0;">Lequel, après lecture, a signé avec nous :</p>
+        </div>
+
+        <div class="row">
+            <span class="label">Nous,</span>
+            <span class="dots dynamic-val">${v(d.officierEtatCivil)}</span>
+            <span class="label" style="margin-left: 10px;">Officier de l'État Civil de la commune de :</span>
+        </div>
+        <div class="row">
+            <span class="dots dynamic-val">${v(d.domicileCommune)}</span>
+        </div>
     </div>
 
-    <div class="row">
-      <span class="lbl">sexe</span>
-      <div class="dots"><span class="value">${v(d.genre)}</span></div>
+    <div class="marginal-notes">
+        <div class="marginal-notes-title">Mentions Marginales :</div>
+        <div class="dynamic-val">${v(d.marginalNotes)}</div>
     </div>
 
-    <div class="row">
-      <span class="lbl">fils / fille de</span>
-      <div class="dots"><span class="value">${v(d.pereNomPrenom)}</span></div>
-      <span class="lbl">âge</span>
-      <div class="dots short"><span class="value">${v(d.pereAge, '///')}</span></div>
-      <span class="lbl">profession</span>
-      <div class="dots med"><span class="value">${v(d.pereMetier, '///')}</span></div>
+    <div class="footer">
+        <div>
+            Fait à : <strong>${v(d.domicileCommune)}</strong><br>
+            Le : <span style="display:inline-block; width:120px; border-bottom: 1px dotted black;" class="dynamic-val">${v(new Date().toLocaleDateString())}</span>
+        </div>
+        <div style="text-align: center;">
+            Sceau et Signature
+        </div>
     </div>
 
-    <div class="row">
-      <span class="lbl">et de</span>
-      <div class="dots"><span class="value">${v(d.mereNomPrenom)}</span></div>
-      <span class="lbl">âge</span>
-      <div class="dots short"><span class="value">${v(d.mereAge, '///')}</span></div>
-      <span class="lbl">profession</span>
-      <div class="dots med"><span class="value">${v(d.mereMetier, '///')}</span></div>
+    <div class="latin-spelling">
+        <strong>Transcription du Nom et Prénom en caractères latins :</strong><br>
+        1- En toutes lettres : <span style="display:inline-block; width:400px; border-bottom: 1px dotted black;" class="dynamic-val">${v(d.fullNameLatin)}</span><br>
+        2- Nom et Prénom de l'enfant : <span style="display:inline-block; width:350px; border-bottom: 1px dotted black;" class="dynamic-val">${v(d.fullNameLatin)}</span>
     </div>
 
-    <div class="row">
-      <span class="lbl">demeurant à</span>
-      <div class="dots"><span class="value">${v(d.domicileCommune)}</span></div>
-      <span class="lbl">commune</span>
-      <div class="dots med"><span class="value">${v(d.domicileCommune)}</span></div>
-      <span class="lbl">wilaya</span>
-      <div class="dots short"><span class="value">${v(d.domicileWilaya, '///')}</span></div>
+    <div class="reference">
+        Extrait du Registre National de l'État Civil<br>
+        Référence : 7 M.G.
     </div>
-
-    <div class="row">
-      <span class="lbl">Dressé à</span>
-      <div class="dots"><span class="value">${v(d.communeNaissance)}</span></div>
-      <span class="lbl">à l'heure de</span>
-      <div class="dots med"><span class="value">${v(d.heureRedaction)}</span></div>
-    </div>
-
-    <div class="row">
-      <span class="lbl">sur déclaration de M./Mme</span>
-      <div class="dots"><span class="value">${v(d.declarePar)}</span></div>
-    </div>
-
-    <div class="row">
-      <div class="dots" style="max-width:100%; width:100%;"></div>
-    </div>
-
-    <div class="row" style="flex-wrap:wrap; gap:4px;">
-      <span class="lbl">Après lecture, signé avec nous</span>
-      <div class="dots"><span class="value">${v(d.officierEtatCivil)}</span></div>
-      <span class="lbl" style="white-space:nowrap;">Officier de l'État Civil de la commune de</span>
-      <div class="dots" style="max-width:200px; width:150px;"><span class="value">${v(d.communeNaissance)}</span></div>
-    </div>
-
-  </div>
-
-  <div class="margin-section">
-    <div class="margin-title">Mentions marginales</div>
-    <div class="blank-line"><span class="value">${v(d.marginalNotes)}</span></div>
-    <div class="blank-line"></div>
-    <div class="blank-line"></div>
-    <div class="blank-line"></div>
-    <div class="blank-line"></div>
-    <div class="blank-line"></div>
-  </div>
-
-  <div class="footer-drafted">
-    Dressé à <strong>${v(d.communeNaissance, 'Mostaganem')}</strong> le <strong>${today}</strong>
-  </div>
-
-  <div class="latin-section">
-    <div class="latin-title">Transcription antérieure du nom et prénom en caractères latins</div>
-
-    <div class="latin-row">
-      <span>1- En toutes lettres</span>
-      <div class="dots"><span class="value">${v(d.fullNameLatin)}</span></div>
-    </div>
-    <div class="latin-row">
-      <span>2- Nom et prénom de l'enfant</span>
-      <div class="dots"><span class="value">${v(d.fullNameLatin)}</span></div>
-    </div>
-
-
-
-    <div class="bottom-row">
-      <div class="stamp-circle">Cachet</div>
-      <div class="ref">Réf. J.M. 7</div>
-    </div>
-  </div>
-
 </div>
+
 </body>
-</html>`;
+</html>
+`;
   }
 
   let browser;

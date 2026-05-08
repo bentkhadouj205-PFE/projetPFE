@@ -290,31 +290,12 @@ export class PDFService {
             doc.moveTo(lx, y + 14).lineTo(rEdge, y + 14).lineWidth(0.8).stroke(black);
             y += 22;
 
-            // ── LATIN TRANSCRIPTION ──────────────────────────────────────────
-            doc.moveTo(lx, y).lineTo(rEdge, y).lineWidth(1.5).stroke(black);
-            y += 8;
 
-            doc.fontSize(10).font('Helvetica-Bold').fillColor(black)
-               .text('Transcription antérieure du nom et prénom en caractères latins', lx, y, { align: 'center', width: fullW });
-            y += 16;
-
-            drawField('1- En toutes lettres  ', v(d.fullNameLatin), lx, fullW, y);
-            y += rowH + 4;
-            drawField("2- Nom et prénom de l'enfant  ", v(d.fullNameLatin), lx, fullW, y);
-            y += rowH + 14;
 
             // ── OFFICIAL BOX REMOVED ─────────────────────────────────────────
             y += 10;
 
-            // ── STAMP CIRCLE + REF ───────────────────────────────────────────
-            const stampR = 35;
-            doc.circle(lx + stampR, y + stampR, stampR).lineWidth(1).dash(3, { space: 3 }).stroke(black);
-            doc.undash();
-            doc.fontSize(7).font('Helvetica').fillColor(gray)
-               .text('Cachet', lx + stampR - 15, y + stampR - 5, { width: 30, align: 'center' });
 
-            doc.fontSize(8).font('Helvetica').fillColor(black)
-               .text('Réf. J.M. 7', rEdge - 50, y + stampR * 2 - 10);
 
             doc.end();
          } catch (error) {
