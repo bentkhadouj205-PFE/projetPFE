@@ -110,25 +110,25 @@ router.post('/generate-and-send', async (req, res) => {
           "UPDATE requests SET status = 'completed', document_status = 'approved' WHERE id = $1::text OR id::text = $1",
           [String(requestId)]
         );
-        
-        console.log(' ✅ PostgreSQL updated, rows affected:', result.rowCount);
-        
+
+        console.log('  PostgreSQL updated, rows affected:', result.rowCount);
+
         if (result.rowCount === 0) {
-          console.log(' ⚠️ No rows in PostgreSQL, trying Supabase (register schema)...');
+          console.log('  No rows in PostgreSQL, trying Supabase (register schema)...');
           const { error } = await supabase
             .schema('register')
             .from('requests')
             .update({ status: 'completed', document_status: 'approved' })
             .eq('id', requestId);
-            
+
           if (error) {
-            console.error(' ❌ Supabase update error:', error.message);
+            console.error('  Supabase update error:', error.message);
           } else {
-            console.log(' ✅ Supabase updated successfully');
+            console.log('  Supabase updated successfully');
           }
         }
       } catch (dbErr) {
-        console.error(' ❌ DB Status Update Error:', dbErr.message);
+        console.error('  DB Status Update Error:', dbErr.message);
       }
     }
 

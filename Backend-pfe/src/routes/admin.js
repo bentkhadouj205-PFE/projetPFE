@@ -155,7 +155,7 @@ router.put('/requests/:id/status', async (req, res) => {
     const { id } = req.params;
     const { status, comment } = req.body;
 
-    // 🗺️ Professional Status Mapping
+    //  Professional Status Mapping
     const statusMap = {
       pending: "en_attente",
       in_progress: "en_cours",
@@ -164,14 +164,13 @@ router.put('/requests/:id/status', async (req, res) => {
     };
 
     const dbStatus = statusMap[status] || status;
-
-    // 🛡️ 1. Strict Enum Validation
+    //  1. Strict Enum Validation
     const allowedStatuses = ["en_attente", "en_cours", "refuse", "termine"];
     if (!allowedStatuses.includes(dbStatus)) {
       return res.status(400).json({ error: `Statut invalide.` });
     }
 
-    // 🛡️ 2. Fetch Current State
+    //  2. Fetch Current State
     const { data: currentRecord, error: fetchError } = await supabase
       .from('demandes_inscription')
       .select('*')
@@ -180,7 +179,7 @@ router.put('/requests/:id/status', async (req, res) => {
 
     if (fetchError || !currentRecord) return res.status(404).json({ error: 'Demande non trouvée' });
 
-    // 🛡️ 3. Perform Update (and generate token if validated)
+    //  3. Perform Update (and generate token if validated)
     const updateData = {
       status: dbStatus,
       comment: comment || undefined,
@@ -200,7 +199,7 @@ router.put('/requests/:id/status', async (req, res) => {
 
     return res.json({ success: true, message: 'Traitement terminé', request: data });
   } catch (error) {
-    console.error("💥 ADMIN STATUS ERROR:", error);
+    console.error(" ADMIN STATUS ERROR:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -259,7 +258,7 @@ router.put('/employees/:id/password', async (req, res) => {
       return res.status(400).json({ message: 'Password requis' });
     }
 
-    // ✅ bcrypt يولد salt جديد تلقائياً
+    //  bcrypt يولد salt add
     const password_hash = await bcrypt.hash(password, 10);
 
     const { data, error } = await supabase

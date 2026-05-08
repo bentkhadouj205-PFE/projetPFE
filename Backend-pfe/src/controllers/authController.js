@@ -260,7 +260,7 @@ export const registerEmployee = async (req, res) => {
       });
     }
 
-    // ✅ bcrypt يولد salt مختلف تلقائياً لكل موظف
+    //  bcrypt يولد salt مختلف تلقائياً لكل موظف
     const password_hash = await bcrypt.hash(password, 10);
 
     const { rows } = await pool.query(
@@ -310,7 +310,7 @@ export const loginEmployee = async (req, res) => {
 
     const employee = rows[0];
 
-    // ✅ bcrypt.compare يستخرج الـ salt من الهاش تلقائياً
+    //  bcrypt.compare يستخرج الـ salt من الهاش تلقائياً
     const isMatch = await bcrypt.compare(password, employee.password_hash);
 
     if (!isMatch) {

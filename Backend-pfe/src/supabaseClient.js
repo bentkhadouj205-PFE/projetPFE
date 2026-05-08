@@ -12,13 +12,13 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
 
-console.log('📡 [SUPABASE] Initialization Audit:');
-console.log(`🔗 URL: ${SUPABASE_URL || '❌ MISSING'}`);
-console.log(`🔑 Key Type: ${process.env.SUPABASE_SERVICE_KEY ? '🛡️ SERVICE_ROLE' : '👤 ANON_KEY'}`);
-console.log(`🔑 Key length: ${SUPABASE_KEY ? SUPABASE_KEY.length : 0}`);
+console.log(' [SUPABASE] Initialization Audit:');
+console.log(` URL: ${SUPABASE_URL || ' MISSING'}`);
+console.log(` Key Type: ${process.env.SUPABASE_SERVICE_KEY ? 'SERVICE_ROLE' : 'ANON_KEY'}`);
+console.log(` Key length: ${SUPABASE_KEY ? SUPABASE_KEY.length : 0}`);
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error("❌ [SUPABASE] ERROR: Missing environment variables.");
+  console.error(" [SUPABASE] ERROR: Missing environment variables.");
 }
 
 export const supabase = createClient(SUPABASE_URL || '', SUPABASE_KEY || '');

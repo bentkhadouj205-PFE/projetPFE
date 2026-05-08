@@ -289,245 +289,383 @@ export async function generateCertificatePDF(input) {
     };
 
     const html = ` <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>شهادة الميلاد</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acte de Naissance - Version Électronique</title>
   <style>
-    body{
-      margin:0;
-      padding:0;
-      background:#f2f2f2;
-      font-family: "Tahoma", "Arial", sans-serif;
+    @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Times+New+Roman&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #c8c8c8;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 30px 20px;
+      font-family: 'Times New Roman', Times, serif;
     }
-    .page{
+
+    .page {
+      background: #ffffff;
       width: 210mm;
       min-height: 297mm;
-      margin: 20px auto;
-      background: #fff;
-      color:#000;
-      box-sizing:border-box;
-      padding: 18mm 14mm 16mm 14mm;
+      padding: 14mm 16mm 14mm 16mm;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.3);
       position: relative;
-      box-shadow: 0 0 10px rgba(0,0,0,.15);
+      color: #000;
     }
-    .top-right{
-      position:absolute;
-      top:18mm;
-      right:14mm;
-      text-align:right;
-      font-size:14px;
-      line-height:1.8;
+
+    /* Double border frame like original */
+    .outer-border {
+      position: absolute;
+      top: 6px; left: 6px; right: 6px; bottom: 6px;
+      border: 2.5px solid #000;
+      pointer-events: none;
     }
-    .center-title{
-      text-align:center;
-      margin-top:55px;
+    .inner-border {
+      position: absolute;
+      top: 11px; left: 11px; right: 11px; bottom: 11px;
+      border: 1px solid #000;
+      pointer-events: none;
     }
-    .center-title h1{
-      margin:0;
-      font-size:32px;
-      font-weight:700;
+
+    /* ── HEADER ── */
+    .header {
+      text-align: center;
+      margin-bottom: 4px;
     }
-    .center-title h2{
-      margin:10px 0 0;
-      font-size:18px;
-      font-weight:400;
+    .header .republic {
+      font-size: 15pt;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      line-height: 1.5;
     }
-    .form{
-      margin-top:35px;
-      font-size:18px;
-      line-height:2.4;
+    .header .ministry {
+      font-size: 12pt;
+      font-weight: bold;
+      line-height: 1.5;
     }
-    .row{
-      display:flex;
-      align-items:flex-end;
-      gap:8px;
-      white-space:nowrap;
-      margin: 2px 0;
+    .header .registry {
+      font-size: 11pt;
+      line-height: 1.5;
     }
-    .label{
-      min-width:max-content;
-      font-size:18px;
+
+    hr.thick { border: none; border-top: 2px solid #000; margin: 6px 0; }
+    hr.thin  { border: none; border-top: 1px solid #000; margin: 4px 0; }
+
+    .main-title {
+      text-align: center;
+      font-size: 28pt;
+      font-weight: bold;
+      letter-spacing: 1px;
+      line-height: 1.3;
+      margin: 4px 0 2px;
     }
-    .line{
-      flex:1;
-      border-bottom:1px dotted #222;
-      height: 18px;
-      transform: translateY(-4px);
+    .sub-title {
+      text-align: center;
+      font-size: 11pt;
+      font-style: italic;
+      margin-bottom: 8px;
     }
-    .short{
-      flex:0 0 70px;
+
+    /* ── FIELD ROWS ── */
+    .field-block {
+      margin-top: 4px;
     }
-    .very-short{
-      flex:0 0 40px;
+
+    /* Each line is a flex row with label + dotted fill */
+    .row {
+      display: flex;
+      align-items: flex-end;
+      min-height: 26px;
+      border-bottom: 1px solid #000;
+      margin-bottom: 4px;
+      padding-bottom: 2px;
+      gap: 4px;
+      font-size: 11pt;
     }
-    .two-lines{
-      margin-top:18px;
+    .row.no-line { border-bottom: none; }
+
+    .lbl {
+      white-space: nowrap;
+      font-weight: normal;
+      font-size: 11pt;
+      line-height: 1;
     }
-    .note{
-      margin-top:28px;
-      font-size:16px;
-      line-height:2.1;
+    .lbl.bold { font-weight: bold; }
+
+    .dots {
+      flex: 1;
+      border-bottom: 1px dotted #666;
+      min-height: 16px;
+      margin-bottom: -1px;
     }
-    .footer{
-      position:absolute;
-      bottom:16mm;
-      right:14mm;
-      left:14mm;
-      font-size:14px;
-      line-height:1.8;
+    .dots.short { max-width: 90px; flex: none; width: 90px; }
+    .dots.med   { max-width: 160px; flex: none; width: 160px; }
+
+    /* cert number + date top row */
+    .top-meta {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      font-size: 11pt;
+      border-bottom: 1px solid #000;
+      padding-bottom: 2px;
     }
-    .footer .small{
-      font-size:13px;
+    .cert-num {
+      font-size: 10pt;
+      white-space: nowrap;
     }
-    .bottom-right{
-      text-align:right;
-      margin-top:18px;
-      font-size:14px;
+    .cert-num span {
+      display: inline-block;
+      min-width: 60px;
+      border-bottom: 1px dotted #666;
     }
-    .bottom-center{
-      text-align:center;
-      margin-top:18px;
+
+    /* Marginal notes */
+    .margin-section {
+      margin-top: 10px;
     }
-    @media print{
-      body{ background:#fff; }
-      .page{
-        margin:0;
-        box-shadow:none;
-        width:auto;
-        min-height:auto;
-      }
+    .margin-title {
+      font-size: 11pt;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .blank-line {
+      border-bottom: 1px solid #000;
+      min-height: 20px;
+      margin-bottom: 4px;
+      width: 100%;
+    }
+
+    /* Footer */
+    .footer-drafted {
+      font-size: 11pt;
+      margin-top: 12px;
+      font-weight: bold;
+      border-bottom: 1px solid #000;
+      padding-bottom: 4px;
+    }
+
+    /* Latin section at bottom */
+    .latin-section {
+      margin-top: 10px;
+      border-top: 1.5px solid #000;
+      padding-top: 8px;
+    }
+    .latin-title {
+      font-size: 10.5pt;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .latin-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      margin-bottom: 6px;
+      font-size: 10.5pt;
+    }
+    .latin-row .dots { border-bottom: 1px solid #666; }
+
+    /* Official stamp box */
+    .official-box {
+      text-align: center;
+      border: 2px solid #000;
+      padding: 5px 14px;
+      font-size: 11pt;
+      font-weight: bold;
+      display: inline-block;
+      margin-top: 8px;
+    }
+    .bottom-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 10px;
+    }
+    .stamp-circle {
+      width: 75px;
+      height: 75px;
+      border: 1.5px dashed #000;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8pt;
+      color: #555;
+    }
+    .ref {
+      font-size: 9pt;
+      align-self: flex-end;
+    }
+
+    /* Filled value style */
+    .value {
+      font-weight: bold;
+      font-size: 11pt;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .page { box-shadow: none; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <div class="top-right">
-      <div>وزارة الداخلية والجماعات المحلية</div>
-      <div>السجل الوطني للحالة المدنية</div>
+<div class="page">
+  <div class="outer-border"></div>
+  <div class="inner-border"></div>
+
+  <div class="header">
+    <div class="republic">RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE</div>
+    <div class="ministry">Ministère de l'Intérieur et des Collectivités Locales</div>
+    <div class="registry">Registre National de l'État Civil</div>
+  </div>
+
+  <hr class="thick">
+
+  <div class="main-title">ACTE DE NAISSANCE</div>
+  <div class="sub-title">Version électronique</div>
+
+  <hr class="thin">
+
+  <div class="top-meta">
+    <div class="cert-num">
+      N° de l'acte&nbsp;&nbsp;<span class="value">${v(d.numeroChahada)}</span>
     </div>
-
-    <div class="center-title">
-      <h1>شهادة الميلاد</h1>
-      <h2>نسخة إلكترونية</h2>
-    </div>
-
-    <div class="form">
-      <div class="row">
-        <span class="label">رقم الشهادة</span>
-        <span class="line short" style="padding-right:10px;">${v(d.numeroChahada)}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">في يوم</span>
-        <span class="line" style="padding-right:10px;">${formatDate(d.dateNaissance)}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">على الساعة</span>
-        <span class="line" style="padding-right:10px;">${formatTime(d.heureNaissance)}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">ببلدية</span>
-        <span class="line" style="padding-right:10px;">${v(d.communeNaissance)}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">المسمى (ة)</span>
-        <span class="line" style="padding-right:10px;"><strong>${v(d.fullName)}</strong></span>
-      </div>
-
-      <div class="row">
-        <span class="label">الجنس</span>
-        <span class="line short" style="padding-right:10px;">${v(d.genre)}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">ابن (ة)</span>
-        <span class="line" style="padding-right:10px;">${v(d.pereNomPrenom)}</span>
-        <span class="label">عمره</span>
-        <span class="line very-short" style="padding-right:10px;">${v(d.pereAge, '///')}</span>
-        <span class="label">سنة</span>
-      </div>
-
-      <div class="row">
-        <span class="label">و</span>
-        <span class="line" style="padding-right:10px;">${v(d.mereNomPrenom)}</span>
-        <span class="label">عمرها</span>
-        <span class="line very-short" style="padding-right:10px;">${v(d.mereAge, '///')}</span>
-        <span class="label">سنة</span>
-      </div>
-
-      <div class="row">
-        <span class="label">الساكنين</span>
-        <span class="line" style="padding-right:10px;">${v(d.domicileCommune)}</span>
-        <span class="label">ولاية</span>
-        <span class="line very-short" style="padding-right:10px;">${v(d.domicileWilaya, '///')}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">حرر في</span>
-        <span class="line short" style="padding-right:10px;">${v(d.communeNaissance)}</span>
-        <span class="label">بتاريخ</span>
-        <span class="line" style="padding-right:10px;">${today}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">بإعلان أدلى به السيد (ة)</span>
-        <span class="line" style="padding-right:10px;">${v(d.declarePar)}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">وبعد القراءة وقع معنا نحن</span>
-        <span class="line" style="padding-right:10px;">${v(d.officierEtatCivil)}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">ضابط الحالة المدنية بلدية</span>
-        <span class="line" style="padding-right:10px;">${v(d.communeNaissance)}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">البيانات الهامشية</span>
-        <span class="line" style="padding-right:10px;">${v(d.marginalNotes)}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">...............................................................</span>
-      </div>
-
-      <div class="row">
-        <span class="label">...............................................................</span>
-      </div>
-
-      <div class="row">
-        <span class="label">...............................................................</span>
-      </div>
-
-      <div class="row">
-        <span class="label">...............................................................</span>
-      </div>
-
-      <div class="row">
-        <span class="label">...............................................................</span>
-      </div>
-    </div>
-
-    <div class="footer">
-      <div class="bottom-center">حررت ب <strong>${v(d.communeNaissance, 'مستغانم')}</strong> في <strong>${today}</strong></div>
-
-      <div class="bottom-right">
-        <div>الكتابة السابقة للاسم واللقب بأحرف لاتينية</div>
-        <div class="line" style="margin-top:10px;"></div>
-        <div class="small" style="margin-top:14px;">-1- كمال الحروف</div>
-        <div class="small">-2- و.د.البلد</div>
-        <div class="small" style="font-weight:700;">مستخرج من السجل الوطني للحالة المدنية</div>
-        <div class="small">الموقع :</div>
-      </div>
+    <div style="flex:1; display:flex; align-items:flex-end; gap:4px; padding-left:20px;">
+      <span class="lbl">Le jour</span>
+      <div class="dots"><span class="value">${formatDate(d.dateNaissance)}</span></div>
     </div>
   </div>
+
+  <div class="field-block">
+
+    <div class="row">
+      <span class="lbl">à l'heure de</span>
+      <div class="dots med"><span class="value">${formatTime(d.heureNaissance)}</span></div>
+      <span class="lbl">est né(e) à</span>
+      <div class="dots"><span class="value">${v(d.communeNaissance)}</span></div>
+    </div>
+
+    <div class="row">
+      <span class="lbl">commune de</span>
+      <div class="dots"><span class="value">${v(d.communeNaissance)}</span></div>
+      <span class="lbl">wilaya de</span>
+      <div class="dots med"><span class="value">${v(d.domicileWilaya)}</span></div>
+    </div>
+
+    <div class="row">
+      <span class="lbl" style="font-family:monospace; font-size:10.5pt;">${formatDate(d.dateNaissance)}</span>
+      <div class="dots short"></div>
+      <span class="lbl">dénommé(e)</span>
+      <div class="dots"><span class="value">${v(d.fullName)}</span></div>
+    </div>
+
+    <div class="row">
+      <span class="lbl">sexe</span>
+      <div class="dots"><span class="value">${v(d.genre)}</span></div>
+    </div>
+
+    <div class="row">
+      <span class="lbl">fils / fille de</span>
+      <div class="dots"><span class="value">${v(d.pereNomPrenom)}</span></div>
+      <span class="lbl">âge</span>
+      <div class="dots short"><span class="value">${v(d.pereAge, '///')}</span></div>
+      <span class="lbl">profession</span>
+      <div class="dots med"><span class="value">${v(d.pereProfession, '///')}</span></div>
+    </div>
+
+    <div class="row">
+      <span class="lbl">et de</span>
+      <div class="dots"><span class="value">${v(d.mereNomPrenom)}</span></div>
+      <span class="lbl">âge</span>
+      <div class="dots short"><span class="value">${v(d.mereAge, '///')}</span></div>
+      <span class="lbl">profession</span>
+      <div class="dots med"><span class="value">${v(d.mereProfession, '///')}</span></div>
+    </div>
+
+    <div class="row">
+      <span class="lbl">demeurant à</span>
+      <div class="dots"><span class="value">${v(d.domicileCommune)}</span></div>
+      <span class="lbl">commune</span>
+      <div class="dots med"><span class="value">${v(d.domicileCommune)}</span></div>
+      <span class="lbl">wilaya</span>
+      <div class="dots short"><span class="value">${v(d.domicileWilaya, '///')}</span></div>
+    </div>
+
+    <div class="row">
+      <span class="lbl">Dressé à</span>
+      <div class="dots"><span class="value">${v(d.communeNaissance)}</span></div>
+      <span class="lbl">à l'heure de</span>
+      <div class="dots med"><span class="value">${v(d.heureRedaction)}</span></div>
+    </div>
+
+    <div class="row">
+      <span class="lbl">sur déclaration de M./Mme</span>
+      <div class="dots"><span class="value">${v(d.declarePar)}</span></div>
+    </div>
+
+    <div class="row">
+      <div class="dots" style="max-width:100%; width:100%;"></div>
+    </div>
+
+    <div class="row" style="flex-wrap:wrap; gap:4px;">
+      <span class="lbl">Après lecture, signé avec nous</span>
+      <div class="dots"><span class="value">${v(d.officierEtatCivil)}</span></div>
+      <span class="lbl" style="white-space:nowrap;">Officier de l'État Civil de la commune de</span>
+      <div class="dots" style="max-width:200px; width:150px;"><span class="value">${v(d.communeNaissance)}</span></div>
+    </div>
+
+  </div>
+
+  <div class="margin-section">
+    <div class="margin-title">Mentions marginales</div>
+    <div class="blank-line"><span class="value">${v(d.marginalNotes)}</span></div>
+    <div class="blank-line"></div>
+    <div class="blank-line"></div>
+    <div class="blank-line"></div>
+    <div class="blank-line"></div>
+    <div class="blank-line"></div>
+  </div>
+
+  <div class="footer-drafted">
+    Dressé à <strong>${v(d.communeNaissance, 'Mostaganem')}</strong> le <strong>${today}</strong>
+  </div>
+
+  <div class="latin-section">
+    <div class="latin-title">Transcription antérieure du nom et prénom en caractères latins</div>
+
+    <div class="latin-row">
+      <span>1- En toutes lettres</span>
+      <div class="dots"><span class="value">${v(d.fullNameLatin)}</span></div>
+    </div>
+    <div class="latin-row">
+      <span>2- Nom et prénom de l'enfant</span>
+      <div class="dots"><span class="value">${v(d.fullNameLatin)}</span></div>
+    </div>
+
+    <div style="text-align:center; margin-top:10px;">
+      <span class="official-box">EXTRAIT DU REGISTRE NATIONAL DE L'ÉTAT CIVIL</span>
+    </div>
+
+    <div class="bottom-row">
+      <div class="stamp-circle">Cachet</div>
+      <div class="ref">Réf. J.M. 7</div>
+    </div>
+  </div>
+
+</div>
 </body>
 </html>
 `;
