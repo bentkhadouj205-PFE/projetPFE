@@ -224,7 +224,6 @@ export async function generateCertificatePDF(input) {
       declarePar: actes_naissance.declare_par ?? actes_naissance.declarePar,
       officierEtatCivil: actes_naissance.officier_etat_civil ?? actes_naissance.officierEtatCivil,
       marginalNotes: actes_naissance.marginal_notes ?? actes_naissance.marginalNotes,
-      fullNameLatin: actes_naissance.full_name_latin ?? actes_naissance.fullNameLatin,
     };
 
     html = `<!DOCTYPE html>
@@ -259,6 +258,10 @@ export async function generateCertificatePDF(input) {
 <body>
 
 <div class="container">
+    <div style="position: absolute; top: 15px; left: 15px; font-size: 10px; text-align: left; font-weight: normal; text-transform: none; line-height: 1.2; color: #333;">
+        Extrait du Registre National de l'État Civil<br>
+        Référence : 7 M.G.
+    </div>
     <div class="header">
         <h1>République Algérienne Démocratique et Populaire</h1>
         <h2>Ministère de l'Intérieur et des Collectivités Locales</h2>
@@ -270,6 +273,7 @@ export async function generateCertificatePDF(input) {
         <p>Copie Électronique</p>
     </div>
 
+    
     <div class="content-section">
         <div class="row">
             <span class="label">Acte N° :</span>
@@ -382,6 +386,28 @@ export async function generateCertificatePDF(input) {
         <div class="row">
             <span class="dots dynamic-val">${v(d.domicileCommune)}</span>
         </div>
+
+        <div style="margin-top: 20px; text-align: left;">
+            <p style="margin: 5px 0;">Fait à : <strong>${v(d.domicileCommune)}</strong></p>
+            <p style="margin: 5px 0;">Le : <span style="display:inline-block; width:120px; border-bottom: 1px dotted black;" class="dynamic-val">${v(new Date().toLocaleDateString())}</span></p>
+        </div>
+
+        <div style="margin-top: 15px;">
+            <p style="font-weight: bold; text-decoration: underline; margin-bottom: 5px;">Mentions Marginales :</p>
+            <div class="dynamic-val" style="padding-left: 10px; min-height: 40px; font-size: 14px;">
+                ${v(d.marginalNotes, 'NÉANT')}
+            </div>
+        </div>
+        <div style="margin: 10px 0; font-size: 14px;">
+        <div class="row">
+            <span class="label">1- En toutes lettres </span>
+  
+        </div>
+        <div class="row">
+            <span class="label">2- Nom et Prénom de l'enfant </span>
+        </div>
+    </div>
+
     </div>
 
 

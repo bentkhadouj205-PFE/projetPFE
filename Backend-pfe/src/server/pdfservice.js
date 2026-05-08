@@ -156,22 +156,31 @@ export class PDFService {
             let y = margin + 18;
 
             // ── HEADER ───────────────────────────────────────────────────────
+            doc.fontSize(8).font('Helvetica').fillColor(black)
+               .text('Extrait du Registre National de l\'État Civil', margin + 10, margin + 5);
+            doc.text('Référence : 7 M.G.', margin + 10, margin + 15);
+
             doc.fontSize(13).font('Helvetica-Bold').fillColor(black)
                .text('RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
             y += 18;
             doc.fontSize(11).font('Helvetica-Bold')
                .text("Ministère de l'Intérieur et des Collectivités Locales", margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
             y += 16;
-            doc.fontSize(10).font('Helvetica')
-               .text("Registre National de l'État Civil", margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
-            y += 14;
-
+            
             y += 8;
 
             // Main title
             doc.fontSize(26).font('Helvetica-Bold')
                .text('CERTIFICAT DE NAISSANCE', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
             y += 32;
+
+            // ── LATIN TRANSCRIPTION LINES ────────────────────────────────────
+            doc.fontSize(10).font('Helvetica').fillColor(black)
+               .text(`1- En toutes lettres : ${v(d.fullNameLatin)}`, margin + 10, y);
+            y += 15;
+            doc.text(`2- Nom et Prénom de l'enfant : ${v(d.fullNameLatin)}`, margin + 10, y);
+            y += 18;
+
             doc.fontSize(10).font('Helvetica').fillColor(gray)
                .text('Version électronique', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
             y += 14;
@@ -260,8 +269,14 @@ export class PDFService {
             drawField('Après lecture, signé avec nous  ', v(d.officierEtatCivil), lx, fullW * 0.5, y);
             drawField("Officier de l'État Civil de la commune de  ", v(d.communeNaissance), lx + fullW * 0.5, fullW * 0.5, y);
             y += rowH + 10;
-
-
+            doc.fontSize(10).font('Helvetica').text(`Fait à : ${v(d.domicileCommune)}`, lx, y);
+            y += 14;
+            doc.text(`Le : ${new Date().toLocaleDateString()}`, lx, y);
+            y += 25;
+            doc.font('Helvetica-Bold').text('Mentions marginales :', lx, y, { underline: true });
+            y += 16;
+            doc.font('Helvetica').fontSize(9).text(d.marginalNotes || 'NÉANT', lx + 10, y, { width: fullW - 10 });
+            y += 40;
             y += 6;
 
 
