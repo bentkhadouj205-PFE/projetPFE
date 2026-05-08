@@ -263,12 +263,16 @@ let transporter = null;
 function getTransporter() {
   if (transporter) return transporter;
 
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  console.log(`[SMTP CONFIG] user=${user} | pass=${pass ? '***set***' : 'MISSING!'}`);
+
   transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: { user, pass },
+    tls: { rejectUnauthorized: false },
   });
   return transporter;
 }
