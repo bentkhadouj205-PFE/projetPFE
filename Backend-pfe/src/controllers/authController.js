@@ -1,346 +1,210 @@
-import bcrypt from 'bcrypt';
+import express from 'express';
+import { emailService, generateCertificatePDF } from './emailServices.js';
+import { supabase } from '../supabaseClient.js';
 import pool from '../db.js';
-export const register = async (req, res) => {
+import PDFService from '../server/pdfservice.js';
+
+
+const router = express.Router();
+
+// ── POST /api/email/generate-pdf ──────────────────────────────────────────
+// Génère le PDF et le renvoie en Base64 au frontend
+router.post('/generate-pdf', async (req, res) => {
+  try {
+    const pdfBuffer = await generateCertificatePDF(req.body);
+    const pdfBase64 = pdfBuffer.toString('base64');
+    res.json({ pdfBase64 });
+  } catch (err) {
+    console.error(' generate-pdf error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/email/generate-and-send ─────────────────────────────────────
+// Génère le PDF ET l'envoie par email au citoyen
+router.post('/generate-and-send', async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  console.log('[Start] generate-and-send request received');
   try {
     const {
-      nom,
-      prenom,
-      nin,
-      email,
-      adresse,
-      codePostal,
-      password
+      citizenEmail, citizenFirstName, requestSubject,
+      employeeName, comment, requestId, citizen_id,
+      wilaya, commune, actYear, actNumber,
     } = req.body;
 
-    console.log('Inscription reçue:', email);
+    const isResidenceCard = requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence') || requestSubject.toLowerCase().includes('séjour'));
 
-    // Check duplicate email
-    const emailCheck = await pool.query(
-      `SELECT id FROM users WHERE email = $1`,
-      [email]
-    );
-
-    if (emailCheck.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email déjà utilisé',
-        field: 'email'
-      });
-    }
-    // Check duplicate NIN
-
-    const ninCheck = await pool.query(
-      `SELECT id FROM users WHERE nin = $1`,
-      [nin]
-    );
-
-    if (ninCheck.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'NIN déjà utilisé',
-        field: 'nin'
-      });
+    // 1. جلب بيانات الأكت من Supabase (Only for birth certificates)
+    let acte = null;
+    if (!isResidenceCard) {
+      console.time(' Supabase Fetch');
+      const { data, error } = await supabase
+        .schema('register')
+        .from('actes_naissance')
+        .select('*')
+        .eq('citizen_id', citizen_id || '')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      console.timeEnd(' Supabase Fetch');
+      if (!error) acte = data;
     }
 
-    // Hash password
-    const password_hash = await bcrypt.hash(password, 10);
+    // دمج البيانات
+    const pdfData = {
+      ...req.body,
+      subject: requestSubject || 'Fiche de Résidence',
+      type_document: requestSubject || 'Fiche de Résidence',
+      citizenEmail,
+      citizenFirstName,
+      fullName: acte?.nom_prenom || `${citizenFirstName} ${req.body.citizenLastName || ''}`,
+      numeroChahada: acte?.numero_chahada || actNumber,
+      numeroActe: acte?.numero_acte || actNumber,
+      dateNaissance: acte?.date_naissance || req.body.dateNaissance || '',
+      heureNaissance: acte?.heure_naissance || '',
+      wilayaNaissance: acte?.wilaya_naissance || wilaya,
+      communeNaissance: acte?.commune_naissance || commune,
+      sexe: acte?.sexe || '',
+      pereNomPrenom: acte?.pere_nom_prenom || '',
+      pereAge: acte?.pere_age || '',
+      pereMetier: acte?.pere_metier || '',
+      mereNomPrenom: acte?.mere_nom_prenom || '',
+      mereAge: acte?.mere_age || '',
+      mereMetier: acte?.mere_metier || '',
+      domicileCommune: acte?.domicile_commune || commune,
+      domicileWilaya: acte?.domicile_wilaya || wilaya,
+      heureRedaction: acte?.heure_redaction || '',
+      redigeA: acte?.redige_a || commune,
+      declarePar: acte?.declare_par || '',
+      officierEtatCivil: acte?.officier_etat_civil || '',
+      marginalNotes: acte?.marginal_notes || '',
+      wilayaDelivrance: acte?.wilaya_delivrance || wilaya,
+      dateDelivrance: acte?.date_delivrance || new Date().toISOString().split('T')[0],
+      // Residence Card specific
+      adresse: req.body.adresse || '',
+      wilaya: wilaya,
+      commune: commune,
+    };
 
-    // Insert user
-    const { rows } = await pool.query(
-      `INSERT INTO users
-        (nom, prenom, nin, email, adresse, code_postal, password_hash, role)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'citoyen')
-       RETURNING id, nom, prenom, nin, email, adresse, code_postal, role, created_at`,
-      [
-        nom,
-        prenom,
-        nin,
-        email,
-        adresse,
-        codePostal,
-        password_hash
-      ]
-    );
+    // 2. Generate PDF
+    console.time(' PDF Generation');
+    const pdfBuffer = await generateCertificatePDF(pdfData);
+    console.timeEnd(' PDF Generation');
 
-    const user = rows[0];
-
-    console.log('Compte créé:', email);
-
-    res.status(201).json({
-      success: true,
-      message: 'Compte créé avec succès',
-      user: {
-        id: user.id,
-        nom: user.nom,
-        prenom: user.prenom,
-        email: user.email,
-        adresse: user.adresse,
-        codePostal: user.code_postal,
-        nin: user.nin,
-        role: user.role
+    // 3. Robust Background Email Sending with Retries
+    const sendWithRetry = async (maxRetries = 3) => {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const info = await emailService.sendValidationEmailWithPDF(
+            citizenEmail, citizenFirstName,
+            requestSubject || 'Acte de Naissance',
+            employeeName || 'Service État Civil',
+            comment || '',
+            pdfBuffer
+          );
+          console.log(` [Background Success] Email sent (Attempt ${attempt}):`, info?.messageId);
+          return;
+        } catch (err) {
+          console.error(` [Background Attempt ${attempt} Failed]:`, err);
+          if (attempt < maxRetries) {
+            const delay = attempt * 5000; // 5s, 10s delay
+            await new Promise(r => setTimeout(r, delay));
+          } else {
+            console.error(' [Background Critical] Email permanently failed after', maxRetries, 'attempts');
+          }
+        }
       }
-    });
+    };
 
-  } catch (error) {
-    console.error('Erreur inscription:', error);
+    // Trigger the background task without await
+    sendWithRetry().catch(err => console.error(' [Background Orchestration Error]:', err));
 
-    if (error.code === '23505') {
-      if (error.constraint?.includes('email')) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email déjà utilisé',
-          field: 'email'
-        });
+    // 4. Update status with fallback
+    if (requestId) {
+      try {
+        console.log(' [DB] Attempting PostgreSQL update for ID:', requestId);
+        const result = await pool.query(
+          "UPDATE requests SET status = 'approuve', document_status = 'approved' WHERE id = $1",
+          [requestId]
+        );
+
+        console.log('  PostgreSQL updated, rows affected:', result.rowCount);
+
+        if (result.rowCount === 0) {
+          console.log('  No rows in PostgreSQL, trying Supabase (register schema)...');
+          const { error } = await supabase
+            .schema('register')
+            .from('requests')
+            .update({ status: 'approuve', document_status: 'approved' })
+            .eq('id', requestId);
+
+          if (error) {
+            console.error('  Supabase update error:', error.message);
+          } else {
+            console.log('  Supabase updated successfully');
+          }
+        }
+
+        // Broadcast real-time status update to all connected clients
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('status-update', {
+            id: requestId,
+            status: 'approuve',
+            documentStatus: 'approved'
+          });
+          console.log(`  WebSocket 'status-update' emitted for ID: ${requestId}`);
+        }
+      } catch (dbErr) {
+        console.error('  DB Status Update Error:', dbErr.message);
       }
-
-      if (error.constraint?.includes('nin')) {
-        return res.status(400).json({
-          success: false,
-          message: 'NIN déjà utilisé',
-          field: 'nin'
-        });
-      }
-
-      return res.status(400).json({
-        success: false,
-        message: 'Donnée déjà utilisée'
-      });
     }
 
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur',
-      error: error.message
-    });
+    console.log(' [Success] Email sent and status updated');
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(' generate-and-send error:', err);
+    res.status(500).json({ error: err.message });
   }
-};
+});
 
-// ─────────────────────────────────────────────────────────────
-// LOGIN
-// ─────────────────────────────────────────────────────────────
-export const login = async (req, res) => {
+// ── POST /api/email/send-official-acte/:acteId ────────────────────────────
+// Génère l'acte officiel à partir du template et l'envoie par email
+router.post('/send-official-acte/:acteId', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, name } = req.body;
 
-    console.log('Tentative connexion:', email);
+    // Fetch acte
+    const { data: acte, error } = await supabase
+      .schema('register')
+      .from('actes_naissance')
+      .select('nom_prenom, numero_chahada, numero_acte, date_naissance, heure_naissance, wilaya_naissance, commune_naissance, sexe, pere_nom_prenom, pere_age, pere_metier, mere_nom_prenom, mere_age, mere_metier, domicile_commune, domicile_wilaya, heure_redaction, redige_a, declare_par, officier_etat_civil, marginal_notes, wilaya_delivrance, date_delivrance')
+      .eq('id', req.params.acteId)
+      .single();
 
-    const { rows } = await pool.query(
-      `SELECT id, nom, prenom, nin, email, adresse, code_postal,
-              password_hash, role
-       FROM citizens
-       WHERE email = $1`,
-      [email]
-    );
+    if (error || !acte) return res.status(404).json({ error: 'Acte non trouvé' });
 
-    if (rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Email non trouvé'
-      });
-    }
+    // Generate PDF
+    const pdfBuffer = await PDFService.generateOfficialActeNaissance(acte);
 
-    const user = rows[0];
-
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Mot de passe incorrect'
-      });
-    }
-
-    console.log('Connexion réussie:', email);
-
-    res.json({
-      success: true,
-      message: 'Connexion réussie',
-      user: {
-        id: user.id,
-        nom: user.nom,
-        prenom: user.prenom,
-        email: user.email,
-        adresse: user.adresse,
-        codePostal: user.code_postal,
-        nin: user.nin,
-        role: user.role
-      }
-    });
-
-  } catch (error) {
-    console.error('Erreur connexion:', error);
-
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur',
-      error: error.message
-    });
-  }
-};
-// GET ME
-export const getMe = async (req, res) => {
-  try {
-    if (!req.user?.id) {
-      return res.status(401).json({
-        success: false,
-        message: 'Non authentifié'
-      });
-    }
-
-    const { rows } = await pool.query(
-      `SELECT id, nom, prenom, nin, email, adresse, code_postal, role, created_at
-       FROM users
-       WHERE id = $1`,
-      [req.user.id]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Utilisateur non trouvé'
-      });
-    }
-
-    const user = rows[0];
-
-    res.json({
-      success: true,
-      user: {
-        id: user.id,
-        nom: user.nom,
-        prenom: user.prenom,
-        email: user.email,
-        adresse: user.adresse,
-        codePostal: user.code_postal,
-        nin: user.nin,
-        role: user.role,
-        createdAt: user.created_at
-      }
-    });
-
-  } catch (error) {
-    console.error('Erreur getMe:', error);
-
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur'
-    });
-  }
-};
-
-// ─────────────────────────────────────────────────────────────
-// REGISTER EMPLOYEE (done by admin)
-// ─────────────────────────────────────────────────────────────
-export const registerEmployee = async (req, res) => {
-  try {
-    const {
+    // Envoie l'email avec le PDF officiel en pièce jointe
+    const info = await emailService.sendValidationEmailWithPDF(
       email,
-      password,
-      first_name,
-      last_name,
-      role,
-      service,
-      position,
-      join_date,
-      status,
-      user_id
-    } = req.body;
-
-    // Check duplicate email
-    const emailCheck = await pool.query(
-      `SELECT id FROM employees WHERE email = $1`,
-      [email]
+      name || acte.nom_prenom,
+      'Acte de Naissance Officiel',
+      'completed',
+      'Service État Civil',
+      'Votre acte de naissance officiel est prêt.',
+      pdfBuffer
     );
 
-    if (emailCheck.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email déjà utilisé',
-        field: 'email'
-      });
-    }
+    res.json({ success: true, messageId: info?.messageId || 'sent' });
 
-    //  bcrypt يولد salt مختلف تلقائياً لكل موظف
-    const password_hash = await bcrypt.hash(password, 10);
-
-    const { rows } = await pool.query(
-      `INSERT INTO employees
-        (email, password_hash, first_name, last_name, role, service, position, join_date, status, user_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING id, email, first_name, last_name, role, service, position, join_date, status`,
-      [email, password_hash, first_name, last_name, role, service, position, join_date, status, user_id]
-    );
-
-    res.status(201).json({
-      success: true,
-      message: 'Employé créé avec succès',
-      employee: rows[0]
-    });
-
-  } catch (error) {
-    console.error('Erreur register employee:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur',
-      error: error.message
-    });
+  } catch (err) {
+    console.error(' send-official-acte error:', err);
+    res.status(500).json({ error: err.message });
   }
-};
+});
 
-// ─────────────────────────────────────────────────────────────
-// LOGIN EMPLOYEE
-// ─────────────────────────────────────────────────────────────
-export const loginEmployee = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const { rows } = await pool.query(
-      `SELECT id, email, password_hash, first_name, last_name, role, service, position, status
-       FROM employees
-       WHERE email = $1`,
-      [email]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Email non trouvé'
-      });
-    }
-
-    const employee = rows[0];
-
-    //  bcrypt.compare يستخرج الـ salt من الهاش تلقائياً
-    const isMatch = await bcrypt.compare(password, employee.password_hash);
-
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Mot de passe incorrect'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Connexion réussie',
-      employee: {
-        id: employee.id,
-        email: employee.email,
-        first_name: employee.first_name,
-        last_name: employee.last_name,
-        role: employee.role,
-        service: employee.service,
-        position: employee.position,
-        status: employee.status
-      }
-    });
-
-  } catch (error) {
-    console.error('Erreur login employee:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur',
-      error: error.message
-    });
-  }
-};
+export default router;

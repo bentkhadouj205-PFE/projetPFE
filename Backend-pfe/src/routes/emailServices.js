@@ -30,7 +30,7 @@ async function getBrowser() {
   if (browserInstance && browserInstance.connected) {
     return browserInstance;
   }
-  
+
   const execPath = await chromium.executablePath();
   browserInstance = await puppeteer.launch({
     args: [
@@ -262,7 +262,7 @@ let transporter = null;
 
 function getTransporter() {
   if (transporter) return transporter;
-  
+
   transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {

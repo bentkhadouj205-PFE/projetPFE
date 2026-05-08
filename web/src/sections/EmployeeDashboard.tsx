@@ -35,6 +35,7 @@ interface EmployeeDashboardProps {
     updateTask: (id: string, updates: Partial<Task>) => void;
     completeTask: (id: string) => void;
     getTasksByEmployee: (employeeId: string) => Task[];
+    fetchRequests: (service?: string) => Promise<void> | void;
   };
   notifications: {
     notifications: EmployeeNotification[];

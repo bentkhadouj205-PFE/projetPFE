@@ -31,7 +31,7 @@ const translations = {
     myTasks: 'Mes tâches',
     pending: 'En attente',
     inProgress: 'En cours',
-    completed: 'Terminé',
+    completed: 'Completed',
     rejected: 'Rejeté',
     totalTasks: 'Total des tâches',
     toProcess: 'À traiter',
