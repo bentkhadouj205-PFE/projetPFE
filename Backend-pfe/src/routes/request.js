@@ -305,12 +305,20 @@ router.put('/validate-with-pdf/:requestId', async (req, res) => {
       return res.status(404).json({ message: 'Demande non trouvée' });
     }
 
-    // 2. Update request in Supabase
+    // Map status from frontend (English) to DB (French) for 'demandes' table
+    const statusMap = {
+      'completed': 'termine',
+      'rejected': 'refuse',
+      'in-progress': 'en_cours',
+      'pending': 'en_attente'
+    };
+    const dbStatus = statusMap[status] || status;
+
+    // 2. Update request in Supabase (table 'demandes' uses 'status' and 'commentaire')
     const { data: updated, error: updateErr } = await supabase
       .from('demandes')
       .update({
-        status: status,
-        document_status: documentStatus || request.document_status,
+        status: dbStatus,
         commentaire: comment || request.commentaire
       })
       .eq('id', requestId)
@@ -319,13 +327,11 @@ router.put('/validate-with-pdf/:requestId', async (req, res) => {
 
     if (updateErr) throw updateErr;
 
-    console.log('Validation demande (Supabase):', requestId, '| Statut:', status);
+    console.log('Validation demande (Supabase):', requestId, '| Statut:', dbStatus);
 
     // 3. Generate PDF
     let pdfBuffer = null;
     try {
-      // Use the helper from emailServices.js which handles both IDs and objects
-      // We pass the updated object directly
       const { generateCertificatePDF } = await import('./emailServices.js');
       pdfBuffer = await generateCertificatePDF(updated);
       console.log('PDF généré via emailServices:', pdfBuffer?.length, 'bytes');
@@ -333,16 +339,27 @@ router.put('/validate-with-pdf/:requestId', async (req, res) => {
       console.error('PDF Generation Error:', pdfError.message);
     }
 
-    // 4. Send email
+    // 4. Send email (Fetch email from users table if missing)
     let emailSent = false;
-    if (pdfBuffer && updated.email) {
+    let targetEmail = updated.email || updated.citizen_email;
+    
+    if (!targetEmail && updated.user_id) {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', updated.user_id)
+        .single();
+      if (userData) targetEmail = userData.email;
+    }
+
+    if (pdfBuffer && targetEmail && status === 'completed') {
       try {
         await emailService.sendValidationEmailWithPDF(
-          updated.email,
-          updated.prenom || updated.firstName,
-          updated.type_document || 'Document municipal',
-          position || 'Service municipal',
-          comment,
+          targetEmail,
+          updated.prenom || updated.firstName || 'Citoyen',
+          updated.type_document || 'Certificat de Naissance',
+          position || 'Service État Civil',
+          comment || 'Votre demande a été traitée avec succès.',
           pdfBuffer
         );
         emailSent = true;

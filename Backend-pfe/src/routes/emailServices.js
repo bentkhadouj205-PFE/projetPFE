@@ -30,7 +30,7 @@ export async function generateCertificatePDF(input) {
     actes_naissance = await fetchActeNaissance(input);
   } else {
     actes_naissance = input || {};
-    
+
     // Fallback: fetch full record from actes_naissance if needed
     if (!actes_naissance.pere_nom_prenom && (actes_naissance.citizen_id || actes_naissance.citizen_nin)) {
       const { data: fullRecord } = await supabase
@@ -335,18 +335,7 @@ export async function generateCertificatePDF(input) {
       color: #000;
     }
 
-    .outer-border {
-      position: absolute;
-      top: 6px; left: 6px; right: 6px; bottom: 6px;
-      border: 2.5px solid #000;
-      pointer-events: none;
-    }
-    .inner-border {
-      position: absolute;
-      top: 11px; left: 11px; right: 11px; bottom: 11px;
-      border: 1px solid #000;
-      pointer-events: none;
-    }
+
 
     .header {
       text-align: center;
@@ -529,8 +518,6 @@ export async function generateCertificatePDF(input) {
 </head>
 <body>
 <div class="page">
-  <div class="outer-border"></div>
-  <div class="inner-border"></div>
 
   <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
     <div style="text-align: left;">
@@ -538,24 +525,11 @@ export async function generateCertificatePDF(input) {
       <div class="ministry">Ministère de l'Intérieur et des Collectivités Locales</div>
       <div class="registry">Registre National de l'État Civil</div>
     </div>
-    <div style="text-align: right; font-family: 'Arial', sans-serif; direction: rtl;">
-      <div style="font-size: 15pt; font-weight: bold;">الجمهورية الجزائرية الديمقراطية الشعبية</div>
-      <div style="font-size: 12pt; font-weight: bold;">وزارة الداخلية والجماعات المحلية</div>
-      <div style="font-size: 11pt;">السجل الوطني للحالة المدنية</div>
-    </div>
   </div>
 
   <hr class="thick">
 
-  <div class="main-title" style="display: flex; justify-content: center; align-items: center; gap: 40px;">
-    <span>CERTIFICAT DE NAISSANCE</span>
-    <span style="font-family: 'Arial', sans-serif;">شهادة الميلاد</span>
-  </div>
-  <div class="sub-title" style="display: flex; justify-content: center; gap: 20px;">
-    <span>Version électronique</span>
-    <span>نسخة إلكترونية</span>
-  </div>
-
+  
   <hr class="thin">
 
   <div class="top-meta">
@@ -674,10 +648,7 @@ export async function generateCertificatePDF(input) {
       <div class="dots"><span class="value">${v(d.fullNameLatin)}</span></div>
     </div>
 
-    <div style="text-align:center; margin-top:10px; display: flex; flex-direction: column; align-items: center; gap: 5px;">
-      <span class="official-box">CERTIFICAT DU REGISTRE NATIONAL DE L'ÉTAT CIVIL</span>
-      <span style="font-family: 'Arial', sans-serif; font-size: 11pt; font-weight: bold; border: 2px solid #000; padding: 5px 14px;">مستخرج من السجل الوطني للحالة المدنية</span>
-    </div>
+
 
     <div class="bottom-row">
       <div class="stamp-circle">Cachet</div>

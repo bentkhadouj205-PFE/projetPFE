@@ -153,12 +153,6 @@ export class PDFService {
                fullNameLatin: data.full_name_latin ?? data.fullNameLatin,
             };
 
-            // ── DOUBLE BORDER ────────────────────────────────────────────────
-            doc.rect(margin, margin, W - margin * 2, H - margin * 2)
-               .lineWidth(2.5).stroke(black);
-            doc.rect(margin + 5, margin + 5, W - (margin + 5) * 2, H - (margin + 5) * 2)
-               .lineWidth(1).stroke(black);
-
             let y = margin + 18;
 
             // ── HEADER ───────────────────────────────────────────────────────
@@ -178,7 +172,7 @@ export class PDFService {
 
             // Main title
             doc.fontSize(26).font('Helvetica-Bold')
-               .text('ACTE DE NAISSANCE', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
+               .text('CERTIFICAT DE NAISSANCE', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
             y += 32;
             doc.fontSize(10).font('Helvetica').fillColor(gray)
                .text('Version électronique', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
@@ -226,7 +220,7 @@ export class PDFService {
 
             // ── commune + wilaya ─────────────────────────────────────────────
             drawField('commune de  ', v(d.communeNaissance), lx, fullW / 2, y);
-            drawField('wilaya de  ', v(d.domicileWilaya), lx + fullW / 2, fullW / 2, y);
+            drawField('wilaya de  ', v(d.wilayaNaissance), lx + fullW / 2, fullW / 2, y);
             y += rowH + 4;
 
             // ── date (repeat) + dénommé(e) ───────────────────────────────────
@@ -250,10 +244,10 @@ export class PDFService {
             drawField('profession  ', v(d.mereMetier, '///'), lx + fullW * 0.75, fullW * 0.25, y);
             y += rowH + 4;
 
-            // ── domicile ─────────────────────────────────────────────────────
-            drawField('demeurant à  ', v(d.domicileCommune), lx, fullW * 0.45, y);
-            drawField('commune  ', v(d.domicileCommune), lx + fullW * 0.45, fullW * 0.35, y);
-            drawField('wilaya  ', v(d.domicileWilaya, '///'), lx + fullW * 0.80, fullW * 0.20, y);
+            // ── demeure ──────────────────────────────────────────────────────
+            drawField('demeurant à  ', v(d.domicileCommune), lx, fullW * 0.55, y);
+            drawField('commune  ', v(d.domicileCommune), lx + fullW * 0.55, fullW * 0.2, y);
+            drawField('wilaya  ', v(d.domicileWilaya, '///'), lx + fullW * 0.75, fullW * 0.25, y);
             y += rowH + 4;
 
             // ── dressé à ─────────────────────────────────────────────────────
@@ -309,13 +303,8 @@ export class PDFService {
             drawField("2- Nom et prénom de l'enfant  ", v(d.fullNameLatin), lx, fullW, y);
             y += rowH + 14;
 
-            // ── OFFICIAL BOX ─────────────────────────────────────────────────
-            const boxW = 280;
-            const boxX = (W - boxW) / 2;
-            doc.rect(boxX, y, boxW, 24).lineWidth(2).stroke(black);
-            doc.fontSize(9).font('Helvetica-Bold').fillColor(black)
-               .text("EXTRAIT DU REGISTRE NATIONAL DE L'ÉTAT CIVIL", boxX + 4, y + 7, { width: boxW - 8, align: 'center' });
-            y += 34;
+            // ── OFFICIAL BOX REMOVED ─────────────────────────────────────────
+            y += 10;
 
             // ── STAMP CIRCLE + REF ───────────────────────────────────────────
             const stampR = 35;
