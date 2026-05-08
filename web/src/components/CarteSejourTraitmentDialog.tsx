@@ -278,10 +278,6 @@ export function CarteSejourTraitmentDialog({
                 />
               </Row>
               <FileRow
-                label={language === 'fr' ? 'Scan CNI' : 'CNI Scan'}
-                url={demandes?.cniFileUrl}
-              />
-              <FileRow
                 label={language === 'fr' ? 'Justificatif (Photo)' : 'Proof of Residence (Photo)'}
                 url={demandes?.factureFileUrl}
               />

@@ -134,7 +134,7 @@ router.post('/generate-and-send', async (req, res) => {
           console.log('  No rows in PostgreSQL, trying Supabase (register schema)...');
           const { error } = await supabase
             .schema('register')
-            .from('requests')
+            .from('citizens')
             .update({ status: 'approuve', document_status: 'approved' })
             .eq('id', requestId);
 
