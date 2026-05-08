@@ -85,7 +85,7 @@ export async function generateCertificatePDF(input) {
       commune: actes_naissance.commune || actes_naissance.domicile_commune || 'Mostaganem',
       nationalite: actes_naissance.nationalite || 'Algerian',
       profession: actes_naissance.profession || actes_naissance.metier || '',
-      presidentName: actes_naissance.president_name || actes_naissance.presidentName || 'Ould abed CHri',
+      presidentName: actes_naissance.president_name || actes_naissance.presidentName || 'Ould Abed Meshri',
     };
 
     html = `<!DOCTYPE html>
@@ -95,17 +95,19 @@ export async function generateCertificatePDF(input) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificat de Résidence</title>
     <style>
-        body {font-family: "Times New Roman", Times, serif;background-color: white;color: black;margin: 0;padding: 40px;line-height: 1.6;}
-        .container {max-width: 800px;margin: auto;border: 2px solid black;padding: 40px;position: relative;}
+        body {font-family: "Times New Roman", Times, serif;background-color: white;color: black;margin: 0;padding: 20px;line-height: 1.4;}
+        .container {max-width: 800px;margin: auto;border: 1.5px solid black;padding: 30px;position: relative;}
         .header {text-align: center;margin-bottom: 30px;font-weight: bold;text-transform: uppercase;}
         .header h1 {font-size: 18px;margin: 5px 0;}
         .header h2 {font-size: 16px;margin: 3px 0;}
-        .title-box {text-align: center;margin: 20px 0;border-top: 1px solid black;border-bottom: 1px solid black;padding: 10px 0;}
+        .header-left {text-align: left;font-weight: normal;text-transform: uppercase;margin-bottom: 20px;}
+        .header-left h2 {font-size: 13px;margin: 3px 0;font-weight: normal;}
+        .title-box {text-align: center;margin: 20px auto;border: 1.5px solid black;border-radius: 12px;padding: 15px 40px;display: table;}
         .title-box h3 {font-size: 24px;margin: 0;text-transform: uppercase;letter-spacing: 2px;}
-        .content-section {margin-top: 30px;}
-        .row {margin-bottom: 15px;display: flex;align-items: baseline;}
-        .label {font-weight: bold;margin-right: 10px;white-space: nowrap;}
-        .dots {flex-grow: 1;border-bottom: 1px dotted black;height: 14px;padding-left: 10px;}
+        .content-section {margin-top: 20px;}
+        .row {margin-bottom: 10px;display: flex;align-items: baseline;}
+        .label {font-weight: normal;margin-right: 10px;white-space: nowrap;}
+        .dots {flex-grow: 1;border-bottom: 0.5px dotted #888;height: 18px;padding-left: 10px;padding-bottom: 2px;}
         .grid-row {display: grid;grid-template-columns: 1fr 1fr;gap: 20px;}
         .footer {margin-top: 50px;display: flex;justify-content: space-between;}
         .validity-note {margin-top: 30px;font-size: 12px;font-style: italic;border-top: 1px solid black;padding-top: 10px;}
@@ -119,6 +121,9 @@ export async function generateCertificatePDF(input) {
     <div class="header">
         <h1>République Algérienne Démocratique et Populaire</h1>
         <h2>Ministère de l'Intérieur</h2>
+    </div>
+
+    <div class="header-left">
         <h2>Wilaya de : <span class="dynamic-val">${v(d.domicileWilaya)}</span></h2>
         <h2>Daïra de : <span class="dynamic-val">${v(d.domicileDaira || 'Mostaganem')}</span></h2>
         <h2>Commune de : <span class="dynamic-val">${v(d.domicileCommune)}</span></h2>
@@ -128,8 +133,13 @@ export async function generateCertificatePDF(input) {
         <h3>Certificat de Résidence</h3>
     </div>
 
+    <div style="text-align: center; margin-top: 20px; font-size: 18px; line-height: 1.5;">
+        Nous,<br>
+        <strong>${v(d.presidentName)}</strong><br>
+        <strong>${v(d.domicileCommune)}</strong>
+    </div>
+
     <div class="content-section">
-        <p>Le Président de l'Assemblée Populaire Communale de la commune de <span class="dynamic-val"><strong>${v(d.domicileCommune)}</strong></span>, certifie que :</p>
         
         <div class="row">
             <span class="label">M. / Mme / Mlle :</span>
@@ -167,27 +177,33 @@ export async function generateCertificatePDF(input) {
         <p style="margin-top: 20px;">Réside dans la commune depuis plus de six (06) mois.</p>
         
         <p>Cette attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit dans les limites de ce qui n'est pas interdit par la loi.</p>
+
+        <div style="margin-top: 30px; text-align: center;">
+             <p>Le Président de l'Assemblée Populaire Communale de la commune de <span class="dynamic-val"><strong>${v(d.domicileCommune)}</strong></span>, certifie que les renseignements ci-dessus sont exacts.</p>
+        </div>
     </div>
 
     <div class="footer">
         <div>
             Fait à : <strong>${v(d.domicileCommune)}</strong><br>
-            Le : <span style="display:inline-block; width:120px; border-bottom: 1px dotted black;" class="dynamic-val">${v(new Date().toLocaleDateString())}</span>
+            Le : <span class="dynamic-val">${formatDate(new Date())}</span>
         </div>
-        <div style="text-align: center;">
-            Sceau et Signature de l'Officier
-        </div>
+        <div></div>
+    </div>
+
+    <div style="text-align: center; margin-top: 15px; font-size: 14px; text-transform: uppercase;">
+        L'OBJET DE LA DÉLIVRANCE DE CETTE ATTESTATION EST DE JUSTIFIER LE DOMICILE
     </div>
 
     <div class="validity-note">
-        (1) La durée de validité de ce certificat ne peut excéder six (06) mois à compter de sa date de délivrance.
+        (1) La validité de la présente attestation ne peut excéder six (6) mois
     </div>
 </div>
 
 </body>
 </html>`;
   } else {
-    // ─── BIRTH CERTIFICATE TEMPLATE (شهادة الميلاد) ────────────────────────
+    // ─── BIRTH CERTIFICATE TEMPLATE  ────────────────────────
     const d = {
       numeroChahada: actes_naissance.numero_chahada ?? actes_naissance.numeroChahada ?? actes_naissance.numero_acte ?? '///',
       dateNaissance: actes_naissance.date_naissance ?? actes_naissance.dateNaissance,
@@ -218,18 +234,18 @@ export async function generateCertificatePDF(input) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificat de Naissance</title>
     <style>
-        body {font-family: "Times New Roman", Times, serif;background-color: white;color: black;margin: 0;padding: 40px;line-height: 1.6;}
-        .container {max-width: 800px;margin: auto;border: 2px solid black;padding: 40px;position: relative;}
+        body {font-family: "Times New Roman", Times, serif;background-color: white;color: black;margin: 0;padding: 20px;line-height: 1.4;}
+        .container {max-width: 800px;margin: auto;border: 1.5px solid black;padding: 30px;position: relative;}
         .header {text-align: center;margin-bottom: 30px;font-weight: bold;text-transform: uppercase;}
         .header h1 {font-size: 18px;margin: 5px 0;}
         .header h2 {font-size: 16px;margin: 5px 0;}
-        .title-box {text-align: center;margin: 20px 0;border-top: 1px solid black;border-bottom: 1px solid black;padding: 10px 0;}
+        .title-box {text-align: center;margin: 20px 0;padding: 10px 0;}
         .title-box h3 {font-size: 24px;margin: 0;text-transform: uppercase;letter-spacing: 2px;}
         .title-box p {margin: 5px 0 0 0;font-style: italic;}
-        .content-section {margin-top: 20px;}
-        .row {margin-bottom: 15px;display: flex;align-items: baseline;}
-        .label {font-weight: bold;margin-right: 10px;white-space: nowrap;}
-        .dots {flex-grow: 1;border-bottom: 1px dotted black;height: 14px;padding-left: 10px;}
+        .content-section {margin-top: 15px;}
+        .row {margin-bottom: 10px;display: flex;align-items: baseline;}
+        .label {font-weight: normal;margin-right: 10px;white-space: nowrap;}
+        .dots {flex-grow: 1;border-bottom: 0.5px dotted #888;height: 14px;padding-left: 10px;}
         .grid-row {display: grid;grid-template-columns: 1fr 1fr;gap: 20px;}
         .marginal-notes {margin-top: 40px;border: 1px solid black;min-height: 100px;padding: 10px;}
         .marginal-notes-title {font-weight: bold;text-decoration: underline;margin-bottom: 10px;}
@@ -368,31 +384,13 @@ export async function generateCertificatePDF(input) {
         </div>
     </div>
 
-    <div class="marginal-notes">
-        <div class="marginal-notes-title">Mentions Marginales :</div>
-        <div class="dynamic-val">${v(d.marginalNotes)}</div>
-    </div>
 
-    <div class="footer">
-        <div>
-            Fait à : <strong>${v(d.domicileCommune)}</strong><br>
-            Le : <span style="display:inline-block; width:120px; border-bottom: 1px dotted black;" class="dynamic-val">${v(new Date().toLocaleDateString())}</span>
-        </div>
-        <div style="text-align: center;">
-            Sceau et Signature
-        </div>
-    </div>
 
-    <div class="latin-spelling">
-        <strong>Transcription du Nom et Prénom en caractères latins :</strong><br>
-        1- En toutes lettres : <span style="display:inline-block; width:400px; border-bottom: 1px dotted black;" class="dynamic-val">${v(d.fullNameLatin)}</span><br>
-        2- Nom et Prénom de l'enfant : <span style="display:inline-block; width:350px; border-bottom: 1px dotted black;" class="dynamic-val">${v(d.fullNameLatin)}</span>
-    </div>
 
-    <div class="reference">
-        Extrait du Registre National de l'État Civil<br>
-        Référence : 7 M.G.
-    </div>
+
+
+
+
 </div>
 
 </body>

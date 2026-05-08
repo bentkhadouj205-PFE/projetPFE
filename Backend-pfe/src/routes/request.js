@@ -404,21 +404,36 @@ router.get('/:requestId/download-pdf', async (req, res) => {
 // ── PUT /requests/:requestId/status ───────────────────────────────────────────
 router.put('/:requestId/status', async (req, res) => {
   try {
+    const { requestId } = req.params;
     const { status, comment } = req.body;
-    const { rows } = await pool.query(
-      `UPDATE requests
-       SET status     = $1,
-           comment    = COALESCE($2, comment),
-           updated_at = NOW()
-       WHERE id = $3
-       RETURNING *`,
-      [status, comment ?? null, req.params.requestId]
-    );
-    if (rows.length === 0) {
+
+    // Map status to match DB conventions if needed
+    const statusMap = {
+      'completed': 'termine',
+      'rejected': 'refuse',
+      'in-progress': 'en_traitement',
+      'pending': 'en_attente',
+      'approuve': 'termine'
+    };
+    const dbStatus = statusMap[status] || status;
+
+    const { data, error } = await supabase
+      .from('demandes')
+      .update({ 
+        status: dbStatus,
+        commentaire: comment || undefined
+      })
+      .eq('id', requestId)
+      .select();
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
       return res.status(404).json({ message: 'Demande non trouvée' });
     }
-    res.json({ message: 'Statut mis à jour', request: rows[0] });
+
+    res.json({ message: 'Statut mis à jour', request: data[0] });
   } catch (error) {
+    console.error('Update status error:', error.message);
     res.status(500).json({ message: error.message });
   }
 });

@@ -234,8 +234,6 @@ export function EmployeeDashboard({
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('commune')}</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('firstName')}</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('lastName')}</th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('birthActYear')}</th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('birthActNumber')}</th>
                 </>
               )}
               {/* Fatima columns */}
@@ -270,8 +268,6 @@ export function EmployeeDashboard({
                     <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.commune)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.firstName)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.lastName)}</td>
-                    <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.actYear)}</td>
-                    <td className="px-3 py-3 whitespace-nowrap font-mono text-xs">{dash(task.citizen?.actNumber)}</td>
                   </>
                 )}
                 {/* Fatima row cells */}

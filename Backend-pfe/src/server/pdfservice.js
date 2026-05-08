@@ -166,8 +166,6 @@ export class PDFService {
                .text("Registre National de l'État Civil", margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
             y += 14;
 
-            // thick rule
-            doc.moveTo(margin + 10, y).lineTo(W - margin - 10, y).lineWidth(2).stroke(black);
             y += 8;
 
             // Main title
@@ -178,8 +176,6 @@ export class PDFService {
                .text('Version électronique', margin + 10, y, { align: 'center', width: W - (margin + 10) * 2 });
             y += 14;
 
-            // thin rule
-            doc.moveTo(margin + 10, y).lineTo(W - margin - 10, y).lineWidth(1).stroke(black);
             y += 10;
 
             // ── helper: draw a labelled underline row ────────────────────────
@@ -197,14 +193,11 @@ export class PDFService {
                // dotted underline
                doc.moveTo(valX, lineY(baseY))
                   .lineTo(valX + valW, lineY(baseY))
-                  .lineWidth(0.5).dash(1, { space: 3 }).stroke(gray);
+                  .lineWidth(0.3).dash(1, { space: 3 }).stroke(gray);
                doc.undash();
                // value text
-               doc.fontSize(10).font('Helvetica-Bold').fillColor(black)
+               doc.fontSize(10).font('Helvetica').fillColor(black)
                   .text(v(value), valX + 2, baseY, { width: valW - 4, lineBreak: false });
-               // solid bottom rule for the whole row
-               doc.moveTo(x, lineY(baseY) + 1).lineTo(x + fieldWidth, lineY(baseY) + 1)
-                  .lineWidth(0.8).stroke(black);
             };
 
             // ── N° de l'acte  +  Le jour ─────────────────────────────────────
@@ -268,27 +261,10 @@ export class PDFService {
             drawField("Officier de l'État Civil de la commune de  ", v(d.communeNaissance), lx + fullW * 0.5, fullW * 0.5, y);
             y += rowH + 10;
 
-            // ── MENTIONS MARGINALES ──────────────────────────────────────────
-            doc.fontSize(10).font('Helvetica-Bold').fillColor(black)
-               .text('Mentions marginales', lx, y);
-            y += 14;
 
-            const marginalLines = d.marginalNotes ? d.marginalNotes.split('\n') : [''];
-            const totalMarginalLines = Math.max(6, marginalLines.length);
-            for (let i = 0; i < totalMarginalLines; i++) {
-               const lineVal = marginalLines[i] || '';
-               doc.fontSize(9).font('Helvetica').fillColor(black)
-                  .text(lineVal, lx, y, { width: fullW, lineBreak: false });
-               doc.moveTo(lx, y + 14).lineTo(rEdge, y + 14).lineWidth(0.8).stroke(black);
-               y += 18;
-            }
             y += 6;
 
-            // ── DRESSÉ À (footer line) ────────────────────────────────────────
-            doc.fontSize(10).font('Helvetica-Bold').fillColor(black)
-               .text(`Dressé à ${v(d.communeNaissance, 'Mostaganem')} le ${today}`, lx, y);
-            doc.moveTo(lx, y + 14).lineTo(rEdge, y + 14).lineWidth(0.8).stroke(black);
-            y += 22;
+
 
 
 
