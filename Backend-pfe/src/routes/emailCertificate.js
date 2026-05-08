@@ -105,7 +105,7 @@ router.post('/generate-and-send', async (req, res) => {
           console.log(` [Background Success] Email sent (Attempt ${attempt}):`, info?.messageId);
           return;
         } catch (err) {
-          console.error(` [Background Attempt ${attempt} Failed]:`, err.message);
+          console.error(` [Background Attempt ${attempt} Failed]:`, err);
           if (attempt < maxRetries) {
             const delay = attempt * 5000; // 5s, 10s delay
             await new Promise(r => setTimeout(r, delay));
@@ -124,8 +124,8 @@ router.post('/generate-and-send', async (req, res) => {
       try {
         console.log(' [DB] Attempting PostgreSQL update for ID:', requestId);
         const result = await pool.query(
-          "UPDATE requests SET status = 'completed', document_status = 'approved' WHERE id = $1::text OR id::text = $1",
-          [String(requestId)]
+          "UPDATE requests SET status = 'approuve', document_status = 'approved' WHERE id = $1",
+          [requestId]
         );
 
         console.log('  PostgreSQL updated, rows affected:', result.rowCount);
@@ -135,7 +135,7 @@ router.post('/generate-and-send', async (req, res) => {
           const { error } = await supabase
             .schema('register')
             .from('requests')
-            .update({ status: 'completed', document_status: 'approved' })
+            .update({ status: 'approuve', document_status: 'approved' })
             .eq('id', requestId);
 
           if (error) {
@@ -143,6 +143,17 @@ router.post('/generate-and-send', async (req, res) => {
           } else {
             console.log('  Supabase updated successfully');
           }
+        }
+
+        // Broadcast real-time status update to all connected clients
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('status-update', {
+            id: requestId,
+            status: 'approuve',
+            documentStatus: 'approved'
+          });
+          console.log(`  WebSocket 'status-update' emitted for ID: ${requestId}`);
         }
       } catch (dbErr) {
         console.error('  DB Status Update Error:', dbErr.message);

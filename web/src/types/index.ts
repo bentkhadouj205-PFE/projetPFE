@@ -20,7 +20,7 @@ export interface Task {
   title: string;
   assignedTo: string;
   assignedBy: string;
-  status: 'pending' | 'in-progress' | 'completed';
+  status: 'pending' | 'in-progress' | 'completed' | 'rejected';
   createdAt: string;
   citizen?: {
     firstName: string;

@@ -45,7 +45,7 @@ function App() {
   });
 
   // 3. Socket Hook
-  const { notifications: socketNotifications } = useSocket(
+  const { socket, notifications: socketNotifications } = useSocket(
     user?.id || '',
     user?.role || ''
   );
@@ -77,6 +77,23 @@ function App() {
       fetchRequests(user.service);
     }
   }, [user, fetchRequests, vueActuelle]);
+
+  // Real-time WebSocket status updates
+  useEffect(() => {
+    if (!socket || user?.role !== 'employee') return;
+
+    const handleStatusUpdate = (update: any) => {
+      console.log(' [WebSocket] Status update received:', update);
+      // Refresh requests automatically to hide dashes and show 'completed'
+      fetchRequests(user?.service);
+    };
+
+    socket.on('status-update', handleStatusUpdate);
+
+    return () => {
+      socket.off('status-update', handleStatusUpdate);
+    };
+  }, [socket, fetchRequests, user?.service, user?.role]);
 
   // ───────────── Login ─────────────
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -140,7 +157,7 @@ function App() {
               getEmployeeById: (id: string) =>
                 adminEmployees.find((e: any) => e._id === id || e.id === id),
             } as any}
-            tasks={{ tasks: requests, updateTask, completeTask, getTasksByEmployee } as any}
+            tasks={{ tasks: requests, updateTask, completeTask, getTasksByEmployee, fetchRequests } as any}
             isDark={isDark}
             toggleDarkMode={toggleDarkMode}
           />
@@ -154,7 +171,7 @@ function App() {
             user={user as any}
             onLogout={logout}
             onUpdateUser={updateUser as any}
-            tasks={{ tasks: requests, updateTask, completeTask, getTasksByEmployee } as any}
+            tasks={{ tasks: requests, updateTask, completeTask, getTasksByEmployee, fetchRequests } as any}
             isDark={isDark}
             toggleDarkMode={toggleDarkMode}
             notifications={notificationsState as any}

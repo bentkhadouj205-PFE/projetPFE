@@ -148,6 +148,8 @@ export function EmployeeDashboard({
 
   const handleValidationComplete = () => {
     handleCloseModal();
+    // Re-fetch or manually update tasks to ensure 'completed' status is reflected
+    tasks.fetchRequests(); 
     toast.success(language === 'fr' ? 'Liste des tâches mise à jour' : 'Task list updated');
   };
 
@@ -178,6 +180,8 @@ export function EmployeeDashboard({
       case 'completed': return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400';
       case 'in-progress': return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400';
       case 'pending': return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400';
+      case 'rejected': return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400';
     }
   };
 
@@ -186,6 +190,8 @@ export function EmployeeDashboard({
       case 'completed': return t('completed');
       case 'in-progress': return t('inProgress');
       case 'pending': return t('pending');
+      case 'rejected': return t('rejected');
+      default: return String(status || '—');
     }
   };
 

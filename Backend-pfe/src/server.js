@@ -105,6 +105,7 @@ io.engine.on("headers", (headers, req) => {
 });
 
 export { io };
+app.set('io', io);
 
 io.on('connection', (socket) => {
   const { userId, userRole } = socket.handshake.query;
