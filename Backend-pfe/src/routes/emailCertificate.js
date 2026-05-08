@@ -27,12 +27,12 @@ router.post('/generate-and-send', async (req, res) => {
   console.log('[Start] generate-and-send citizen request received');
   try {
     const {
-      citizenEmail, citizenFirstName, citizenSubject,
+      citizenEmail, citizenFirstName, requestSubject,
       employeeName, comment, citizen_id,
       wilaya, commune, actYear, actNumber,
     } = req.body;
 
-    const isResidenceCard = citizenSubject && (citizenSubject.toLowerCase().includes('résidence') || citizenSubject.toLowerCase().includes('residence') || citizenSubject.toLowerCase().includes('séjour'));
+    const isResidenceCard = requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence') || requestSubject.toLowerCase().includes('séjour'));
 
     // 1. جلب بيانات الأكت من Supabase (Only for birth certificates)
     let acte = null;
@@ -53,8 +53,8 @@ router.post('/generate-and-send', async (req, res) => {
     // دمج البيانات
     const pdfData = {
       ...req.body,
-      subject: citizenSubject || 'Fiche de Résidence',
-      type_document: citizenSubject || 'Fiche de Résidence',
+      subject: requestSubject || 'Fiche de Résidence',
+      type_document: requestSubject || 'Fiche de Résidence',
       citizenEmail,
       citizenFirstName,
       fullName: acte?.nom_prenom || `${citizenFirstName} ${req.body.citizenLastName || ''}`,
