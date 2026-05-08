@@ -91,19 +91,33 @@ router.post('/generate-and-send', async (req, res) => {
     const pdfBuffer = await generateCertificatePDF(pdfData);
     console.timeEnd(' PDF Generation');
 
-    // 3. Send Email (Background)
-    console.log(' [Background] Starting email dispatch...');
-    emailService.sendValidationEmailWithPDF(
-      citizenEmail, citizenFirstName,
-      requestSubject || 'Acte de Naissance',
-      employeeName || 'Service État Civil',
-      comment || '',
-      pdfBuffer
-    ).then(info => {
-      console.log(' [Background Success] Email sent:', info?.messageId);
-    }).catch(err => {
-      console.error(' [Background Error] Email failed:', err.message);
-    });
+    // 3. Robust Background Email Sending with Retries
+    const sendWithRetry = async (maxRetries = 3) => {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const info = await emailService.sendValidationEmailWithPDF(
+            citizenEmail, citizenFirstName,
+            requestSubject || 'Acte de Naissance',
+            employeeName || 'Service État Civil',
+            comment || '',
+            pdfBuffer
+          );
+          console.log(` [Background Success] Email sent (Attempt ${attempt}):`, info?.messageId);
+          return;
+        } catch (err) {
+          console.error(` [Background Attempt ${attempt} Failed]:`, err.message);
+          if (attempt < maxRetries) {
+            const delay = attempt * 5000; // 5s, 10s delay
+            await new Promise(r => setTimeout(r, delay));
+          } else {
+            console.error(' [Background Critical] Email permanently failed after', maxRetries, 'attempts');
+          }
+        }
+      }
+    };
+
+    // Trigger the background task without await
+    sendWithRetry().catch(err => console.error(' [Background Orchestration Error]:', err));
 
     // 4. Update status with fallback
     if (requestId) {
