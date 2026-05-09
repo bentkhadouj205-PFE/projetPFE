@@ -256,7 +256,7 @@ export class PDFService {
             doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous : ", col2, y, { continued: true })
                .font('Helvetica').text((v(d.officierEtatCivil), ''), { continued: true })
                .font('Helvetica-Bold').text(" officier d'état civil à la commune.");
-            y += 18;
+            y += 20;
 
             // Mentions marginales (11 lines)
             doc.font('Helvetica-Bold').text('Mentions marginales : ................................', col2, y);
