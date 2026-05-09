@@ -234,9 +234,9 @@ export class PDFService {
             // domicilié(e) à + commune + wilaya
             doc.font('Helvetica-Bold').text("domicilié(e) à : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.domicile, '....................'), { continued: true })
-               .font('Helvetica-Bold').text("  commune de : ...........", { continued: true })
+               .font('Helvetica-Bold').text("  commune de : ", { continued: true })
                .font('Helvetica').text(v(d.domicileCommune, ''), { continued: true })
-               .font('Helvetica-Bold').text("  wilaya de :........... ", { continued: true })
+               .font('Helvetica-Bold').text("  wilaya de : ", { continued: true })
                .font('Helvetica').text(v(d.domicileWilaya, ''));
             y += lineH + 10;
 
@@ -245,7 +245,7 @@ export class PDFService {
                .font('Helvetica').text(v(formatDate(new Date()), ''), { continued: true })
                .font('Helvetica-Bold').text("  à heures : ", { continued: true })
                .font('Helvetica').text(v(d.heureRedaction, '....'));
-            y += lineH + 15;
+            y += lineH + 10;
 
             // Row 11: sur déclaration faite par Madame/Monsieur
             doc.font('Helvetica-Bold').text(" sur déclaration faite par Madame/Monsieur :.... ", col2, y, { continued: true })
@@ -256,7 +256,7 @@ export class PDFService {
             doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous :........................ ", col2, y, { continued: true })
                .font('Helvetica').text((v(d.officierEtatCivil), ''), { continued: true })
                .font('Helvetica-Bold').text(" officier d'état civil à la commune : ");
-            y += 15;
+            y += 18;
 
             // Mentions marginales (11 lines)
             doc.font('Helvetica-Bold').text('Mentions marginales : ................................', col2, y);
