@@ -172,7 +172,7 @@ export class PDFService {
             doc.fontSize(contentFontSize).font('Helvetica').fillColor(black);
             const lineH = 20;
             const col1 = marginX;
-            const col2 = 230;
+            const col2 = 170; // Reduced from 230
             const col3 = 400;
 
             const drawDottedValue = (label, value, x, yPos, width) => {
@@ -191,17 +191,15 @@ export class PDFService {
                .font('Helvetica').text(v(d.numeroChahada, ''));
             doc.font('Helvetica-Bold').text("le jour : ", col2, y, { continued: true })
                .font('Helvetica').text(v(formatDate(d.dateNaissance), '....................'));
-            y += 18; // Increased from 14
+            y += 18;
 
-            // Row 2: Dots under N° | date template under le jour
-            doc.text("........................................", col1, y);
+            // Row 2: Date template under le jour
             doc.text("..../..../........", col2 + 40, y);
-            y += 28; // Increased from 20
+            y += 28;
 
             // Row 3: à l'heure de | est né(e) à
             doc.font('Helvetica-Bold').text("à l'heure de : ", col1, y, { continued: true })
-               .font('Helvetica').text(v(formatTime(d.heureNaissance), '........'), { continued: true })
-               .text(" ....................");
+               .font('Helvetica').text(v(formatTime(d.heureNaissance), '........'));
             
             doc.font('Helvetica-Bold').text("est né(e) à : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.communeNaissance, '........................................'));
