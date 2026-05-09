@@ -245,15 +245,15 @@ export class PDFService {
             doc.font('Helvetica-Bold').text("dressé le  ", col2, y, { continued: true })
                .font('Helvetica').text(v(formatDate(new Date()), '...............'), { continued: true })
                .font('Helvetica-Bold').text("  à  heures  ", { continued: true })
-               .font('Helvetica').text(v(d.heureRedaction, '....'), { continued: true })
+               .font('Helvetica').text(v(d.heureRedaction, '....'))
             y += lineH + 14;
 
             // Row 11: sur déclaration faite par Madame/Monsieur
 
             doc.font('Helvetica-Bold').text(" sur déclaration faite par Madame/Monsieur", col2, y, { continued: true })
-               .font('Helvetica').text((v(d.declarePar), '........'), { continued: true });
+               .font('Helvetica').text((v(d.declarePar), '....................'), { continued: true });
             y += 14;
-            doc.font('Helvetica').text("..................................................................................................................................................", col2, y);
+            doc.font('Helvetica').text(".......................................", col2, y);
             y += 14;
 
             // Row 12: lecture faite, a signé avec nous
@@ -282,7 +282,7 @@ export class PDFService {
 
             doc.fillColor(black).font('Helvetica-Bold')
                .text('Extrait du Registre National de l\'État Civil', marginX, footerY + 30);
-            doc.text('Référence : 7 M.G.', marginX, footerY + 42);
+            doc.text('Référence 7 M.G.', marginX, footerY + 42);
 
             doc.end();
          } catch (error) {
