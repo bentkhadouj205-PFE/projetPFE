@@ -250,7 +250,7 @@ export class PDFService {
             // Row 11: sur déclaration faite par Madame/Monsieur
             doc.font('Helvetica-Bold').text("sur déclaration faite par Madame/Monsieur : ", col2, y, { continued: true })
                .font('Helvetica').text(v.nomDeclarant || ".............................");
-            y += lineH + 10;
+            y += 18;
 
             // Row 12: lecture faite, a signé avec nous
             doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous : ", col2, y, { continued: true })
