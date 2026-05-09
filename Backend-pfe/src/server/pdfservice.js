@@ -327,6 +327,8 @@ export class PDFService {
             const dateNaiss   = v(formatDate(data.date_naissance || data.dateNaissance));
             const lieuNaiss   = v(data.lieu_naissance || data.lieuNaissance || data.communeNaissance || data.commune_naissance);
             const adresse     = v(data.adresse || data.citizen_address);
+            const nationalite = v(data.nationalite || data.citizen_nationalite || 'Algérienne');
+            const profession  = v(data.profession || data.citizen_profession || '');
             const wilaya      = v(data.wilaya || data.domicile_wilaya || 'Mostaganem');
             const daira       = v(data.daira || data.domicile_daira || wilaya);
             const commune     = v(data.commune || data.domicile_commune || wilaya);
@@ -334,8 +336,7 @@ export class PDFService {
             const today       = formatDate(new Date());
 
             // ── HEADER BAR ────────────────────────────────────────────────────
-            doc.rect(0, 0, W, 85).fill(navy);
-            doc.fillColor('#ffffff').fontSize(13).font('Helvetica-Bold')
+            doc.fillColor(black).fontSize(13).font('Helvetica-Bold')
                .text('RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE', 40, 18, { align: 'center', width: W - 80 });
             doc.fontSize(11).font('Helvetica')
                .text("Ministère de l'Intérieur", 40, 38, { align: 'center', width: W - 80 });
@@ -344,22 +345,17 @@ export class PDFService {
             let y = 100;
             doc.fillColor(black).fontSize(11).font('Helvetica-Bold')
                .text(`Wilaya de : `, 40, y, { continued: true }).font('Helvetica').text(wilaya);
-            y += 18;
+            y += 20;
             doc.font('Helvetica-Bold').text(`Daïra de : `, 40, y, { continued: true }).font('Helvetica').text(daira);
-            y += 18;
+            y += 20;
             doc.font('Helvetica-Bold').text(`Commune de : `, 40, y, { continued: true }).font('Helvetica').text(commune);
-            y += 30;
+            y += 35;
 
             // ── TITLE ─────────────────────────────────────────────────────────
             doc.rect(120, y, W - 240, 40).stroke(black);
             doc.fillColor(black).fontSize(18).font('Helvetica-Bold')
                .text('CERTIFICAT DE RÉSIDENCE', 120, y + 8, { align: 'center', width: W - 240 });
-            y += 60;
-
-            // ── INTRO TEXT ────────────────────────────────────────────────────
-            doc.fillColor(black).fontSize(11).font('Helvetica')
-               .text(`Nous, ${president}, de la commune de ${commune}, certifions que :`, 40, y, { width: W - 80 });
-            y += 35;
+            y += 80;
 
             // ── helper: draw a row with label + dotted line + value ───────────
             const drawRow = (label, value, yPos) => {
@@ -370,35 +366,108 @@ export class PDFService {
                const lineStart = 40 + lblW + valW + 4;
                doc.moveTo(lineStart, yPos + 14).lineTo(W - 40, yPos + 14)
                   .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
-               return yPos + 26;
+               return yPos + 35;
             };
 
-            y = drawRow('M. / Mme / Mlle : ', fullName, y);
-            y = drawRow('Né(e) le : ', dateNaiss, y);
-            y = drawRow('À : ', lieuNaiss, y);
-            y = drawRow('Demeurant à : ', commune, y);
-            y = drawRow('Adresse complète : ', adresse, y);
-            y += 10;
+            // ── INTRO TEXT ────────────────────────────────────────────────────
+            y = drawRow('Nous, ', president, y);
+            y = drawRow('De la commune de : ', commune, y);
+            y += 15;
+            doc.fontSize(13).font('Helvetica-Bold').fillColor(black).text('Attestons que :', 40, y, { align: 'center', width: W - 80 });
+            y += 40;
+
+            y = drawRow('Monsieur / Madame : ', fullName, y);
+            
+            // ── helper: draw inline birth row ─────────────────────────────────
+            const drawBirthRow = (yPos) => {
+               const lbl1 = 'Né(e) à ';
+               const val1 = lieuNaiss;
+               const lbl2 = ' le ';
+               const val2 = dateNaiss;
+               
+               doc.fontSize(11).font('Helvetica').fillColor(black).text(lbl1, 40, yPos, { lineBreak: false });
+               const lbl1W = doc.widthOfString(lbl1) + 2;
+               doc.fontSize(11).font('Helvetica').fillColor(black).text(val1, 40 + lbl1W, yPos, { lineBreak: false });
+               const val1W = doc.widthOfString(val1);
+               
+               const midX = W * 0.60; // Place date more to the right
+               
+               const line1Start = 40 + lbl1W + val1W + 4;
+               doc.moveTo(line1Start, yPos + 14).lineTo(midX - 10, yPos + 14)
+                  .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
+
+               doc.fontSize(11).font('Helvetica').fillColor(black).text(lbl2, midX, yPos, { lineBreak: false });
+               const lbl2W = doc.widthOfString(lbl2) + 2;
+               doc.fontSize(11).font('Helvetica').fillColor(black).text(val2, midX + lbl2W, yPos, { lineBreak: false });
+               const val2W = doc.widthOfString(val2);
+               
+               const line2Start = midX + lbl2W + val2W + 4;
+               doc.moveTo(line2Start, yPos + 14).lineTo(W - 40, yPos + 14)
+                  .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
+                  
+               return yPos + 35;
+            };
+            
+            y = drawBirthRow(y);
+            
+            // ── helper: draw inline nat/prof row ──────────────────────────────
+            const drawNatProfRow = (yPos) => {
+               const lbl1 = 'Nationalité ';
+               const val1 = nationalite;
+               const lbl2 = ' Profession ';
+               const val2 = profession;
+               
+               doc.fontSize(11).font('Helvetica').fillColor(black).text(lbl1, 40, yPos, { lineBreak: false });
+               const lbl1W = doc.widthOfString(lbl1) + 2;
+               doc.fontSize(11).font('Helvetica').fillColor(black).text(val1, 40 + lbl1W, yPos, { lineBreak: false });
+               const val1W = doc.widthOfString(val1);
+               
+               const midX = W * 0.55; 
+               
+               const line1Start = 40 + lbl1W + val1W + 4;
+               doc.moveTo(line1Start, yPos + 14).lineTo(midX - 10, yPos + 14)
+                  .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
+
+               doc.fontSize(11).font('Helvetica').fillColor(black).text(lbl2, midX, yPos, { lineBreak: false });
+               const lbl2W = doc.widthOfString(lbl2) + 2;
+               doc.fontSize(11).font('Helvetica').fillColor(black).text(val2, midX + lbl2W, yPos, { lineBreak: false });
+               const val2W = doc.widthOfString(val2);
+               
+               const line2Start = midX + lbl2W + val2W + 4;
+               doc.moveTo(line2Start, yPos + 14).lineTo(W - 40, yPos + 14)
+                  .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
+                  
+               return yPos + 35;
+            };
+            
+            y = drawNatProfRow(y);
+            
+            // Domicile line
+            doc.fontSize(11).font('Helvetica').fillColor(black).text('Domicile ', 40, y, { lineBreak: false });
+            const domLblW = doc.widthOfString('Domicile ') + 2;
+            doc.fontSize(11).font('Helvetica').fillColor(black).text(adresse, 40 + domLblW, y, { lineBreak: false });
+            const domValW = doc.widthOfString(adresse);
+            doc.moveTo(40 + domLblW + domValW + 4, y + 14).lineTo(W - 40, y + 14)
+               .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
+            y += 55; 
 
             // ── BODY TEXT ─────────────────────────────────────────────────────
             doc.fontSize(11).font('Helvetica').fillColor(black)
-               .text('Réside dans la commune depuis plus de six (06) mois.', 40, y, { width: W - 80 });
-            y += 25;
-            doc.text("Cette attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.", 40, y, { width: W - 80 });
+               .text('Réside à la même adresse depuis plus de six (6) mois', 40, y, { width: W - 80 });
+            y += 50;
+            
+            doc.text("Cette attestation lui a été délivrée pour être produite dans la limite permise par la loi.", 40, y, { width: W - 80 });
             y += 50;
 
-            // ── DATE + SIGNATURE ──────────────────────────────────────────────
-            doc.fontSize(11).font('Helvetica')
-               .text(`Fait à ${commune}, le ${today}`, 40, y);
-            y += 20;
-            doc.text('Signature et cachet de l\'APC :', 40, y);
-            y += 60;
-            doc.moveTo(40, y).lineTo(200, y).lineWidth(0.8).stroke(black);
+            doc.text(`Fait à ${commune}, le ${today}`, 40, y);
+            y += 50;
+            
+            doc.text("L'objet de cette attestation est la justification du domicile.", 40, y, { width: W - 80 });
+            y += 50;
 
             // ── VALIDITY NOTE ─────────────────────────────────────────────────
-            doc.moveTo(40, 790).lineTo(W - 40, 790).lineWidth(0.5).stroke(black);
-            doc.fontSize(9).font('Helvetica').fillColor(gray)
-               .text("(1) La validité de la présente attestation ne peut excéder six (6) mois", 40, 795, { align: 'center', width: W - 80 });
+            doc.fontSize(11).font('Helvetica').fillColor(black)
+               .text("(1) La validité de la présente attestation ne peut excéder six (6) mois.", 40, y, { width: W - 80 });
 
             doc.end();
          } catch (err) {

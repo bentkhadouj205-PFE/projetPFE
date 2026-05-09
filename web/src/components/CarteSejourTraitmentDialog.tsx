@@ -270,14 +270,6 @@ export function CarteSejourTraitmentDialog({
               <Row label={tr.nin}>
                 <Input readOnly value={demandes?.nin ?? ''} className="bg-white dark:bg-slate-900 font-mono" />
               </Row>
-              <Row label={tr.adresse}>
-                <Input
-                  value={adresse}
-                  onChange={(e) => setAdresse(e.target.value)}
-                  placeholder="—"
-                  className="bg-white dark:bg-slate-900"
-                />
-              </Row>
               <FileRow
                 label={language === 'fr' ? 'Justificatif (Photo)' : 'Proof of Residence (Photo)'}
                 url={demandes?.factureFileUrl}
