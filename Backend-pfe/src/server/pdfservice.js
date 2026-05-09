@@ -175,11 +175,21 @@ export class PDFService {
             const col2 = 230;
             const col3 = 400;
 
+            const drawDottedValue = (label, value, x, yPos, width) => {
+               doc.font('Helvetica-Bold').text(label, x, yPos, { continued: true });
+               const lblW = doc.widthOfString(label);
+               doc.font('Helvetica').text(v(value, ''), x + lblW, yPos);
+               const valW = doc.widthOfString(v(value, ''));
+               const dotStart = x + lblW + valW + 2;
+               if (dotStart < x + width) {
+                  doc.text(".".repeat(Math.floor((x + width - dotStart) / 2)), dotStart, yPos);
+               }
+            };
+
             // Row 1: N° de l'acte | le jour
-            doc.font('Helvetica-Bold').text("N° de l'acte : ", col1, y, { continued: true })
-               .font('Helvetica').text(v(d.numeroChahada, '...............'));
+            drawDottedValue("N° de l'acte : ", d.numeroChahada, col1, y, 150);
             doc.font('Helvetica-Bold').text("le jour : ", col2, y, { continued: true })
-               .font('Helvetica').text(v(formatDate(d.dateNaissance), '...............'));
+               .font('Helvetica').text(v(formatDate(d.dateNaissance), '....................'));
             y += 14;
 
             // Row 2: Dots under N° | date template under le jour
@@ -189,9 +199,11 @@ export class PDFService {
 
             // Row 3: à l'heure de | est né(e) à
             doc.font('Helvetica-Bold').text("à l'heure de : ", col1, y, { continued: true })
-               .font('Helvetica').text(v(formatTime(d.heureNaissance), '........'));
+               .font('Helvetica').text(v(formatTime(d.heureNaissance), '........'), { continued: true })
+               .text(" ....................");
+            
             doc.font('Helvetica-Bold').text("est né(e) à : ", col2, y, { continued: true })
-               .font('Helvetica').text(v(d.communeNaissance, '..............................'));
+               .font('Helvetica').text(v(d.communeNaissance, '........................................'));
             y += lineH;
 
             // Row 4: commune de | wilaya de
@@ -208,7 +220,8 @@ export class PDFService {
 
             // Row 6: sexe
             doc.font('Helvetica-Bold').text("sexe : ", col2, y, { continued: true })
-               .font('Helvetica').text(v(d.genre, '..........'));
+               .font('Helvetica').text(v(d.genre, '..........'), { continued: true })
+               .text(" ....................");
             y += lineH;
 
             // Row 7: fils/fille + âge + profession
@@ -243,7 +256,7 @@ export class PDFService {
                .font('Helvetica').text(v(formatDate(new Date()), '..........'), { continued: true })
                .font('Helvetica-Bold').text("  à : ", { continued: true })
                .font('Helvetica').text(v(d.heureRedaction, '....'), { continued: true })
-               .font('Helvetica-Bold').text("  heures", { continued: true });
+               .font('Helvetica-Bold').text("  heures ....................");
             y += lineH;
 
             // Row 11: sur déclaration faite par Madame/Monsieur
@@ -275,8 +288,8 @@ export class PDFService {
             // Bottom Left: Latin Transcription and Registry info
             const footerY = H - 85;
             doc.fontSize(8).font('Helvetica').fillColor(gray);
-            doc.text(`1- En toutes lettres : ${v(d.fullNameLatin)}`, marginX, footerY);
-            doc.text(`2- Nom et Prénom de l'enfant : ${v(d.fullNameLatin)}`, marginX, footerY + 12);
+            doc.text(`1- En toutes lettres : ${v(d.fullNameLatin, '..................................................')}`, marginX, footerY);
+            doc.text(`2- Nom et Prénom de l'enfant : ${v(d.fullNameLatin, '..................................................')}`, marginX, footerY + 12);
             
             doc.fillColor(black).font('Helvetica-Bold')
                .text('Extrait du Registre National de l\'État Civil', marginX, footerY + 30);
@@ -359,6 +372,13 @@ export class PDFService {
             };
 
             // ── INTRO TEXT ────────────────────────────────────────────────────
+            doc.fontSize(10).font('Helvetica-Bold').fillColor(black)
+               .text("Nous, ", 40, y, { continued: true })
+               .font('Helvetica').text("Ould Abed Mechri .................... ", { continued: true })
+               .font('Helvetica-Bold').text("Président de l'Assemblée Populaire Communale de la commune de Mostaganem ", { continued: true })
+               .font('Helvetica').text("....................");
+            y += 35;
+
             doc.fontSize(13).font('Helvetica-Bold').fillColor(black).text('Attestons que :', 40, y, { align: 'center', width: W - 80 });
             y += 40;
 
