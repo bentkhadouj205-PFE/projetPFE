@@ -360,16 +360,15 @@ export class PDFService {
                .text('CERTIFICAT DE RÉSIDENCE', 120, y + 8, { align: 'center', width: W - 240 });
             y += 80;
 
-            // ── helper: draw a row with label + dotted line + value ───────────
-            const drawRow = (label, value, yPos) => {
-               doc.fontSize(11).font('Helvetica-Bold').fillColor(black).text(label, 40, yPos, { lineBreak: false });
-               const lblW = doc.widthOfString(label) + 6;
-               doc.fontSize(11).font('Helvetica').fillColor(black).text(value, 40 + lblW, yPos, { lineBreak: false });
-               const valW = doc.widthOfString(value);
-               const lineStart = 40 + lblW + valW + 4;
-               doc.moveTo(lineStart, yPos + 14).lineTo(W - 40, yPos + 14)
-                  .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
-               return yPos + 35;
+            const drawDottedValue = (label, value, x, yPos, width) => {
+               doc.font('Helvetica-Bold').text(label, x, yPos, { continued: true });
+               const lblW = doc.widthOfString(label);
+               doc.font('Helvetica').text(v(value, ''), x + lblW, yPos);
+               const valW = doc.widthOfString(v(value, ''));
+               const dotStart = x + lblW + valW + 2;
+               if (dotStart < x + width) {
+                  doc.text(".".repeat(Math.floor((x + width - dotStart) / 2)), dotStart, yPos);
+               }
             };
 
             // ── INTRO TEXT ────────────────────────────────────────────────────
@@ -384,97 +383,47 @@ export class PDFService {
             doc.fontSize(13).font('Helvetica-Bold').fillColor(black).text('Attestons que :', 40, y, { align: 'center', width: W - 80 });
             y += 40;
 
-            y = drawRow('Monsieur / Madame : ', fullName, y);
+            drawDottedValue('Monsieur / Madame : ', fullName, 40, y, W - 80);
+            y += 35;
             
-            // ── helper: draw inline birth row ─────────────────────────────────
-            const drawBirthRow = (yPos) => {
-               const lbl1 = 'Né(e) à ';
-               const val1 = lieuNaiss;
-               const lbl2 = ' le ';
-               const val2 = dateNaiss;
-               
-               doc.fontSize(11).font('Helvetica').fillColor(black).text(lbl1, 40, yPos, { lineBreak: false });
-               const lbl1W = doc.widthOfString(lbl1) + 2;
-               doc.fontSize(11).font('Helvetica').fillColor(black).text(val1, 40 + lbl1W, yPos, { lineBreak: false });
-               const val1W = doc.widthOfString(val1);
-               
-               const midX = W * 0.60; // Place date more to the right
-               
-               const line1Start = 40 + lbl1W + val1W + 4;
-               doc.moveTo(line1Start, yPos + 14).lineTo(midX - 10, yPos + 14)
-                  .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
+            // Né(e) à + le
+            doc.font('Helvetica-Bold').text('Né(e) à : ', 40, y, { continued: true })
+               .font('Helvetica').text(lieuNaiss, { continued: true })
+               .text(' .................... ', { continued: true })
+               .font('Helvetica-Bold').text(' le : ', { continued: true })
+               .font('Helvetica').text(dateNaiss, { continued: true })
+               .text(' ....................');
+            y += 35;
 
-               doc.fontSize(11).font('Helvetica').fillColor(black).text(lbl2, midX, yPos, { lineBreak: false });
-               const lbl2W = doc.widthOfString(lbl2) + 2;
-               doc.fontSize(11).font('Helvetica').fillColor(black).text(val2, midX + lbl2W, yPos, { lineBreak: false });
-               const val2W = doc.widthOfString(val2);
-               
-               const line2Start = midX + lbl2W + val2W + 4;
-               doc.moveTo(line2Start, yPos + 14).lineTo(W - 40, yPos + 14)
-                  .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
-                  
-               return yPos + 35;
-            };
-            
-            y = drawBirthRow(y);
-            
-            // ── helper: draw inline nat/prof row ──────────────────────────────
-            const drawNatProfRow = (yPos) => {
-               const lbl1 = 'Nationalité ';
-               const val1 = nationalite;
-               const lbl2 = ' Profession ';
-               const val2 = profession;
-               
-               doc.fontSize(11).font('Helvetica').fillColor(black).text(lbl1, 40, yPos, { lineBreak: false });
-               const lbl1W = doc.widthOfString(lbl1) + 2;
-               doc.fontSize(11).font('Helvetica').fillColor(black).text(val1, 40 + lbl1W, yPos, { lineBreak: false });
-               const val1W = doc.widthOfString(val1);
-               
-               const midX = W * 0.55; 
-               
-               const line1Start = 40 + lbl1W + val1W + 4;
-               doc.moveTo(line1Start, yPos + 14).lineTo(midX - 10, yPos + 14)
-                  .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
+            // Nationalité + Profession
+            doc.font('Helvetica-Bold').text('Nationalité : ', 40, y, { continued: true })
+               .font('Helvetica').text(nationalite, { continued: true })
+               .text(' .................... ', { continued: true })
+               .font('Helvetica-Bold').text(' Profession : ', { continued: true })
+               .font('Helvetica').text(profession, { continued: true })
+               .text(' ....................');
+            y += 35;
 
-               doc.fontSize(11).font('Helvetica').fillColor(black).text(lbl2, midX, yPos, { lineBreak: false });
-               const lbl2W = doc.widthOfString(lbl2) + 2;
-               doc.fontSize(11).font('Helvetica').fillColor(black).text(val2, midX + lbl2W, yPos, { lineBreak: false });
-               const val2W = doc.widthOfString(val2);
-               
-               const line2Start = midX + lbl2W + val2W + 4;
-               doc.moveTo(line2Start, yPos + 14).lineTo(W - 40, yPos + 14)
-                  .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
-                  
-               return yPos + 35;
-            };
-            
-            y = drawNatProfRow(y);
-            
-            // Domicile line
-            doc.fontSize(11).font('Helvetica').fillColor(black).text('Domicile ', 40, y, { lineBreak: false });
-            const domLblW = doc.widthOfString('Domicile ') + 2;
-            doc.fontSize(11).font('Helvetica').fillColor(black).text(adresse, 40 + domLblW, y, { lineBreak: false });
-            const domValW = doc.widthOfString(adresse);
-            doc.moveTo(40 + domLblW + domValW + 4, y + 14).lineTo(W - 40, y + 14)
-               .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
+            // Domicile
+            drawDottedValue('Domicile : ', adresse, 40, y, W - 80);
             y += 55; 
 
             // ── BODY TEXT ─────────────────────────────────────────────────────
             doc.fontSize(11).font('Helvetica').fillColor(black)
                .text('Réside à la même adresse depuis plus de six (6) mois', 40, y, { width: W - 80 });
-            y += 50;
+            y += 40;
             
             doc.text("Cette attestation lui a été délivrée pour être produite dans la limite permise par la loi.", 40, y, { width: W - 80 });
-            y += 50;
+            y += 40;
 
             doc.text(`Fait à ${commune}, le ${today}`, 40, y);
-            y += 50;
+            y += 40;
             
             doc.text("L'objet de cette attestation est la justification du domicile.", 40, y, { width: W - 80 });
-            y += 50;
+            y += 40;
 
             // ── VALIDITY NOTE ─────────────────────────────────────────────────
-            doc.fontSize(11).font('Helvetica').fillColor(black)
+            doc.fontSize(10).font('Helvetica').fillColor(black)
                .text("(1) La validité de la présente attestation ne peut excéder six (6) mois.", 40, y, { width: W - 80 });
 
             doc.end();
