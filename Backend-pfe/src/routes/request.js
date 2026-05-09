@@ -217,19 +217,34 @@ router.get('/my-requests/:employeeId', async (req, res) => {
 
     if (error) return res.status(500).json({ message: error.message });
 
-    // For residence requests, auto-fill address from users table if missing
+    // Auto-fill citizen_address from demandes_inscription → users → citizens (in priority order)
     const enrichedDemandes = await Promise.all(demandes.map(async (d) => {
       if (d.citizen_address || !d.citizen_nin) return d;
       try {
+        // 1st priority: demandes_inscription (type_document = certificat_residence) has the adresse
+        const { data: inscriptData } = await supabase
+          .from('demandes_inscription')
+          .select('adresse')
+          .eq('nin', d.citizen_nin)
+          .eq('type_document', 'certificat_residence')
+          .order('date_demande', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (inscriptData?.adresse) {
+          return { ...d, citizen_address: inscriptData.adresse, adresse: inscriptData.adresse };
+        }
+
+        // 2nd priority: users table
         const { data: userData } = await supabase
           .from('users')
-          .select('adresse, code_postal')
+          .select('adresse')
           .eq('nin', d.citizen_nin)
           .maybeSingle();
         if (userData?.adresse) {
           return { ...d, citizen_address: userData.adresse, adresse: userData.adresse };
         }
-        // Also check citizens table
+
+        // 3rd priority: citizens table
         const { data: citizenData } = await supabase
           .from('citizens')
           .select('adresse, address')
