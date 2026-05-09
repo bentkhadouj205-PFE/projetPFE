@@ -261,9 +261,9 @@ export class PDFService {
             // Mentions marginales (11 lines)
             doc.font('Helvetica-Bold').text('Mentions marginales : ................................', col2, y);
             y += 18;
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < 9; i++) {
                doc.text(".........................................................................................", col2, y);
-               y += 15;
+               y += 20;
             }
 
             // Bottom Right: Fait à Mostaganem le
