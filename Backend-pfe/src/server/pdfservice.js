@@ -120,7 +120,7 @@ export class PDFService {
 
             const v = (val, fallback = '....................') => (val ? String(val) : fallback);
             const formatDate = (d) => {
-               if (!d) return '../../..';
+               if (!d) return '';
                const dt = new Date(d);
                return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
             };
@@ -181,9 +181,6 @@ export class PDFService {
             doc.font('Helvetica').text(v(d.numeroChahada, '.....'), col1, y + 14);
 
             // Right Column
-            // Dotted line above le jour
-            doc.font('Helvetica').text("................................................................................................................................................................", col1, y - 10);
-
             // le jour
             doc.font('Helvetica-Bold').text("le jour : ", col2, y, { continued: true })
                .font('Helvetica').text(".......................................................................................");
@@ -265,7 +262,7 @@ export class PDFService {
             y += 20;
 
             // Mentions marginales (11 lines)
-            doc.font('Helvetica-Bold').text('Mentions marginales ', col2, y);
+            doc.font('Helvetica-Bold').text('Mentions marginales : ', col2, y);
             y += 18;
             for (let i = 0; i < 10; i++) {
                doc.text("................................................................................................................................................................", col2, y);
@@ -284,7 +281,7 @@ export class PDFService {
 
             doc.fillColor(black).font('Helvetica-Bold')
                .text('Extrait du Registre National de l\'État Civil', marginX, footerY + 30);
-            doc.text('Référence : 7 M.G.', marginX, footerY + 42);
+            doc.text('Référence  7 M.G.', marginX, footerY + 42);
 
             doc.end();
          } catch (error) {
