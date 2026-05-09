@@ -383,7 +383,11 @@ export class PDFService {
             doc.fontSize(13).font('Helvetica-Bold').fillColor(black).text('Attestons que :', 40, y, { align: 'center', width: W - 80 });
             y += 40;
 
-            drawDottedValue('Monsieur / Madame : ', fullName, 40, y, W - 80);
+            // Monsieur / Madame
+            doc.font('Helvetica-Bold').text('Monsieur / Madame : ', 40, y, { continued: true })
+               .font('Helvetica').text(fullName);
+            y += 18;
+            doc.text("..........................................................................................................................................................................", 40, y);
             y += 35;
             
             // Né(e) à + le
@@ -405,7 +409,10 @@ export class PDFService {
             y += 35;
 
             // Domicile
-            drawDottedValue('Domicile : ', adresse, 40, y, W - 80);
+            doc.font('Helvetica-Bold').text('Domicile : ', 40, y, { continued: true })
+               .font('Helvetica').text(adresse);
+            y += 18;
+            doc.text("..........................................................................................................................................................................", 40, y);
             y += 55; 
 
             // ── BODY TEXT ─────────────────────────────────────────────────────
