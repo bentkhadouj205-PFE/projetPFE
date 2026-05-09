@@ -185,7 +185,7 @@ export class PDFService {
             // le jour
             doc.font('Helvetica-Bold').text("le jour  ", col2, y, { continued: true })
                .font('Helvetica').text(".......................................................................................");
-            y += 35;
+            y += 14;
 
             // à l'heure de
             doc.font('Helvetica-Bold').text("à l'heure de  ", col2, y, { continued: true })
@@ -252,8 +252,6 @@ export class PDFService {
 
             doc.font('Helvetica-Bold').text(" sur déclaration faite par Madame/Monsieur", col2, y, { continued: true })
                .font('Helvetica').text((v(d.declarePar), '....................'), { continued: true });
-            y += 14;
-            doc.font('Helvetica').text(".......................................", col2, y);
             y += 14;
 
             // Row 12: lecture faite, a signé avec nous
