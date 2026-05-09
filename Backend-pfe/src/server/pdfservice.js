@@ -305,18 +305,106 @@ export class PDFService {
    static generateCarteSejour(data) {
       return new Promise((resolve, reject) => {
          try {
-            const doc = new PDFDocument({ size: 'A4' });
+            const doc = new PDFDocument({ size: 'A4', margins: { top: 30, bottom: 30, left: 40, right: 40 } });
             const chunks = [];
             doc.on('data', chunk => chunks.push(chunk));
             doc.on('end', () => resolve(Buffer.concat(chunks)));
+
             const W = 595;
-            doc.rect(0, 0, W, 90).fill('#1e3a5f');
-            doc.fillColor('#ffffff').fontSize(15).font('Helvetica-Bold')
-               .text('RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE', 50, 18, { align: 'center', width: W - 100 });
-            doc.fillColor('#1f2937').fontSize(22).font('Helvetica-Bold')
-               .text('CARTE DE RÉSIDENCE', 50, 105, { align: 'center', width: W - 100 });
+            const black = '#000000';
+            const navy = '#1e3a5f';
+            const gray = '#555555';
+
+            const v = (val, fallback = '...............') => (val ? String(val) : fallback);
+            const formatDate = (d) => {
+               if (!d) return '../../..';
+               const dt = new Date(d);
+               return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+            };
+
+            // Normalise incoming fields
+            const fullName    = v(data.fullName || data.nom_prenom || `${data.firstName || data.citizenFirstName || ''} ${data.lastName || data.citizenLastName || ''}`.trim());
+            const dateNaiss   = v(formatDate(data.date_naissance || data.dateNaissance));
+            const lieuNaiss   = v(data.lieu_naissance || data.lieuNaissance || data.communeNaissance || data.commune_naissance);
+            const adresse     = v(data.adresse || data.citizen_address);
+            const wilaya      = v(data.wilaya || data.domicile_wilaya || 'Mostaganem');
+            const daira       = v(data.daira || data.domicile_daira || wilaya);
+            const commune     = v(data.commune || data.domicile_commune || wilaya);
+            const president   = v(data.president_name || data.presidentName || 'Le Président de l\'APC');
+            const today       = formatDate(new Date());
+
+            // ── HEADER BAR ────────────────────────────────────────────────────
+            doc.rect(0, 0, W, 85).fill(navy);
+            doc.fillColor('#ffffff').fontSize(13).font('Helvetica-Bold')
+               .text('RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE', 40, 18, { align: 'center', width: W - 80 });
+            doc.fontSize(11).font('Helvetica')
+               .text("Ministère de l'Intérieur", 40, 38, { align: 'center', width: W - 80 });
+
+            // ── LOCATION HEADER ───────────────────────────────────────────────
+            let y = 100;
+            doc.fillColor(black).fontSize(11).font('Helvetica-Bold')
+               .text(`Wilaya de : `, 40, y, { continued: true }).font('Helvetica').text(wilaya);
+            y += 18;
+            doc.font('Helvetica-Bold').text(`Daïra de : `, 40, y, { continued: true }).font('Helvetica').text(daira);
+            y += 18;
+            doc.font('Helvetica-Bold').text(`Commune de : `, 40, y, { continued: true }).font('Helvetica').text(commune);
+            y += 30;
+
+            // ── TITLE ─────────────────────────────────────────────────────────
+            doc.rect(120, y, W - 240, 40).stroke(black);
+            doc.fillColor(black).fontSize(18).font('Helvetica-Bold')
+               .text('CERTIFICAT DE RÉSIDENCE', 120, y + 8, { align: 'center', width: W - 240 });
+            y += 60;
+
+            // ── INTRO TEXT ────────────────────────────────────────────────────
+            doc.fillColor(black).fontSize(11).font('Helvetica')
+               .text(`Nous, ${president}, de la commune de ${commune}, certifions que :`, 40, y, { width: W - 80 });
+            y += 35;
+
+            // ── helper: draw a row with label + dotted line + value ───────────
+            const drawRow = (label, value, yPos) => {
+               doc.fontSize(11).font('Helvetica-Bold').fillColor(black).text(label, 40, yPos, { lineBreak: false });
+               const lblW = doc.widthOfString(label) + 6;
+               doc.fontSize(11).font('Helvetica').fillColor(black).text(value, 40 + lblW, yPos, { lineBreak: false });
+               const valW = doc.widthOfString(value);
+               const lineStart = 40 + lblW + valW + 4;
+               doc.moveTo(lineStart, yPos + 14).lineTo(W - 40, yPos + 14)
+                  .lineWidth(0.4).dash(1, { space: 3 }).stroke(gray).undash();
+               return yPos + 26;
+            };
+
+            y = drawRow('M. / Mme / Mlle : ', fullName, y);
+            y = drawRow('Né(e) le : ', dateNaiss, y);
+            y = drawRow('À : ', lieuNaiss, y);
+            y = drawRow('Demeurant à : ', commune, y);
+            y = drawRow('Adresse complète : ', adresse, y);
+            y += 10;
+
+            // ── BODY TEXT ─────────────────────────────────────────────────────
+            doc.fontSize(11).font('Helvetica').fillColor(black)
+               .text('Réside dans la commune depuis plus de six (06) mois.', 40, y, { width: W - 80 });
+            y += 25;
+            doc.text("Cette attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.", 40, y, { width: W - 80 });
+            y += 50;
+
+            // ── DATE + SIGNATURE ──────────────────────────────────────────────
+            doc.fontSize(11).font('Helvetica')
+               .text(`Fait à ${commune}, le ${today}`, 40, y);
+            y += 20;
+            doc.text('Signature et cachet de l\'APC :', 40, y);
+            y += 60;
+            doc.moveTo(40, y).lineTo(200, y).lineWidth(0.8).stroke(black);
+
+            // ── VALIDITY NOTE ─────────────────────────────────────────────────
+            doc.moveTo(40, 790).lineTo(W - 40, 790).lineWidth(0.5).stroke(black);
+            doc.fontSize(9).font('Helvetica').fillColor(gray)
+               .text("(1) La validité de la présente attestation ne peut excéder six (6) mois", 40, 795, { align: 'center', width: W - 80 });
+
             doc.end();
-         } catch (err) { reject(err); }
+         } catch (err) {
+            console.error('Error generating Carte de Résidence:', err);
+            reject(err);
+         }
       });
    }
 }

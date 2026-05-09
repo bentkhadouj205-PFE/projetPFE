@@ -8,7 +8,7 @@ export class EmailService {
   static async sendActivationEmail({ to, firstName, lastName, verificationLink }) {
     try {
       console.log(`📧 RESEND: Preparing activation email for ${to}`);
-      
+
       const { data, error } = await resend.emails.send({
         from: 'Baladiya <noreply@resend.dev>', // Note: Use resend.dev for testing if no domain verified
         to: [to],
@@ -54,14 +54,14 @@ export class EmailService {
       });
 
       if (error) {
-        console.error('❌ RESEND ERROR:', error);
+        console.error(' RESEND ERROR:', error);
         throw new Error(error.message);
       }
 
-      console.log('✅ RESEND SUCCESS:', data.id);
+      console.log(' RESEND SUCCESS:', data.id);
       return data;
     } catch (err) {
-      console.error('💥 EMAIL SERVICE FAILURE:', err);
+      console.error('EMAIL SERVICE FAILURE:', err);
       throw err;
     }
   }
@@ -90,7 +90,7 @@ export class EmailService {
       if (error) throw new Error(error.message);
       return data;
     } catch (err) {
-      console.error('💥 REJECTION EMAIL FAILURE:', err);
+      console.error(' REJECTION EMAIL FAILURE:', err);
       throw err;
     }
   }

@@ -52,11 +52,12 @@ export function useRealRequests(employeeId: string) {
 
       if (response.ok) {
         const transformedRequests = data.requests?.map((req: any) => {
-          const st = req.status === 'en_attente' ? 'pending'
-            : req.status === 'en_traitement' ? 'in-progress'
-              : req.status === 'approuve' ? 'completed'
-                : req.status === 'rejete' ? 'rejected'
-                  : req.status;
+          const rawStatus = (req.status || req.statut || '').toLowerCase();
+          const st = ['en_attente', 'pending', 'en attente'].includes(rawStatus) ? 'pending'
+            : ['en_traitement', 'in-progress', 'in progress'].includes(rawStatus) ? 'in-progress'
+              : ['approuve', 'completed', 'termine', 'terminé', 'approuvé'].includes(rawStatus) ? 'completed'
+                : ['rejete', 'rejected', 'rejeté'].includes(rawStatus) ? 'rejected'
+                  : rawStatus || 'pending';
 
           return {
             id: req.id,

@@ -24,6 +24,7 @@ export interface CarteSejourCitizenShape {
   factureFileUrl?: string;
   dateNaissance?: string;
   adresse?: string;
+  address?: string;
   wilaya?: string;
   commune?: string;
 }
@@ -147,7 +148,7 @@ export function CarteSejourTraitmentDialog({
 
   useEffect(() => {
     if (!open || !demandes) return;
-    setAdresse(demandes.adresse?.trim() || '');
+    setAdresse(demandes.adresse?.trim() || demandes.address?.trim() || '');
     setStep('form');
   }, [open, demandes]);
 
