@@ -173,31 +173,29 @@ export class PDFService {
             doc.fontSize(contentFontSize).font('Helvetica').fillColor(black);
             const lineH = 22;
             const col1 = 40;
-            const col2 = 230;
+            const col2 = 150;
             const rightMargin = 560;
 
             // Left Column (Act Info)
             doc.font('Helvetica-Bold').text("N° de l'acte ", col1, y);
             doc.font('Helvetica').text(v(d.numeroChahada, '.....'), col1, y + 14);
-            doc.text(v(formatDate(d.dateNaissance), '...../../...'), col1, y + 28);
 
             // Right Column
             // le jour
             doc.font('Helvetica-Bold').text("le jour  ", col2, y, { continued: true })
-               .font('Helvetica').text(".......................................................................................");
-            doc.text(v(formatDate(d.dateNaissance), ''), col2 + 45, y + 14);
-            doc.text("..........................................", col2 + 45, y + 14);
+               .font('Helvetica').text(v(formatDate(d.dateNaissance), '......................................................................'), col2 + 45, y + 14);
+
             y += 35;
 
             // à l'heure de
             doc.font('Helvetica-Bold').text("à l'heure de  ", col2, y, { continued: true })
                .font('Helvetica').text(v(formatTime(d.heureNaissance), '..........................................................'));
-            y += lineH + 5;
+            y += lineH + 10;
 
             // est né(e) à
             doc.font('Helvetica-Bold').text("est né(e) à  ", col2, y, { continued: true })
                .font('Helvetica').text(".................................................................");
-            y += lineH + 5;
+            y += lineH + 10;
 
             // commune de | wilaya de
             doc.font('Helvetica-Bold').text("commune de  ", col2, y, { continued: true })
@@ -209,12 +207,12 @@ export class PDFService {
             // dénommé(e)
             doc.font('Helvetica-Bold').text("dénommé(e)  ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.fullName, '..............................................................'));
-            y += lineH + 5;
+            y += lineH + 10;
 
             // sexe
             doc.font('Helvetica-Bold').text("sexe  ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.genre, '..............................................................'));
-            y += lineH + 5;
+            y += lineH + 10;
 
             // fils/fille + âge + profession
             doc.font('Helvetica-Bold').text("fils / fille de  ", col2, y, { continued: true })
@@ -223,7 +221,7 @@ export class PDFService {
                .font('Helvetica').text(v(d.pereAge, '....'), { continued: true })
                .font('Helvetica-Bold').text("  profession  ", { continued: true })
                .font('Helvetica').text(v(d.pereMetier, '....................'));
-            y += lineH + 5;
+            y += lineH + 10;
 
             // et de + âge + profession
             doc.font('Helvetica-Bold').text("et de  ", col2, y, { continued: true })
@@ -232,7 +230,7 @@ export class PDFService {
                .font('Helvetica').text(v(d.mereAge, '....'), { continued: true })
                .font('Helvetica-Bold').text("  profession  ", { continued: true })
                .font('Helvetica').text(v(d.mereMetier, '....................'));
-            y += lineH + 5;
+            y += lineH + 10;
 
             // domicilié(e) à + commune + wilaya
             doc.font('Helvetica-Bold').text("domicilié(e) à  ", col2, y, { continued: true })
@@ -241,7 +239,7 @@ export class PDFService {
                .font('Helvetica').text(v(d.domicileCommune, '...........'), { continued: true })
                .font('Helvetica-Bold').text("  wilaya de  ", { continued: true })
                .font('Helvetica').text(v(d.domicileWilaya, '...........'));
-            y += lineH + 5;
+            y += lineH + 10;
 
             // dressé le + à  heures
             doc.font('Helvetica-Bold').text("dressé le  ", col2, y, { continued: true })
@@ -254,23 +252,23 @@ export class PDFService {
             y += lineH + 15;
 
             // Row 11: sur déclaration faite par Madame/Monsieur
-            doc.font('Helvetica').text("........................................................................", col1, y, { continued: true })
-               .font('Helvetica-Bold').text(" sur déclaration faite par Madame/Monsieur", { align: 'right' });
+
+            doc.font('Helvetica-Bold').text(" sur déclaration faite par Madame/Monsieur", col2, y, { continued: true });
             y += 18;
-            doc.font('Helvetica').text("................................................................................................................................................................", col1, y);
+            doc.font('Helvetica').text("................................................................................................................................................................", col2, y);
             y += 25;
 
             // Row 12: lecture faite, a signé avec nous
             doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous  ", col2, y, { continued: true })
                .font('Helvetica').text("....................", { continued: true })
-               .font('Helvetica-Bold').text(" officier d'état civil à la commune", { align: 'right' });
+               .font('Helvetica-Bold').text(" officier d'état civil à la commune");
             y += 20;
 
             // Mentions marginales (11 lines)
-            doc.font('Helvetica-Bold').text('Mentions marginales ', col1, y);
+            doc.font('Helvetica-Bold').text('Mentions marginales ', col2, y);
             y += 18;
-            for (let i = 0; i < 11; i++) {
-               doc.text("................................................................................................................................................................", col1, y);
+            for (let i = 0; i < 10; i++) {
+               doc.text("................................................................................................................................................................", col2, y);
                y += 14;
             }
 
