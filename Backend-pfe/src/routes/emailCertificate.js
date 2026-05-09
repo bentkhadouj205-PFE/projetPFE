@@ -42,9 +42,7 @@ router.post('/generate-and-send', async (req, res) => {
         .schema('register')
         .from('actes_naissance')
         .select('*')
-        .eq('citizen_id', citizen_id || '')
-        .order('created_at', { ascending: false })
-        .limit(1)
+        .eq('numero_acte', actNumber)
         .single();
       console.timeEnd(' Supabase Fetch');
       if (!error) acte = data;
