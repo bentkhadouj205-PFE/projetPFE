@@ -248,14 +248,14 @@ export class PDFService {
             y += lineH + 10;
 
             // Row 11: sur déclaration faite par Madame/Monsieur
-            doc.font('Helvetica-Bold').text(" sur déclaration faite par Madame/Monsieur :.... ", col2, y, { continued: true })
-               .font('Helvetica').text((v(d.declarePar), '........'), { continued: true });
+            doc.font('Helvetica-Bold').text("sur déclaration faite par Madame/Monsieur : ", col2, y, { continued: true })
+               .font('Helvetica').text(v.nomDeclarant || ".............................");
             y += 18;
 
             // Row 12: lecture faite, a signé avec nous
-            doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous :........................ ", col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous : ", col2, y, { continued: true })
                .font('Helvetica').text((v(d.officierEtatCivil), ''), { continued: true })
-               .font('Helvetica-Bold').text(" officier d'état civil à la commune : ");
+               .font('Helvetica-Bold').text(" officier d'état civil à la commune.");
             y += 18;
 
             // Mentions marginales (11 lines)
