@@ -250,17 +250,17 @@ export class PDFService {
             // Row 11: sur déclaration faite par Madame/Monsieur
             doc.font('Helvetica-Bold').text("sur déclaration faite par Madame/Monsieur : ", col2, y, { continued: true })
                .font('Helvetica').text(v.nomDeclarant || ".............................");
-            y += 18;
+            y += lineH + 10;
 
             // Row 12: lecture faite, a signé avec nous
             doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous : ", col2, y, { continued: true })
                .font('Helvetica').text((v(d.officierEtatCivil), ''), { continued: true })
                .font('Helvetica-Bold').text(" officier d'état civil à la commune.");
-            y += 20;
+            y += lineH + 10;
 
             // Mentions marginales (11 lines)
             doc.font('Helvetica-Bold').text('Mentions marginales : ................................', col2, y);
-            y += 18;
+            y += lineH + 10;
             for (let i = 0; i < 9; i++) {
                doc.text(".........................................................................................", col2, y);
                y += 20;
