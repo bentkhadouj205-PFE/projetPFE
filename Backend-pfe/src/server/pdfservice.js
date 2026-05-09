@@ -253,7 +253,7 @@ export class PDFService {
                .font('Helvetica').text((v(d.declarePar), '........'), { continued: true });
             y += 18;
             doc.font('Helvetica').text("..................................................................................................................................................", col2, y);
-            y += 14;
+            y += 20;
 
             // Row 12: lecture faite, a signé avec nous
             doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous : ", col2, y, { continued: true })
@@ -266,7 +266,7 @@ export class PDFService {
             y += 18;
             for (let i = 0; i < 10; i++) {
                doc.text("................................................................................................................................................................", col2, y);
-               y += 14;
+               y += 20;
             }
 
             // Bottom Right: Fait à Mostaganem le
