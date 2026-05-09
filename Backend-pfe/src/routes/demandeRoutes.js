@@ -43,7 +43,7 @@ router.get('/demandes', async (req, res) => {
   const normalizedData = data.map(item => {
     const newItem = { ...item };
     const pathKeys = ['cni_recto_path', 'cni_verso_path', 'selfie_path', 'photo_cni_path', 'photo_domicile_path'];
-    
+
     pathKeys.forEach(key => {
       if (typeof newItem[key] === 'string' && newItem[key].length > 0) {
         // Find 'uploads' in the path and get everything after it
@@ -71,13 +71,12 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      const { user_id, nom, prenom, nin, date_demande } = req.body;
+      const { user_id, nom, prenom, nin, date_demande, adresse, commune, wilaya } = req.body;
 
       if (!user_id || !nom || !prenom || !nin) {
         return res.status(400).json({ success: false, message: 'Champs obligatoires manquants' });
       }
 
-      // CORRECT: Save ONLY the relative path using the exact logic requested
       const fileUrl1 = `/uploads/inscriptions/${req.files.photo_cni[0].filename}`;
       const fileUrl2 = `/uploads/inscriptions/${req.files.photo_domicile[0].filename}`;
 
@@ -90,6 +89,9 @@ router.post(
             nom,
             prenom,
             nin,
+            adresse,
+            commune,
+            wilaya_naissance: wilaya, // Note: Assuming wilaya_naissance acts as wilaya based on frontend mapping
             cni_recto_path: fileUrl1,
             selfie_path: fileUrl2,
             date_demande: date_demande || new Date(),
@@ -108,6 +110,7 @@ router.post(
         nom,
         prenom,
         nin,
+        adresse,
         cni_recto_path: fileUrl1,
         selfie_path: fileUrl2,
         date_demande: date_demande || new Date(),

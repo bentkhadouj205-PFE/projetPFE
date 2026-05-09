@@ -50,7 +50,7 @@ router.post('/submit', async (req, res) => {
         citizenData.lastName,
         citizenData.email,
         citizenData.nin,
-        citizenData.address ?? null,
+        citizenData.address,
         subject,
         description,
         emp.id,
@@ -146,11 +146,11 @@ router.get('/', async (req, res) => {
 
     // Mapping layer to ensure UI names match DB types
     const serviceMap = {
-      'Civil Status': 'extrait_naissance',
+      'Civil Status': 'certificat_naissance',
       'Residence': 'certificat_residence',
       'Mariage': 'certificat_mariage',
       'Voirie': 'autorisation_voirie',
-      'extrait_naissance': 'extrait_naissance',
+      'certificat_naissance': 'certificat_naissance',
       'certificat_residence': 'certificat_residence',
       'certificat_mariage': 'certificat_mariage',
       'autorisation_voirie': 'autorisation_voirie'
@@ -217,7 +217,33 @@ router.get('/my-requests/:employeeId', async (req, res) => {
 
     if (error) return res.status(500).json({ message: error.message });
 
-    res.json({ count: demandes.length, requests: demandes });
+    // For residence requests, auto-fill address from users table if missing
+    const enrichedDemandes = await Promise.all(demandes.map(async (d) => {
+      if (d.citizen_address || !d.citizen_nin) return d;
+      try {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('adresse, code_postal')
+          .eq('nin', d.citizen_nin)
+          .maybeSingle();
+        if (userData?.adresse) {
+          return { ...d, citizen_address: userData.adresse, adresse: userData.adresse };
+        }
+        // Also check citizens table
+        const { data: citizenData } = await supabase
+          .from('citizens')
+          .select('adresse, address')
+          .eq('nin', d.citizen_nin)
+          .maybeSingle();
+        if (citizenData?.adresse || citizenData?.address) {
+          const addr = citizenData.adresse || citizenData.address;
+          return { ...d, citizen_address: addr, adresse: addr };
+        }
+      } catch (_) { /* silently ignore */ }
+      return d;
+    }));
+
+    res.json({ count: enrichedDemandes.length, requests: enrichedDemandes });
 
   } catch (error) {
     console.error('Error in my-requests:', error);
