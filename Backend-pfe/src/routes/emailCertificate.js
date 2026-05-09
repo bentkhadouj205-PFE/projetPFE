@@ -155,7 +155,7 @@ router.post('/send-official-acte/:acteId', async (req, res) => {
     if (error || !acte) return res.status(404).json({ error: 'Acte non trouvé' });
 
     // Generate PDF
-    const pdfBuffer = await PDFService.generateOfficialActeNaissance(acte);
+    const pdfBuffer = await PDFService.generateActeNaissance(acte);
 
     // Envoie l'email avec le PDF officiel en pièce jointe
     const info = await emailService.sendValidationEmailWithPDF(

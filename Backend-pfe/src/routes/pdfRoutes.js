@@ -101,7 +101,7 @@ router.get('/official-acte/:acteId', async (req, res) => {
       return res.status(404).json({ message: 'Acte non trouvé dans le registre' });
     }
 
-    const buffer = await PDFService.generateOfficialActeNaissance(acte);
+    const buffer = await PDFService.generateActeNaissance(acte);
     sendPDF(res, buffer, `acte_naissance_officiel_${acte.numero_acte || acteId}.pdf`);
 
   } catch (err) {
