@@ -59,7 +59,7 @@ export const emailService = {
       pdfBuffer = await generateCertificatePDF(pdfBufferOrId);
     }
 
-    const apiKey = process.env.BREVO_SMTP_PASS;
+    const apiKey = process.env.BREVO_API_KEY;
     const senderEmail = process.env.SMTP_USER || 'baladiyadigital27@gmail.com';
     console.log(`[BREVO] API key: ${apiKey ? '***set***' : 'MISSING!'} | Sender: ${senderEmail}`);
 
