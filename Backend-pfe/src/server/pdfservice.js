@@ -148,6 +148,7 @@ export class PDFService {
                heureRedaction: data.heure_redaction ?? data.heureRedaction ?? '......',
                declarePar: data.declare_par ?? data.declarePar,
                officierEtatCivil: data.officier_etat_civil ?? data.officierEtatCivil,
+               mentions_marginales: data.mentions_marginales ?? data.mentions_marginales,
 
             };
 
@@ -183,8 +184,7 @@ export class PDFService {
             // Right Column
             // le jour
             doc.font('Helvetica-Bold').text("le jour  ", col2, y, { continued: true })
-               .font('Helvetica').text(v(formatDate(d.dateNaissance), '......................................................................'), col2 + 45, y + 14);
-
+               .font('Helvetica').text(".......................................................................................");
             y += 35;
 
             // à l'heure de
@@ -266,7 +266,7 @@ export class PDFService {
             doc.font('Helvetica-Bold').text('Mentions marginales ', col2, y);
             y += 18;
             for (let i = 0; i < 10; i++) {
-               doc.text("................................................................................................................................................................", col2, y);
+               doc.text((v(d.mentions_marginales), '..........................'), { continued: true }, col2, y);
                y += 14;
             }
 
