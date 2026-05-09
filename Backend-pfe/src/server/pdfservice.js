@@ -181,85 +181,87 @@ export class PDFService {
             doc.font('Helvetica').text(v(d.numeroChahada, '.....'), col1, y + 14);
 
             // Right Column
-            // le jour
-            doc.font('Helvetica-Bold').text("le jour  ", col2, y, { continued: true })
-               .font('Helvetica').text(v(formatDate(d.dateNaissance), '......................................................................'), col2 + 45, y + 14);
+            // Dotted line above le jour
+            doc.font('Helvetica').text("................................................................................................................................................................", col1, y - 10);
 
+            // le jour
+            doc.font('Helvetica-Bold').text("le jour : ", col2, y, { continued: true })
+               .font('Helvetica').text(".......................................................................................");
             y += 35;
 
             // à l'heure de
-            doc.font('Helvetica-Bold').text("à l'heure de  ", col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text("à l'heure de : ", col2, y, { continued: true })
                .font('Helvetica').text(v(formatTime(d.heureNaissance), '..........................................................'));
             y += lineH + 10;
 
             // est né(e) à
-            doc.font('Helvetica-Bold').text("est né(e) à  ", col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text("est né(e) à : ", col2, y, { continued: true })
                .font('Helvetica').text(".................................................................");
             y += lineH + 10;
 
             // commune de | wilaya de
-            doc.font('Helvetica-Bold').text("commune de  ", col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text("commune de : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.communeNaissance, '....................'), { continued: true })
-               .font('Helvetica-Bold').text("  wilaya de  ", { continued: true })
+               .font('Helvetica-Bold').text("  wilaya de : ", { continued: true })
                .font('Helvetica').text(v(d.wilayaNaissance, '....................'));
             y += lineH + 10;
 
             // dénommé(e)
-            doc.font('Helvetica-Bold').text("dénommé(e)  ", col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text("dénommé(e) : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.fullName, '..............................................................'));
             y += lineH + 10;
 
             // sexe
-            doc.font('Helvetica-Bold').text("sexe  ", col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text("sexe : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.genre, '..............................................................'));
             y += lineH + 10;
 
             // fils/fille + âge + profession
-            doc.font('Helvetica-Bold').text("fils / fille de  ", col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text("fils / fille de : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.pereNomPrenom, '....................'), { continued: true })
-               .font('Helvetica-Bold').text("  âge  ", { continued: true })
+               .font('Helvetica-Bold').text("  âge : ", { continued: true })
                .font('Helvetica').text(v(d.pereAge, '....'), { continued: true })
-               .font('Helvetica-Bold').text("  profession  ", { continued: true })
+               .font('Helvetica-Bold').text("  profession : ", { continued: true })
                .font('Helvetica').text(v(d.pereMetier, '....................'));
             y += lineH + 10;
 
             // et de + âge + profession
-            doc.font('Helvetica-Bold').text("et de  ", col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text("et de : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.mereNomPrenom, '....................'), { continued: true })
-               .font('Helvetica-Bold').text("  âge  ", { continued: true })
+               .font('Helvetica-Bold').text("  âge : ", { continued: true })
                .font('Helvetica').text(v(d.mereAge, '....'), { continued: true })
-               .font('Helvetica-Bold').text("  profession  ", { continued: true })
+               .font('Helvetica-Bold').text("  profession : ", { continued: true })
                .font('Helvetica').text(v(d.mereMetier, '....................'));
             y += lineH + 10;
 
             // domicilié(e) à + commune + wilaya
-            doc.font('Helvetica-Bold').text("domicilié(e) à  ", col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text("domicilié(e) à : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.domicile, '....................'), { continued: true })
-               .font('Helvetica-Bold').text("  commune de  ", { continued: true })
+               .font('Helvetica-Bold').text("  commune de : ", { continued: true })
                .font('Helvetica').text(v(d.domicileCommune, '...........'), { continued: true })
-               .font('Helvetica-Bold').text("  wilaya de  ", { continued: true })
+               .font('Helvetica-Bold').text("  wilaya de : ", { continued: true })
                .font('Helvetica').text(v(d.domicileWilaya, '...........'));
             y += lineH + 10;
 
             // dressé le + à  heures
-            doc.font('Helvetica-Bold').text("dressé le  ", col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text("dressé le : ", col2, y, { continued: true })
                .font('Helvetica').text(v(formatDate(new Date()), '...............'), { continued: true })
-               .font('Helvetica-Bold').text("  à  heures  ", { continued: true })
+               .font('Helvetica-Bold').text("  à : ", { continued: true })
                .font('Helvetica').text(v(d.heureRedaction, '....'), { continued: true })
+               .font('Helvetica-Bold').text("  heures : ", { continued: true });
             y += lineH + 15;
 
             // Row 11: sur déclaration faite par Madame/Monsieur
-
-            doc.font('Helvetica-Bold').text(" sur déclaration faite par Madame/Monsieur", col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text(" sur déclaration faite par Madame/Monsieur : ", col2, y, { continued: true })
                .font('Helvetica').text((v(d.declarePar), '........'), { continued: true });
             y += 18;
             doc.font('Helvetica').text("..................................................................................................................................................", col2, y);
             y += 14;
 
             // Row 12: lecture faite, a signé avec nous
-            doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous  ", col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous : ", col2, y, { continued: true })
                .font('Helvetica').text((v(d.officierEtatCivil), '..........................'), { continued: true })
-               .font('Helvetica-Bold').text(" officier d'état civil à la commune");
+               .font('Helvetica-Bold').text(" officier d'état civil à la commune : ");
             y += 20;
 
             // Mentions marginales (11 lines)
