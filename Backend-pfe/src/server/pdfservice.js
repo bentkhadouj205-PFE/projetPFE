@@ -17,7 +17,7 @@ export class PDFService {
             const chunks = [];
             doc.on('data', chunk => chunks.push(chunk));
             doc.on('end', () => resolve(Buffer.concat(chunks)));
-            
+
             // Header
             doc.fillColor('#000000');
             doc.fontSize(28).font('Helvetica-Bold').text('BALADIYA DIGITAL', 50, 30);
@@ -72,7 +72,7 @@ export class PDFService {
             const chunks = [];
             doc.on('data', chunk => chunks.push(chunk));
             doc.on('end', () => resolve(Buffer.concat(chunks)));
-            
+
             doc.fillColor('#000000').fontSize(28).font('Helvetica-Bold').text('BALADIYA DIGITAL', 50, 30);
             doc.fontSize(14).font('Helvetica').text('Notification', 50, 65);
             doc.fillColor('#1f2937').fontSize(16).font('Helvetica-Bold').text('DÉTAILS DE LA NOTIFICATION', 50, 130);
@@ -153,7 +153,7 @@ export class PDFService {
             // ── HEADER ───────────────────────────────────────────────────────
             doc.fillColor(black).fontSize(13).font('Helvetica-Bold')
                .text('RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE', 0, 30, { align: 'center', width: W });
-            
+
             doc.fontSize(9).font('Helvetica')
                .text("Ministère de l'Intérieur et des Collectivités Locales", marginX, 55);
             doc.text("Registre National de l'État Civil", marginX, 67);
@@ -189,27 +189,28 @@ export class PDFService {
             // Row 1: N° de l'acte | le jour
             doc.font('Helvetica-Bold').text("N° de l'acte : ", col1, y, { continued: true })
                .font('Helvetica').text(v(d.numeroChahada, ''));
-            doc.font('Helvetica-Bold').text("le jour : ", col2, y, { continued: true })
-               .font('Helvetica').text(v(formatDate(d.dateNaissance), '....................'));
+            doc.font('Helvetica-Bold').text("le jour  ", col2, y, { continued: true })
+               .font('Helvetica').text(v(formatDate(d.dateNaissance), '...../../...'));
             y += 18;
 
             // Row 2: Date template under le jour
-            doc.text("..../..../........", col2 + 40, y);
+            doc.text("............................................", col1, y); // Shortened dots under N° label
+            doc.text("............................................", col2 + 40, y);
             y += 28;
 
             // Row 3: à l'heure de | est né(e) à
             doc.font('Helvetica-Bold').text("à l'heure de : ", col1, y, { continued: true })
-               .font('Helvetica').text(v(formatTime(d.heureNaissance), '........'));
-            
+               .font('Helvetica').text(v(formatTime(d.heureNaissance), '............................................'));
+
             doc.font('Helvetica-Bold').text("est né(e) à : ", col2, y, { continued: true })
-               .font('Helvetica').text(v(d.communeNaissance, '........................................'));
+               .font('Helvetica').text(v(d.communeNaissance, '............................................'));
             y += lineH + 5;
 
             // Row 4: commune de | wilaya de
             doc.font('Helvetica-Bold').text("commune de : ", col2, y, { continued: true })
-               .font('Helvetica').text(v(d.communeNaissance, '....................'), { continued: true })
+               .font('Helvetica').text(v(d.communeNaissance, '............................................'), { continued: true })
                .font('Helvetica-Bold').text("  wilaya de : ", { continued: true })
-               .font('Helvetica').text(v(d.wilayaNaissance, '....................'));
+               .font('Helvetica').text(v(d.wilayaNaissance, '.............................................'));
             y += lineH + 10;
 
             // Row 5: dénommé(e)
@@ -219,64 +220,64 @@ export class PDFService {
 
             // Row 6: sexe
             doc.font('Helvetica-Bold').text("sexe : ", col2, y, { continued: true })
-               .font('Helvetica').text(v(d.genre, '..........'), { continued: true })
-               .text(" ....................");
+               .font('Helvetica').text(v(d.genre, '................................'), { continued: true })
+               .text(" ....................................");
             y += lineH + 5;
 
             // Row 7: fils/fille + âge + profession
             doc.font('Helvetica-Bold').text("fils / fille de : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.pereNomPrenom, '....................'), { continued: true })
                .font('Helvetica-Bold').text("  âge : ", { continued: true })
-               .font('Helvetica').text(v(d.pereAge, '....'), { continued: true })
+               .font('Helvetica').text(v(d.pereAge, '././././.....'), { continued: true })
                .font('Helvetica-Bold').text("  profession : ", { continued: true })
-               .font('Helvetica').text(v(d.pereMetier, '....................'));
+               .font('Helvetica').text(v(d.pereMetier, './././././...........'));
             y += lineH + 5;
 
             // Row 8: et de + âge + profession
             doc.font('Helvetica-Bold').text("et de : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.mereNomPrenom, '....................'), { continued: true })
                .font('Helvetica-Bold').text("  âge : ", { continued: true })
-               .font('Helvetica').text(v(d.mereAge, '....'), { continued: true })
+               .font('Helvetica').text(v(d.mereAge, '././././.....'), { continued: true })
                .font('Helvetica-Bold').text("  profession : ", { continued: true })
-               .font('Helvetica').text(v(d.mereMetier, '....................'));
+               .font('Helvetica').text(v(d.mereMetier, './././././...........'));
             y += lineH + 5;
 
             // Row 9: domicilié(e) à + commune + wilaya
             doc.font('Helvetica-Bold').text("domicilié(e) à : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.domicile, '....................'), { continued: true })
                .font('Helvetica-Bold').text("  commune de : ", { continued: true })
-               .font('Helvetica').text(v(d.domicileCommune, '..........'), { continued: true })
+               .font('Helvetica').text(v(d.domicileCommune, '././././.....'), { continued: true })
                .font('Helvetica-Bold').text("  wilaya de : ", { continued: true })
-               .font('Helvetica').text(v(d.domicileWilaya, '..........'));
+               .font('Helvetica').text(v(d.domicileWilaya, './././././...........'));
             y += lineH + 5;
 
             // Row 10: dressé le + à + heures
             doc.font('Helvetica-Bold').text("dressé le : ", col2, y, { continued: true })
-               .font('Helvetica').text(v(formatDate(new Date()), '..........'), { continued: true })
+               .font('Helvetica').text(v(formatDate(new Date()), '.................'), { continued: true })
                .font('Helvetica-Bold').text("  à : ", { continued: true })
-               .font('Helvetica').text(v(d.heureRedaction, '....'), { continued: true })
-               .font('Helvetica-Bold').text("  heures ....................");
+               .font('Helvetica').text(v(d.heureRedaction, '......................'), { continued: true })
+               .font('Helvetica-Bold').text("  heures ...............................");
             y += lineH + 10;
 
             // Row 11: sur déclaration faite par Madame/Monsieur
             doc.font('Helvetica-Bold').text("sur déclaration faite par Madame/Monsieur : ", col1, y, { continued: true })
                .font('Helvetica').text(v(d.declarePar, '..................................................'));
-            y += 15;
+            y += lineH + 5;
             doc.text("................................................................................................................................................", col1, y);
-            y += 25;
+            y += lineH + 5;
 
             // Row 12: lecture faite, a signé avec nous
             doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.officierEtatCivil, '....................'), { continued: true })
                .font('Helvetica-Bold').text(" officier d'état civil à la commune : ", { continued: true })
                .font('Helvetica').text(v(d.domicileCommune, '....................'));
-            y += 30;
+            y += lineH + 10;
 
             // Mentions marginales (11 lines)
             doc.font('Helvetica-Bold').text('Mentions marginales :', marginX, y);
-            y += 15;
+            y += lineH + 5;
             for (let i = 0; i < 11; i++) {
-               doc.text("....................................................................................................................................................................................", marginX, y);
+               doc.text("..........................................................................................................................................................", marginX, y);
                y += 14;
             }
 
@@ -287,9 +288,9 @@ export class PDFService {
             // Bottom Left: Latin Transcription and Registry info
             const footerY = H - 85;
             doc.fontSize(8).font('Helvetica').fillColor(gray);
-            doc.text(`1- En toutes lettres : ${v(d.fullNameLatin, '..................................................')}`, marginX, footerY);
-            doc.text(`2- Nom et Prénom de l'enfant : ${v(d.fullNameLatin, '..................................................')}`, marginX, footerY + 12);
-            
+            doc.text(`1- En toutes lettres  ${v(d.fullNameLatin, '')}`, marginX, footerY);
+            doc.text(`2- Nom et Prénom de l'enfant  ${v(d.fullNameLatin, '')}`, marginX, footerY + 12);
+
             doc.fillColor(black).font('Helvetica-Bold')
                .text('Extrait du Registre National de l\'État Civil', marginX, footerY + 30);
             doc.text('Référence : 7 M.G.', marginX, footerY + 42);
@@ -324,17 +325,17 @@ export class PDFService {
             };
 
             // Normalise incoming fields
-            const fullName    = v(data.fullName || data.nom_prenom || `${data.firstName || data.citizenFirstName || ''} ${data.lastName || data.citizenLastName || ''}`.trim());
-            const dateNaiss   = v(formatDate(data.date_naissance || data.dateNaissance));
-            const lieuNaiss   = v(data.lieu_naissance || data.lieuNaissance || data.communeNaissance || data.commune_naissance);
-            const adresse     = v(data.adresse || data.citizen_address);
+            const fullName = v(data.fullName || data.nom_prenom || `${data.firstName || data.citizenFirstName || ''} ${data.lastName || data.citizenLastName || ''}`.trim());
+            const dateNaiss = v(formatDate(data.date_naissance || data.dateNaissance));
+            const lieuNaiss = v(data.lieu_naissance || data.lieuNaissance || data.communeNaissance || data.commune_naissance);
+            const adresse = v(data.adresse || data.citizen_address);
             const nationalite = v(data.nationalite || data.citizen_nationalite || 'Algérienne');
-            const profession  = v(data.profession || data.citizen_profession || '');
-            const wilaya      = v(data.wilaya || data.domicile_wilaya || 'Mostaganem');
-            const daira       = v(data.daira || data.domicile_daira || wilaya);
-            const commune     = v(data.commune || data.domicile_commune || wilaya);
-            const president   = v(data.president_name || data.presidentName || 'L\'Officier de l\'État Civil');
-            const today       = formatDate(new Date());
+            const profession = v(data.profession || data.citizen_profession || '');
+            const wilaya = v(data.wilaya || data.domicile_wilaya || 'Mostaganem');
+            const daira = v(data.daira || data.domicile_daira || wilaya);
+            const commune = v(data.commune || data.domicile_commune || wilaya);
+            const president = v(data.president_name || data.presidentName || 'L\'Officier de l\'État Civil');
+            const today = formatDate(new Date());
 
             // ── HEADER BAR ────────────────────────────────────────────────────
             doc.fillColor(black).fontSize(13).font('Helvetica-Bold')
@@ -385,9 +386,9 @@ export class PDFService {
             doc.font('Helvetica-Bold').text('Monsieur / Madame : ', 40, y, { continued: true })
                .font('Helvetica').text(fullName);
             y += 18;
-            doc.text("..........................................................................................................................................................................", 40, y);
+            doc.text(".....................................................", 40, y);
             y += 35;
-            
+
             // Né(e) à + le
             doc.font('Helvetica-Bold').text('Né(e) à : ', 40, y, { continued: true })
                .font('Helvetica').text(lieuNaiss, { continued: true })
@@ -410,20 +411,20 @@ export class PDFService {
             doc.font('Helvetica-Bold').text('Domicile : ', 40, y, { continued: true })
                .font('Helvetica').text(adresse);
             y += 18;
-            doc.text("..........................................................................................................................................................................", 40, y);
-            y += 55; 
+            doc.text(".................................................................................", 40, y);
+            y += 55;
 
             // ── BODY TEXT ─────────────────────────────────────────────────────
             doc.fontSize(11).font('Helvetica').fillColor(black)
                .text('Réside à la même adresse depuis plus de six (6) mois', 40, y, { width: W - 80 });
             y += 40;
-            
+
             doc.text("Cette attestation lui a été délivrée pour être produite dans la limite permise par la loi.", 40, y, { width: W - 80 });
             y += 40;
 
             doc.text(`Fait à ${commune}, le ${today}`, 40, y);
             y += 40;
-            
+
             doc.text("L'objet de cette attestation est la justification du domicile.", 40, y, { width: W - 80 });
             y += 40;
 
