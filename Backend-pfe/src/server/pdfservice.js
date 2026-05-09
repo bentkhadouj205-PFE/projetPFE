@@ -243,9 +243,9 @@ export class PDFService {
             // dressé le + à  heures
             doc.font('Helvetica-Bold').text("dressé le : ", col2, y, { continued: true })
                .font('Helvetica').text(v(formatDate(new Date()), '...............'), { continued: true })
-               .font('Helvetica-Bold').text("  à : ", { continued: true })
+               .font('Helvetica-Bold').text("  à heures : ", { continued: true })
                .font('Helvetica').text(v(d.heureRedaction, '....'), { continued: true })
-               .font('Helvetica-Bold').text("  heures : ", { continued: true });
+
             y += lineH + 15;
 
             // Row 11: sur déclaration faite par Madame/Monsieur
@@ -253,20 +253,20 @@ export class PDFService {
                .font('Helvetica').text((v(d.declarePar), '........'), { continued: true });
             y += 18;
             doc.font('Helvetica').text("..................................................................................................................................................", col2, y);
-            y += 20;
+            y += 15;
 
             // Row 12: lecture faite, a signé avec nous
             doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous : ", col2, y, { continued: true })
                .font('Helvetica').text((v(d.officierEtatCivil), '..........................'), { continued: true })
                .font('Helvetica-Bold').text(" officier d'état civil à la commune : ");
-            y += 20;
+            y += 15;
 
             // Mentions marginales (11 lines)
             doc.font('Helvetica-Bold').text('Mentions marginales : ', col2, y);
             y += 18;
             for (let i = 0; i < 10; i++) {
                doc.text("................................................................................................................................................................", col2, y);
-               y += 20;
+               y += 15;
             }
 
             // Bottom Right: Fait à Mostaganem le
