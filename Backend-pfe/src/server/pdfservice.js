@@ -253,7 +253,7 @@ export class PDFService {
                .font('Helvetica').text(v(d.dateRedaction, ''), { continued: true })
                .font('Helvetica-Bold').text("  à heures : ", { continued: true })
                .font('Helvetica').text(v(d.heureRedaction, '....'), { continued: true })
-               .text(' ...................');
+
             y += lineH + 10;
 
             // sur déclaration
@@ -271,7 +271,13 @@ export class PDFService {
             // Mentions marginales
             doc.font('Helvetica-Bold').text('Mentions marginales : ', col2, y, { continued: true })
                .font('Helvetica').text(v(d.mentions_marginales, '................................'));
-            y += lineH + 10;
+            y += lineH + 5;
+
+            // 7 lignes de points
+            for (let i = 0; i < 7; i++) {
+               doc.text('................................................................................', col2, y);
+               y += 18;
+            }
             // Bottom Right: Fait à Mostaganem le
             y += 15;
             doc.font('Helvetica-Bold').text(`Fait à Mostaganem le  ${formatDate(new Date())}`, W - 220, y);
