@@ -125,30 +125,31 @@ export class PDFService {
                return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
             };
             const formatTime = (t) => (t ? String(t).substring(0, 5) : '......');
+            const clean = (val) => (!val || String(val).includes('/../') ? '' : val);
 
             // Data Normalization
             const d = {
-               numeroChahada: data.numero_chahada ?? data.numero_acte ?? data.actNumber,
-               dateNaissance: data.date_naissance ?? data.dateNaissance,
-               heureNaissance: data.heure_naissance ?? data.heureNaissance,
-               communeNaissance: data.commune_naissance ?? data.communeNaissance ?? data.commune,
-               wilayaNaissance: data.wilaya_naissance ?? data.wilayaNaissance ?? data.wilaya,
-               fullName: data.nom_prenom ?? data.full_name ?? data.fullName ?? `${data.citizenFirstName || ''} ${data.citizenLastName || ''}`.trim(),
-               genre: data.genre ?? data.sexe ?? '..........',
-               pereNomPrenom: data.pere_nom_prenom ?? data.pereNomPrenom,
-               pereAge: data.pere_age ?? data.pereAge,
-               pereMetier: data.pere_metier ?? data.pereMetier,
-               mereNomPrenom: data.mere_nom_prenom ?? data.mereNomPrenom,
-               mereAge: data.mere_age ?? data.mereAge,
-               mereMetier: data.mere_metier ?? data.mereMetier,
-               domicile: data.adresse || data.citizen_address || '',
-               domicileCommune: data.domicile_commune ?? data.domicileCommune ?? data.commune,
-               domicileWilaya: data.domicile_wilaya ?? data.domicileWilaya ?? data.wilaya,
-               dateRedaction: data.date_redaction ?? data.dateRedaction ?? '..........',
-               heureRedaction: data.heure_redaction ?? data.heureRedaction ?? '......',
-               declarePar: data.declare_par ?? data.declarePar,
-               officierEtatCivil: data.officier_etat_civil ?? data.officierEtatCivil,
-               mentions_marginales: data.mentions_marginales ?? data.mentions_marginales,
+               numeroChahada: data.numero_acte,
+               dateNaissance: data.date_naissance,
+               heureNaissance: data.heure_naissance,
+               communeNaissance: data.commune_naissance,
+               wilayaNaissance: data.wilaya_naissance,
+               fullName: data.nom_prenom_enfant,
+               genre: data.genre_enfant,
+               pereNomPrenom: data.nom_prenom_pere,
+               pereAge: clean(data.age_pere),
+               pereMetier: clean(data.metier_pere),
+               mereNomPrenom: data.nom_prenom_mere,
+               mereAge: clean(data.age_mere),
+               mereMetier: clean(data.metier_mere),
+               domicile: clean(data.domicile),
+               domicileCommune: clean(data.domicile_commune),
+               domicileWilaya: clean(data.domicile_wilaya),
+               dateRedaction: data.date_redaction,
+               heureRedaction: data.heure_redaction,
+               declarePar: data.declare_par,
+               officierEtatCivil: data.officier_etat_civil,
+               mentions_marginales: data.mentions_marginales,
             };
 
             // ── HEADER ───────────────────────────────────────────────────────
