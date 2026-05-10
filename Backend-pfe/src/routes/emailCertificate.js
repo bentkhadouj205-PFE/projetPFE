@@ -89,6 +89,25 @@ router.post('/generate-and-send', async (req, res) => {
       mentions_marginales: acte?.mentions_marginales || '',
     };
 
+    // 4. If Residence Card, fetch legal citizen data
+    if (isResidenceCard) {
+      const { data: citizen } = await supabase
+        .schema('register')
+        .from('citizens')
+        .select('*')
+        .eq('nin', citizenNin)
+        .maybeSingle();
+
+      if (citizen) {
+        pdfData.fullName = `${citizen.prenom} ${citizen.nom}`;
+        pdfData.dateNaissance = citizen.date_naissance;
+        pdfData.lieuNaiss = citizen.lieu_naissance || citizen.commune;
+        pdfData.adresse = citizen.adresse;
+        pdfData.wilaya = citizen.wilaya;
+        pdfData.commune = citizen.commune;
+      }
+    }
+
     // 4. Generate PDF
     console.log('NIN received:', req.body.citizenNin);
     console.log('acte found:', acte);
