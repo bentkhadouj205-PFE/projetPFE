@@ -240,31 +240,23 @@ export class PDFService {
                .font('Helvetica').text(v(d.domicileWilaya, ''));
             y += lineH + 10;
 
-            // dressé le + à  heures
-            doc.font('Helvetica-Bold').text("dressé le :............... ", col2, y, { continued: true })
-               .font('Helvetica').text(v(formatDate(new Date()), ''), { continued: true })
+            // dressé le
+            doc.font('Helvetica-Bold').text("dressé le : ", col2, y, { continued: true })
+               .font('Helvetica').text(v(d.dateRedaction, '...............'), { continued: true })
                .font('Helvetica-Bold').text("  à heures : ", { continued: true })
                .font('Helvetica').text(v(d.heureRedaction, '....'));
             y += lineH + 10;
 
-            // Row 11: sur déclaration faite par Madame/Monsieur
-            doc.font('Helvetica-Bold').text("sur déclaration faite par Madame/Monsieur : ", col2, y, { continued: true })
-               .font('Helvetica').text(v(d.declarePar, "............................."));
-            y += 18;
-
-            // Row 12: lecture faite, a signé avec nous
+            // officier état civil
             doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous : ", col2, y, { continued: true })
-               .font('Helvetica').text((v(d.officierEtatCivil), ''), { continued: true })
-               .font('Helvetica-Bold').text(" officier d'état civil à la commune.");
+               .font('Helvetica').text(v(d.officierEtatCivil, '............................'), { continued: true })
+               .font('Helvetica-Bold').text("  officier d'état civil à la commune.");
             y += lineH + 10;
 
-            // Mentions marginales (11 lines)
-            doc.font('Helvetica-Bold').text('Mentions marginales : ................................', col2, y);
+            // Mentions marginales
+            doc.font('Helvetica-Bold').text('Mentions marginales : ', col2, y, { continued: true })
+               .font('Helvetica').text(v(d.mentions_marginales, '................................'));
             y += lineH + 10;
-            for (let i = 0; i < 9; i++) {
-               doc.text(".........................................................................................", col2, y);
-               y += 20;
-            }
 
             // Bottom Right: Fait à Mostaganem le
             y += 15;
