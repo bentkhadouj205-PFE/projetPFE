@@ -98,13 +98,18 @@ router.post('/generate-and-send', async (req, res) => {
         .eq('nin', citizenNin)
         .maybeSingle();
 
+      console.log('citizen found:', citizen);
+
       if (citizen) {
-        pdfData.fullName = `${citizen.prenom} ${citizen.nom}`;
-        pdfData.dateNaissance = citizen.date_naissance;
-        pdfData.lieuNaiss = citizen.lieu_naissance || citizen.commune;
-        pdfData.adresse = citizen.adresse;
-        pdfData.wilaya = citizen.wilaya;
-        pdfData.commune = citizen.commune;
+        pdfData.fullName        = `${citizen.prenom} ${citizen.nom}`;
+        pdfData.dateNaissance   = citizen.date_naissance;
+        pdfData.lieu_naissance  = citizen.lieu_naissance || citizen.commune;
+        pdfData.communeNaissance = citizen.lieu_naissance || citizen.commune;
+        pdfData.wilayaNaissance = citizen.wilaya;
+        pdfData.domicile        = citizen.adresse;
+        pdfData.adresse         = citizen.adresse;
+        pdfData.wilaya          = citizen.wilaya;
+        pdfData.commune         = citizen.commune;
       }
     }
 
