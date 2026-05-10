@@ -180,6 +180,7 @@ export function CarteSejourTraitmentDialog({
           commune: demandes?.commune,
           adresse: adresse,
           dateNaissance: demandes?.dateNaissance,
+          citizenNin: demandes?.nin,
         }),
       });
 

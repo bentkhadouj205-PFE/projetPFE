@@ -219,43 +219,45 @@ router.get('/my-requests/:employeeId', async (req, res) => {
 
     // Auto-fill citizen_address from demandes_inscription → users → citizens (in priority order)
     const enrichedDemandes = await Promise.all(demandes.map(async (d) => {
-      if (d.citizen_address || !d.citizen_nin) return d;
+      // Ensure nin is explicitly handled if it's missing or named differently
+      const citizenNin = d.nin || d.citizen_nin;
+      if (d.citizen_address || !citizenNin) return { ...d, nin: citizenNin };
       try {
         // 1st priority: demandes_inscription (type_document = certificat_residence) has the adresse
         const { data: inscriptData } = await supabase
           .from('demandes_inscription')
           .select('adresse')
-          .eq('nin', d.citizen_nin)
+          .eq('nin', citizenNin)
           .eq('type_document', 'certificat_residence')
           .order('date_demande', { ascending: false })
           .limit(1)
           .maybeSingle();
         if (inscriptData?.adresse) {
-          return { ...d, citizen_address: inscriptData.adresse, adresse: inscriptData.adresse };
+          return { ...d, citizen_address: inscriptData.adresse, adresse: inscriptData.adresse, nin: citizenNin };
         }
 
         // 2nd priority: users table
         const { data: userData } = await supabase
           .from('users')
           .select('adresse')
-          .eq('nin', d.citizen_nin)
+          .eq('nin', citizenNin)
           .maybeSingle();
         if (userData?.adresse) {
-          return { ...d, citizen_address: userData.adresse, adresse: userData.adresse };
+          return { ...d, citizen_address: userData.adresse, adresse: userData.adresse, nin: citizenNin };
         }
 
         // 3rd priority: citizens table
         const { data: citizenData } = await supabase
           .from('citizens')
           .select('adresse, address')
-          .eq('nin', d.citizen_nin)
+          .eq('nin', citizenNin)
           .maybeSingle();
         if (citizenData?.adresse || citizenData?.address) {
           const addr = citizenData.adresse || citizenData.address;
-          return { ...d, citizen_address: addr, adresse: addr };
+          return { ...d, citizen_address: addr, adresse: addr, nin: citizenNin };
         }
       } catch (_) { /* silently ignore */ }
-      return d;
+      return { ...d, nin: citizenNin };
     }));
 
     res.json({ count: enrichedDemandes.length, requests: enrichedDemandes });
