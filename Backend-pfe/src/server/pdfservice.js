@@ -253,7 +253,7 @@ export class PDFService {
                .font('Helvetica').text(v(d.dateRedaction, ''), { continued: true })
                .font('Helvetica-Bold').text("  à heures : ", { continued: true })
                .font('Helvetica').text(v(d.heureRedaction, '....'), { continued: true })
-
+               .text(' ...................');
             y += lineH + 10;
 
             // sur déclaration
@@ -270,7 +270,7 @@ export class PDFService {
 
             // Mentions marginales
             doc.font('Helvetica-Bold').text('Mentions marginales : ', col2, y, { continued: true })
-               .font('Helvetica').text(v(d.mentions_marginales, '................................'));
+               .font('Helvetica').text(v(d.mentions_marginales, '................................'), { continued: true });
             y += lineH + 5;
 
             // 7 lignes de points
