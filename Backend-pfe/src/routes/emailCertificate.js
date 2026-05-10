@@ -40,22 +40,16 @@ router.post('/generate-and-send', async (req, res) => {
     // 2. جلب بيانات الأكت من Supabase (Only for birth certificates)
     let acte = null;
     if (!isResidenceCard) {
-      const { data: citizenData } = await supabase
+      const { data: acteData, error: acteError } = await supabase
         .schema('register')
-        .from('citizens')
-        .select('id')
+        .from('actes_naissance')
+        .select('*')
         .eq('nin', citizenNin)
         .maybeSingle();
 
-      if (citizenData) {
-        const { data: acteData } = await supabase
-          .schema('register')
-          .from('actes_naissance')
-          .select('*')
-          .eq('citizen_id', citizenData.id)
-          .maybeSingle();
-        if (acteData) acte = acteData;
-      }
+      console.log('acte found:', acteData);
+      console.log('acte error:', acteError);
+      if (acteData) acte = acteData;
     }
 
     // 3. دمج البيانات للـ PDF
