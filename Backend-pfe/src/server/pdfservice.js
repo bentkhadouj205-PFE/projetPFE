@@ -269,7 +269,7 @@ export class PDFService {
             y += lineH + 10;
 
             // Mentions marginales
-            doc.font('Helvetica-Bold').text('Mentions marginales : ', col2, y, { continued: true })
+            doc.font('Helvetica-Bold').text('Mentions marginales : ', col2, y)
                .font('Helvetica').text(v(d.mentions_marginales, '................................'), { continued: true });
             y += lineH + 5;
 
