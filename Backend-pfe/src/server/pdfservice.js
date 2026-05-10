@@ -308,9 +308,9 @@ export class PDFService {
 
             // Normalise incoming fields
             const fullName = v(data.fullName || data.nom_prenom || `${data.firstName || data.citizenFirstName || ''} ${data.lastName || data.citizenLastName || ''}`.trim());
-            const dateNaiss = v(formatDate(data.date_naissance || data.dateNaissance));
-            const lieuNaiss = v(data.lieu_naissance || data.lieuNaissance || data.communeNaissance || data.commune_naissance);
-            const adresse = v(data.adresse || data.citizen_address);
+            const dateNaiss = v(data.date_naissance || data.dateNaissance || '');
+            const lieuNaiss = v(data.commune_naissance || data.communeNaissance || data.lieu_naissance || '');
+            const adresse = v(data.domicile || data.adresse || data.citizen_address || '');
             const nationalite = v(data.nationalite || data.citizen_nationalite || 'Algérienne');
             const profession = v(data.profession || data.citizen_profession || '');
             const wilaya = v(data.wilaya || data.domicile_wilaya || 'Mostaganem');
@@ -364,37 +364,31 @@ export class PDFService {
             doc.fontSize(13).font('Helvetica-Bold').fillColor(black).text('Attestons que :', 40, y, { align: 'center', width: W - 80 });
             y += 40;
 
-            // Monsieur / Madame
+            // Monsieur / Madame 
             doc.font('Helvetica-Bold').text('Monsieur / Madame : ', 40, y, { continued: true })
-               .font('Helvetica').text(fullName);
-            y += 18;
-            doc.text(".....................................................", 40, y);
-            y += 35;
+               .font('Helvetica').text(fullName, { continued: true })
+               .text(' ......................................................................');
+            y += 25;
 
-            // Né(e) à + le
+            // Né(e) à + le - 
             doc.font('Helvetica-Bold').text('Né(e) à : ', 40, y, { continued: true })
-               .font('Helvetica').text(lieuNaiss, { continued: true })
-               .text(' .................... ', { continued: true })
-               .font('Helvetica-Bold').text(' le : ', { continued: true })
-               .font('Helvetica').text(dateNaiss, { continued: true })
-               .text(' ....................');
-            y += 35;
+               .font('Helvetica').text(v(lieuNaiss, '....................'), { continued: true })
+               .font('Helvetica-Bold').text('  le : ', { continued: true })
+               .font('Helvetica').text(v(dateNaiss, '....................'));
+            y += 25;
 
             // Nationalité + Profession
             doc.font('Helvetica-Bold').text('Nationalité : ', 40, y, { continued: true })
                .font('Helvetica').text(nationalite, { continued: true })
-               .text(' .................... ', { continued: true })
-               .font('Helvetica-Bold').text(' Profession : ', { continued: true })
-               .font('Helvetica').text(profession, { continued: true })
-               .text(' ....................');
-            y += 35;
+               .font('Helvetica-Bold').text('  Profession : ', { continued: true })
+               .font('Helvetica').text(v(profession, '....................'));
+            y += 25;
 
-            // Domicile
+            // Domicile - 
             doc.font('Helvetica-Bold').text('Domicile : ', 40, y, { continued: true })
-               .font('Helvetica').text(adresse);
-            y += 18;
-            doc.text(".................................................................................", 40, y);
-            y += 55;
+               .font('Helvetica').text(adresse, { continued: true })
+               .text(' ......................................................................');
+            y += 40;
 
             // ── BODY TEXT ─────────────────────────────────────────────────────
             doc.fontSize(11).font('Helvetica').fillColor(black)
