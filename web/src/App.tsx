@@ -55,9 +55,10 @@ function App() {
     user?.role === 'employee' ? user.id : ''
   );
 
-  const { employees: adminEmployees, loading: adminLoading } = useAdminData(
+  const adminData = useAdminData(
     vueActuelle === 'municipal_agent'
   );
+  const { employees: adminEmployees, loading: adminLoading } = adminData;
 
   const notificationsState = useNotifications(
     user?.role === 'employee' ? user.id : '',
@@ -136,6 +137,7 @@ function App() {
       </div>
     );
   }
+
   // ───────────── Render ─────────────
   switch (vueActuelle) {
     case 'connexion':
@@ -165,7 +167,7 @@ function App() {
                   });
                   if (response.ok) {
                     toast.success('Employé ajouté avec succès');
-                    const { fetchEmployees } = useAdminData(true); // This is a bit tricky inside render, I'll use the existing refresh mechanism
+                    adminData.fetchEmployees(); // REFRESH HERE
                   }
                 } catch (error) {
                   toast.error('Erreur lors de l\'ajout');
@@ -182,6 +184,7 @@ function App() {
           <Toaster />
         </>
       );
+
     case 'employe':
       return (
         <>

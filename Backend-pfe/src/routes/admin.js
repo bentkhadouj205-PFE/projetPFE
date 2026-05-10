@@ -60,6 +60,41 @@ router.get('/employees', async (req, res) => {
   }
 });
 
+// POST /admin/employees — create new employee
+router.post('/employees', async (req, res) => {
+  try {
+    const { email, firstName, lastName, role, service, position, status } = req.body;
+    
+    // Default password for new employees
+    const defaultPassword = 'employee123';
+    const password_hash = await bcrypt.hash(defaultPassword, 10);
+
+    const { data, error } = await supabase
+      .from('employees')
+      .insert([{
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        role: role || 'employee',
+        service,
+        position,
+        status: status || 'active',
+        password_hash,
+        created_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log('Nouvel employé créé:', data.email);
+    res.status(201).json({ message: 'Employé créé avec succès', employee: data });
+  } catch (error) {
+    console.error('Erreur création employé:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // GET /admin/employees/:id
 router.get('/employees/:id', async (req, res) => {
   try {
