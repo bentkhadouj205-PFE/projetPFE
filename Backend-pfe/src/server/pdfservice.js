@@ -129,25 +129,25 @@ export class PDFService {
 
             // Data Normalization
             const d = {
-               numeroChahada:    data.numero_acte    || data.numeroActe,
-               dateNaissance:    data.date_naissance || data.dateNaissance,
-               heureNaissance:   data.heure_naissance || data.heureNaissance,
+               numeroChahada: data.numero_acte || data.numeroActe,
+               dateNaissance: data.date_naissance || data.dateNaissance,
+               heureNaissance: data.heure_naissance || data.heureNaissance,
                communeNaissance: data.commune_naissance || data.communeNaissance,
-               wilayaNaissance:  data.wilaya_naissance || data.wilayaNaissance,
-               fullName:         data.nom_prenom_enfant || data.fullName,
-               genre:            data.genre_enfant || data.genre,
-               pereNomPrenom:    data.nom_prenom_pere || data.pereNomPrenom,
-               pereAge:          clean(data.age_pere || data.pereAge),
-               pereMetier:       clean(data.metier_pere || data.pereMetier),
-               mereNomPrenom:    data.nom_prenom_mere || data.mereNomPrenom,
-               mereAge:          clean(data.age_mere || data.mereAge),
-               mereMetier:       clean(data.metier_mere || data.mereMetier),
-               domicile:         clean(data.domicile),
-               domicileCommune:  clean(data.domicile_commune || data.domicileCommune),
-               domicileWilaya:   clean(data.domicile_wilaya || data.domicileWilaya),
-               dateRedaction:    data.date_redaction || data.dateRedaction,
-               heureRedaction:   data.heure_redaction || data.heureRedaction,
-               declarePar:       data.declare_par || data.declarePar,
+               wilayaNaissance: data.wilaya_naissance || data.wilayaNaissance,
+               fullName: data.nom_prenom_enfant || data.fullName,
+               genre: data.genre_enfant || data.genre,
+               pereNomPrenom: data.nom_prenom_pere || data.pereNomPrenom,
+               pereAge: clean(data.age_pere || data.pereAge),
+               pereMetier: clean(data.metier_pere || data.pereMetier),
+               mereNomPrenom: data.nom_prenom_mere || data.mereNomPrenom,
+               mereAge: clean(data.age_mere || data.mereAge),
+               mereMetier: clean(data.metier_mere || data.mereMetier),
+               domicile: clean(data.domicile),
+               domicileCommune: clean(data.domicile_commune || data.domicileCommune),
+               domicileWilaya: clean(data.domicile_wilaya || data.domicileWilaya),
+               dateRedaction: data.date_redaction || data.dateRedaction,
+               heureRedaction: data.heure_redaction || data.heureRedaction,
+               declarePar: data.declare_par || data.declarePar,
                officierEtatCivil: data.officier_etat_civil || data.officierEtatCivil,
                mentions_marginales: data.mentions_marginales,
             };
@@ -184,19 +184,18 @@ export class PDFService {
             // Right Column
             // le jour
             doc.font('Helvetica-Bold').text("le jour : ", col2, y, { continued: true })
-               .font('Helvetica').text(".......................................................................................");
+               .font('Helvetica').text(v(d.dateNaissance, '.......................................................................................'));
             y += 35;
 
             // à l'heure de
             doc.font('Helvetica-Bold').text("à l'heure de : ", col2, y, { continued: true })
-               .font('Helvetica').text(v(formatTime(d.heureNaissance), '..........................................................'));
+               .font('Helvetica').text(v(d.heureNaissance, '..........................................................'));
             y += lineH + 10;
 
             // est né(e) à
             doc.font('Helvetica-Bold').text("est né(e) à : ", col2, y, { continued: true })
-               .font('Helvetica').text(".................................................................");
+               .font('Helvetica').text(v(d.communeNaissance, '.................................................................'));
             y += lineH + 10;
-
             // commune de | wilaya de
             doc.font('Helvetica-Bold').text("commune de : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.communeNaissance, '....................'), { continued: true })
