@@ -194,6 +194,8 @@ export function BirthActTraitmentDialog({
           commune: citizen?.commune,
           actYear: citizen?.actYear,
           actNumber: citizen?.actNumber,
+          acteId: citizen?.id,
+          citizenNin: citizen?.nin,
         }),
       });
 

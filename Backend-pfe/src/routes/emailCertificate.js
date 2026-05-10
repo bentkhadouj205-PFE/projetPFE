@@ -29,7 +29,7 @@ router.post('/generate-and-send', async (req, res) => {
     const {
       citizenEmail, citizenFirstName, requestSubject,
       employeeName, comment, requestId, citizen_id,
-      wilaya, commune, actYear, actNumber,
+      wilaya, commune, actYear, actNumber, acteId,
     } = req.body;
 
     const isResidenceCard = requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence') || requestSubject.toLowerCase().includes('séjour'));
@@ -38,14 +38,34 @@ router.post('/generate-and-send', async (req, res) => {
     let acte = null;
     if (!isResidenceCard) {
       console.time(' Supabase Fetch');
-      const { data, error } = await supabase
-        .schema('register')
-        .from('actes_naissance')
-        .select('*')
-        .eq('numero_acte', actNumber)
-        .single();
+      try {
+        // 1. جيب citizen_id من citizens بالـ NIN
+        const { data: citizenData, error: citizenError } = await supabase
+          .schema('register')
+          .from('citizens')
+          .select('id')
+          .eq('nin', req.body.citizenNin)
+          .single();
+
+        if (citizenData && !citizenError) {
+          // 2. جيب الأكت بالـ citizen_id
+          const { data: acteData, error: acteError } = await supabase
+            .schema('register')
+            .from('actes_naissance')
+            .select('*')
+            .eq('citizen_id', citizenData.id)
+            .single();
+
+          if (!acteError) acte = acteData;
+        }
+      } catch (err) {
+        console.error(' [DB Error] Fetching acte failed:', err);
+      }
       console.timeEnd(' Supabase Fetch');
-      if (!error) acte = data;
+
+      console.log('req.body:', req.body);
+      console.log('citizenNin:', req.body.citizenNin);
+      console.log('acte from DB:', acte);
     }
 
     // دمج البيانات
