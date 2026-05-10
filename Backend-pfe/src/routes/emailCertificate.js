@@ -26,61 +26,57 @@ router.post('/generate-and-send', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   console.log('[Start] generate-and-send request received');
   try {
-    const {
-      citizenEmail, citizenFirstName, requestSubject,
-      employeeName, comment, requestId, citizen_id,
-      wilaya, commune, actYear, actNumber, acteId,
-    } = req.body;
+    const { citizenNin, requestSubject, employeeName, comment, requestId } = req.body;
 
     const isResidenceCard = requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence') || requestSubject.toLowerCase().includes('séjour'));
 
-    // 1. جلب بيانات الأكت من Supabase (Only for birth certificates)
+    // 1. جيب الطلب من demandes بالـ NIN
+    const { data: demande } = await supabase
+      .from('demandes')
+      .select('*')
+      .eq('nin', citizenNin)
+      .maybeSingle();
+
+    // 2. جلب بيانات الأكت من Supabase (Only for birth certificates)
     let acte = null;
     if (!isResidenceCard) {
-      console.time(' Supabase Fetch');
-      try {
-        // 1. جيب citizen_id من citizens بالـ NIN
-        const { data: citizenData, error: citizenError } = await supabase
+      const { data: citizenData } = await supabase
+        .schema('register')
+        .from('citizens')
+        .select('id')
+        .eq('nin', citizenNin)
+        .maybeSingle();
+
+      if (citizenData) {
+        const { data: acteData } = await supabase
           .schema('register')
-          .from('citizens')
-          .select('id')
-          .eq('nin', req.body.citizenNin)
-          .single();
-
-        if (citizenData && !citizenError) {
-          // 2. جيب الأكت بالـ citizen_id
-          const { data: acteData, error: acteError } = await supabase
-            .schema('register')
-            .from('actes_naissance')
-            .select('*')
-            .eq('citizen_id', citizenData.id)
-            .single();
-
-          if (!acteError) acte = acteData;
-        }
-      } catch (err) {
-        console.error(' [DB Error] Fetching acte failed:', err);
+          .from('actes_naissance')
+          .select('*')
+          .eq('citizen_id', citizenData.id)
+          .maybeSingle();
+        if (acteData) acte = acteData;
       }
-      console.timeEnd(' Supabase Fetch');
-
-      console.log('req.body:', req.body);
-      console.log('citizenNin:', req.body.citizenNin);
-      console.log('acte from DB:', acte);
     }
 
-    // دمج البيانات
+    // 3. دمج البيانات للـ PDF
     const pdfData = {
       ...req.body,
-      subject: requestSubject || 'Fiche de Résidence',
-      type_document: requestSubject || 'Fiche de Résidence',
-      citizenEmail,
-      citizenFirstName,
-      fullName: acte?.nom_prenom_enfant || `${citizenFirstName} ${req.body.citizenLastName || ''}`,
-      numeroActe: acte?.numero_acte || actNumber,
+      // From demandes
+      fullName: demande ? `${demande.prenom} ${demande.nom}` : (acte?.nom_prenom_enfant || req.body.fullName),
+      citizenEmail: demande?.email || req.body.citizenEmail,
+      citizenFirstName: demande?.prenom || req.body.citizenFirstName,
+      nin: citizenNin,
+      wilaya: demande?.wilaya_naissance || req.body.wilaya,
+      commune: demande?.commune || req.body.commune,
+      subject: requestSubject || 'Acte de Naissance',
+      type_document: requestSubject || 'Acte de Naissance',
+
+      // From actes_naissance
+      numeroActe: acte?.numero_acte || req.body.actNumber,
       dateNaissance: acte?.date_naissance || req.body.dateNaissance || '',
       heureNaissance: acte?.heure_naissance || '',
-      wilayaNaissance: acte?.wilaya_naissance || wilaya,
-      communeNaissance: acte?.commune_naissance || commune,
+      communeNaissance: acte?.commune_naissance || demande?.commune || req.body.commune,
+      wilayaNaissance: acte?.wilaya_naissance || demande?.wilaya_naissance || req.body.wilaya,
       genre: acte?.genre_enfant || '',
       pereNomPrenom: acte?.nom_prenom_pere || '',
       pereAge: acte?.age_pere || '',
@@ -88,59 +84,46 @@ router.post('/generate-and-send', async (req, res) => {
       mereNomPrenom: acte?.nom_prenom_mere || '',
       mereAge: acte?.age_mere || '',
       mereMetier: acte?.metier_mere || '',
-      domicileCommune: acte?.domicile_commune || commune,
-      domicileWilaya: acte?.domicile_wilaya || wilaya,
-      heureRedaction: acte?.heure_redaction || '',
+      domicileCommune: acte?.domicile_commune || demande?.commune || req.body.commune,
+      domicileWilaya: acte?.domicile_wilaya || demande?.wilaya_naissance || req.body.wilaya,
       declarePar: acte?.declare_par || '',
       officierEtatCivil: acte?.officier_etat_civil || '',
       mentions_marginales: acte?.mentions_marginales || '',
     };
 
-    // 2. Generate PDF
+    // 4. Generate PDF
     console.time(' PDF Generation');
     const pdfBuffer = await generateCertificatePDF(pdfData);
     console.timeEnd(' PDF Generation');
 
-    // 3. Fire-and-forget email — respond to frontend immediately
-    console.log(` [EMAIL] Sending in background to: "${citizenEmail}"`);
+    // 5. Fire-and-forget email
+    const targetEmail = pdfData.citizenEmail;
+    console.log(` [EMAIL] Sending in background to: "${targetEmail}"`);
     emailService.sendValidationEmailWithPDF(
-      citizenEmail, citizenFirstName,
+      targetEmail, 
+      pdfData.citizenFirstName || 'Citoyen',
       requestSubject || 'Acte de Naissance',
       employeeName || 'Service État Civil',
       comment || '',
       pdfBuffer
-    ).then(info => {
-      console.log(` [EMAIL SUCCESS] Sent to ${citizenEmail} | messageId:`, info?.messageId);
-    }).catch(emailErr => {
-      console.error(` [EMAIL ERROR] Failed to send to ${citizenEmail}:`, emailErr.message);
-    });
+    );
 
-    // 4. Update status in DB
-    const updateId = citizen_id || requestId;
+    // 6. Update status in DB
+    const updateId = requestId || demande?.id;
     if (updateId) {
       try {
-        const result = await pool.query(
-          "UPDATE demandes SET statut = 'approuve' WHERE id = $1",
-          [updateId]
-        );
+        const result = await pool.query("UPDATE demandes SET statut = 'approuve' WHERE id = $1", [updateId]);
         if (result.rowCount === 0) {
-          await supabase
-            .schema('register')
-            .from('demandes')
-            .update({ statut: 'approuve' })
-            .eq('id', updateId);
+          await supabase.from('demandes').update({ statut: 'approuve' }).eq('id', updateId);
         }
         const io = req.app.get('io');
-        if (io) {
-          io.emit('status-update', { id: updateId, status: 'approuve', documentStatus: 'approved' });
-        }
+        if (io) io.emit('status-update', { id: updateId, status: 'approuve' });
       } catch (dbErr) {
-        console.error('  DB Status Update Error:', dbErr.message);
+        console.error(' [DB Status Update Error]', dbErr.message);
       }
     }
 
-    // Respond immediately — email sends in background
-    res.json({ success: true });
+    res.json({ success: true, message: 'Process started successfully' });
 
   } catch (err) {
     console.error(' generate-and-send error:', err);
