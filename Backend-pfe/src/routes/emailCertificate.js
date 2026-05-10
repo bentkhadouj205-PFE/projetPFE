@@ -92,6 +92,10 @@ router.post('/generate-and-send', async (req, res) => {
     };
 
     // 4. Generate PDF
+    console.log('NIN received:', req.body.citizenNin);
+    console.log('acte found:', acte);
+    console.log('pdfData:', JSON.stringify(pdfData, null, 2));
+
     console.time(' PDF Generation');
     const pdfBuffer = await generateCertificatePDF(pdfData);
     console.timeEnd(' PDF Generation');

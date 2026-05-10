@@ -128,7 +128,7 @@ export function BirthActTraitmentDialog({
   const [actNumber, setActNumber] = useState('');
   const [position, setPosition] = useState('');
   const [copiesCount, setCopiesCount] = useState('1');
-  const [step, setStep] = useState<'form' | 'demande' | 'certificate'>('form');
+  const [step, setStep] = useState<'form' | 'demande' | 'certificate'>('demande');
 
   const tr = useMemo(() => language === 'fr' ? {
     title: 'Traitement — Certificat de Naissance',
