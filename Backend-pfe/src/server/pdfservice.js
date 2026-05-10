@@ -270,7 +270,7 @@ export class PDFService {
 
             // Mentions marginales
             // Mentions marginales
-            doc.font('Helvetica-Bold').text('Mentions marginales : ..................................................................', col2, y);
+            doc.font('Helvetica-Bold').text('Mentions marginales : ', col2, y);
             y += lineH;
             if (d.mentions_marginales) {
                doc.font('Helvetica').text(d.mentions_marginales, col2, y);
@@ -278,7 +278,7 @@ export class PDFService {
             y += lineH + 5;
             // 5lignes de points
             for (let i = 0; i < 5; i++) {
-               doc.text('.................................................................................................................................................', col2, y);
+               doc.text('........................................................................................................................................', col2, y);
                y += 18;
             }
             // Bottom Right: Fait à Mostaganem le
