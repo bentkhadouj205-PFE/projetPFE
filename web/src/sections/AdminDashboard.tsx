@@ -180,8 +180,8 @@ const isMatch = (a: string, b: string | null) =>
   b ? a.toLowerCase().trim() === b.toLowerCase().trim() : false;
 
 const getEmpName = (emp: any) => ({
-  first: emp?.firstName ?? emp?.prenom ?? emp?.first_name ?? '',
-  last: emp?.lastName ?? emp?.nom ?? emp?.last_name ?? '',
+  first: emp?.firstName ?? emp?.first_name ?? emp?.prenom ?? '',
+  last: emp?.lastName ?? emp?.last_name ?? emp?.nom ?? '',
 });
 
 const translateService = (s: string) =>
