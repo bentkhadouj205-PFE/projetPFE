@@ -247,6 +247,11 @@ export class PDFService {
                .font('Helvetica').text(v(d.heureRedaction, '....'));
             y += lineH + 10;
 
+            // sur déclaration   
+            doc.font('Helvetica-Bold').text("sur déclaration faite par Madame/Monsieur : ", col2, y, { continued: true })
+               .font('Helvetica').text(v(d.declarePar, '.............................'));
+            y += lineH;
+
             // officier état civil
             doc.font('Helvetica-Bold').text("lecture faite, a signé avec nous : ", col2, y, { continued: true })
                .font('Helvetica').text(v(d.officierEtatCivil, '............................'), { continued: true })
