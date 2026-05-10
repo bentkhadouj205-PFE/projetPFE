@@ -269,8 +269,12 @@ export class PDFService {
             y += lineH + 10;
 
             // Mentions marginales
-            doc.font('Helvetica-Bold').text('Mentions marginales : ', col2, y)
-               .font('Helvetica').text(v(d.mentions_marginales, '................................'), { continued: true });
+            // Mentions marginales
+            doc.font('Helvetica-Bold').text('Mentions marginales : ', col2, y);
+            y += lineH;
+            if (d.mentions_marginales) {
+               doc.font('Helvetica').text(d.mentions_marginales, col2, y);
+            }
             y += lineH + 5;
 
             // 7 lignes de points
