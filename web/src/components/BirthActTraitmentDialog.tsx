@@ -126,9 +126,6 @@ export function BirthActTraitmentDialog({
   const [commune, setCommune] = useState('');
   const [actYear, setActYear] = useState('');
   const [actNumber, setActNumber] = useState('');
-  const [position, setPosition] = useState('');
-  const [copiesCount, setCopiesCount] = useState('1');
-  const [step, setStep] = useState<'form' | 'demande' | 'certificate'>('demande');
 
   const tr = useMemo(() => language === 'fr' ? {
     title: 'Traitement — Certificat de Naissance',
@@ -148,9 +145,6 @@ export function BirthActTraitmentDialog({
     setCommune(citizen.commune?.trim() || '');
     setActYear(citizen.actYear?.trim() || '');
     setActNumber(citizen.actNumber?.trim() || '');
-    setPosition('');
-    setCopiesCount('1');
-    setStep('demande');
   }, [open, citizen]);
 
   const wilayaOptions = useMemo(() => ensureWilayaOption(wilaya, [...WILAYA_NAMES]), [wilaya]);
@@ -158,13 +152,6 @@ export function BirthActTraitmentDialog({
     const base = wilaya ? communesForWilaya(wilaya) : [];
     return ensureCommuneOption(commune, base);
   }, [wilaya, commune]);
-
-  const Row = ({ label, children }: { label: string; children: ReactNode }) => (
-    <div className="grid grid-cols-[minmax(140px,32%)_1fr] gap-3 items-center border-b border-slate-200 dark:border-slate-600 py-3 last:border-b-0">
-      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300 shrink-0">{label}</Label>
-      <div className="min-w-0">{children}</div>
-    </div>
-  );
 
   const [sending, setSending] = useState(false);
 
@@ -223,77 +210,7 @@ export function BirthActTraitmentDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
-
-        {step === 'form' && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="text-slate-900 dark:text-white">{tr.title}</DialogTitle>
-            </DialogHeader>
-            <div className="rounded-lg border border-slate-200 dark:border-slate-600 px-4 bg-slate-50/50 dark:bg-slate-800/40">
-              <Row label={tr.firstName}>
-                <Input readOnly value={citizen?.firstName ?? ''} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-600" />
-              </Row>
-              <Row label={tr.lastName}>
-                <Input readOnly value={citizen?.lastName ?? ''} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-600" />
-              </Row>
-              <Row label={tr.wilaya}>
-                <Select value={wilaya || undefined} onValueChange={(v) => { setWilaya(v); setCommune(''); }}>
-                  <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-600 w-full">
-                    <SelectValue placeholder={tr.select} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {wilayaOptions.map((w) => <SelectItem key={w} value={w}>{w}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </Row>
-              <Row label={tr.commune}>
-                <Select value={commune || undefined} onValueChange={setCommune} disabled={communeOptions.length === 0}>
-                  <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-600 w-full">
-                    <SelectValue placeholder={tr.select} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {communeOptions.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </Row>
-              <Row label={tr.actYear}>
-                <Input value={actYear} onChange={(e) => setActYear(e.target.value)} placeholder="—"
-                  className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-600" />
-              </Row>
-              <Row label={tr.actNumber}>
-                <Input value={actNumber} onChange={(e) => setActNumber(e.target.value)} placeholder="—"
-                  className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-600 font-mono" />
-              </Row>
-              {citizen?.cniFileUrl && (
-                <div className="grid grid-cols-[minmax(140px,32%)_1fr] gap-3 items-start border-b border-slate-200 dark:border-slate-600 py-3">
-                  <Label className="text-sm font-medium text-slate-700 dark:text-slate-300 shrink-0">Scan CNI</Label>
-                  <div className="flex flex-col gap-2">
-                    <img
-                      src={citizen.cniFileUrl}
-                      alt="CNI"
-                      className="max-h-40 rounded-lg border border-slate-200 dark:border-slate-700 object-contain bg-white"
-                    />
-                  </div>
-                </div>
-              )}
-              <Row label={tr.copies}>
-                <Input type="number" min={1} max={99} value={copiesCount}
-                  onChange={(e) => setCopiesCount(e.target.value)}
-                  className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-600 w-24" />
-              </Row>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={() => { onCancel(); onOpenChange(false); }}>
-                {tr.cancel}
-              </Button>
-              <Button type="button" onClick={() => { setStep('demande'); onValidate(); }} className="bg-blue-600 hover:bg-blue-700">
-                {tr.validate}
-              </Button>
-            </div>
-          </>
-        )}
-
-        {step === 'demande' && citizen && (
+        {citizen && (
           <>
             <DialogHeader className="sr-only">
               <DialogTitle>{tr.title}</DialogTitle>
@@ -306,12 +223,11 @@ export function BirthActTraitmentDialog({
               actNumber={actNumber}
               language={language}
               onSendEmail={handleSendEmail}
-              onBack={() => setStep('form')}
+              onBack={() => onOpenChange(false)}
               sending={sending}
             />
           </>
         )}
-
       </DialogContent>
     </Dialog>
   );
