@@ -147,11 +147,20 @@ router.post('/generate-and-send', async (req, res) => {
           io.emit('status-update', { id: updateId, status: 'approuve' });
           
           // Notify citizen on mobile
-          io.to(`citizen_${citizenNin}`).emit('document-notification', {
+          const room = `citizen_${citizenNin}`;
+          const sockets = await io.in(room).fetchSockets();
+          
+          console.log(`Trying to notify room: ${room}`);
+          console.log(` Sockets in room: ${sockets.length}`); // 0 = citizen not connected!
+          
+          io.to(room).emit('document-notification', {
             message: `${requestSubject} - Vérifiez votre email`,
             documentType: requestSubject,
-            status: 'approuve'
+            status: 'approuve',
+            dateApprobation: new Date().toISOString()
           });
+          
+          console.log(`Notification emitted to ${room}`);
         }
       } catch (dbErr) {
         console.error(' [DB Status Update Error]', dbErr.message);
