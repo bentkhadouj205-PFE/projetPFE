@@ -160,19 +160,28 @@ const SERVICES = [
 ];
 
 const SERVICE_LABELS: Record<string, { en: string; fr: string }> = {
-  'fiche de residence': { en: 'Civil status', fr: 'État civil' },
-  'certificat de residence': { en: 'Civil status', fr: 'État civil' },
-  'acte de naissance': { en: 'Civil status', fr: 'État civil' },
-  'certificat de mariage': { en: 'Civil status', fr: 'État civil' },
-  'autorisation de voirie': { en: 'Autorisation de voirie', fr: 'Autorisation de voirie' },
+  'civil status': { en: 'Civil Status', fr: 'État Civil' },
+  'état civil': { en: 'Civil Status', fr: 'État Civil' },
+  'fiche de residence': { en: 'Civil Status', fr: 'État Civil' },
+  'certificat de residence': { en: 'Civil Status', fr: 'État Civil' },
+  'acte de naissance': { en: 'Civil Status', fr: 'État Civil' },
+  'certificat de mariage': { en: 'Civil Status', fr: 'État Civil' },
+  'technical service': { en: 'Technical Service', fr: 'Service Technique' },
+  'autorisation de voirie': { en: 'Technical Service', fr: 'Service Technique' },
+  'municipal_agent': { en: 'Municipal Agent', fr: 'Agent Municipal' },
 };
 
 const POSITION_LABELS: Record<string, { en: string; fr: string }> = {
   'fiche_residence': { en: 'Residence Form', fr: 'Fiche de résidence' },
+  'fiche de résidence': { en: 'Residence Form', fr: 'Fiche de résidence' },
   'certificat_residence': { en: 'Residence Certificate', fr: 'Certificat de résidence' },
+  'certificat de résidence': { en: 'Residence Certificate', fr: 'Certificat de résidence' },
   'acte_naissance': { en: 'Birth Certificate', fr: 'Acte de naissance' },
+  'acte de naissance': { en: 'Birth Certificate', fr: 'Acte de naissance' },
   'certificat_mariage': { en: 'Marriage Certificate', fr: 'Certificat de mariage' },
+  'certificat de mariage': { en: 'Marriage Certificate', fr: 'Certificat de mariage' },
   'autorisation de voirie': { en: 'Road Occupancy Permit', fr: 'Autorisation de voirie' },
+  'system administrator': { en: 'System Administrator', fr: 'Administrateur Système' },
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -184,11 +193,15 @@ const getEmpName = (emp: any) => ({
   last: emp?.lastName ?? emp?.last_name ?? emp?.nom ?? '',
 });
 
-const translateService = (s: string) =>
-  SERVICE_LABELS[s?.toLowerCase()]?.fr ?? s;
+const translateService = (s: string, lang: string) => {
+  const label = SERVICE_LABELS[s?.toLowerCase()];
+  return label ? (lang === 'fr' ? label.fr : label.en) : s;
+};
 
-const translatePosition = (p: string) =>
-  POSITION_LABELS[p?.toLowerCase()]?.fr ?? p;
+const translatePosition = (p: string, lang: string) => {
+  const label = POSITION_LABELS[p?.toLowerCase()];
+  return label ? (lang === 'fr' ? label.fr : label.en) : p;
+};
 
 export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDark, toggleDarkMode }: MunicipalAgentDashboardProps) {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -240,7 +253,10 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
 
   const employeesByService = SERVICES.map((s) => ({
     ...s,
-    employees: employees.employees.filter((e) => e.service?.toLowerCase() === s.nameFr.toLowerCase()),
+    employees: employees.employees.filter((e) =>
+      e.service?.toLowerCase() === s.nameFr.toLowerCase() ||
+      e.service?.toLowerCase() === s.name.toLowerCase()
+    ),
   }));
 
   // ── Fetch Data ─────────────────────────────────────────────────────────
@@ -845,8 +861,8 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                                 <div><p className="font-medium dark:text-white">{first} {last}</p><p className="text-sm text-slate-500">{emp.email}</p></div>
                               </div>
                             </TableCell>
-                            <TableCell className="dark:text-slate-300">{translateService(emp.service) ?? '-'}</TableCell>
-                            <TableCell className="dark:text-slate-300">{translatePosition(emp.position)}</TableCell>
+                            <TableCell className="dark:text-slate-300">{translateService(emp.service, language) ?? '-'}</TableCell>
+                            <TableCell className="dark:text-slate-300">{translatePosition(emp.position, language)}</TableCell>
                             <TableCell>
                               <Badge variant={emp.status === 'active' ? 'default' : 'secondary'}>
                                 {emp.status === 'active' ? (language === 'fr' ? 'actif' : 'active') : (language === 'fr' ? 'inactif' : 'inactive')}

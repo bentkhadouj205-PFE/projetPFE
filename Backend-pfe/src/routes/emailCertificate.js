@@ -143,7 +143,16 @@ router.post('/generate-and-send', async (req, res) => {
           await supabase.from('demandes').update({ statut: 'approuve' }).eq('id', updateId);
         }
         const io = req.app.get('io');
-        if (io) io.emit('status-update', { id: updateId, status: 'approuve' });
+        if (io) {
+          io.emit('status-update', { id: updateId, status: 'approuve' });
+          
+          // Notify citizen on mobile
+          io.to(`citizen_${citizenNin}`).emit('document-notification', {
+            message: `${requestSubject} - Vérifiez votre email`,
+            documentType: requestSubject,
+            status: 'approuve'
+          });
+        }
       } catch (dbErr) {
         console.error(' [DB Status Update Error]', dbErr.message);
       }
