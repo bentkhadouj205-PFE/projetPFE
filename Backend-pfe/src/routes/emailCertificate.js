@@ -136,34 +136,38 @@ router.post('/generate-and-send', async (req, res) => {
 
     // 6. Update status in DB
     const updateId = requestId || demande?.id;
+    console.log('updateId:', updateId);
+
     if (updateId) {
       try {
-        const result = await pool.query("UPDATE demandes SET statut = 'approuve' WHERE id = $1", [updateId]);
-        if (result.rowCount === 0) {
-          await supabase.from('demandes').update({ statut: 'approuve' }).eq('id', updateId);
-        }
+        const { data, error } = await supabase
+          .from('demandes')
+          .update({ statut: 'approuve' })
+          .eq('id', updateId);
+
+        console.log('DB update result:', data);
+        console.log('DB update error:', error);
+
         const io = req.app.get('io');
         if (io) {
           io.emit('status-update', { id: updateId, status: 'approuve' });
-          
-          // Notify citizen on mobile
+
           const room = `citizen_${citizenNin}`;
           const sockets = await io.in(room).fetchSockets();
-          
-          console.log(`Trying to notify room: ${room}`);
-          console.log(` Sockets in room: ${sockets.length}`); // 0 = citizen not connected!
-          
+          console.log('Trying to notify room:', room);
+          console.log('Sockets in room:', sockets.length);
+
           io.to(room).emit('document-notification', {
             message: `${requestSubject} - Vérifiez votre email`,
             documentType: requestSubject,
             status: 'approuve',
             dateApprobation: new Date().toISOString()
           });
-          
-          console.log(`Notification emitted to ${room}`);
+
+          console.log('Notification emitted to:', room);
         }
       } catch (dbErr) {
-        console.error(' [DB Status Update Error]', dbErr.message);
+        console.error('[DB Status Update Error]', dbErr.message);
       }
     }
 
