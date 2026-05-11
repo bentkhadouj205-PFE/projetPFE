@@ -142,7 +142,7 @@ router.post('/generate-and-send', async (req, res) => {
       try {
         const { data, error } = await supabase
           .from('demandes')
-          .update({ statut: 'approuve' })
+          .update({ status: 'termine' })
           .eq('id', updateId);
 
         console.log('DB update result:', data);
@@ -150,7 +150,7 @@ router.post('/generate-and-send', async (req, res) => {
 
         const io = req.app.get('io');
         if (io) {
-          io.emit('status-update', { id: updateId, status: 'approuve' });
+          io.emit('status-update', { id: updateId, status: 'termine' });
 
           const room = `citizen_${citizenNin}`;
           const sockets = await io.in(room).fetchSockets();
@@ -160,7 +160,7 @@ router.post('/generate-and-send', async (req, res) => {
           io.to(room).emit('document-notification', {
             message: `${requestSubject} - Vérifiez votre email`,
             documentType: requestSubject,
-            status: 'approuve',
+            status: 'termine',
             dateApprobation: new Date().toISOString()
           });
 
