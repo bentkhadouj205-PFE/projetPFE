@@ -20,12 +20,12 @@ interface TaskWithCitizen extends Task {
 const TACHES_INITIALES: TaskWithCitizen[] = [
   {
     id: '1',
-    title: 'Fiche de résidence ',
+    title: 'Carte de Résidence',
     assignedTo: '3',
     assignedBy: '1',
     status: 'in-progress',
     createdAt: '2026-01-01',
-    requestType: 'Fiche de résidence ',
+    requestType: 'Carte de Résidence',
     documentStatus: 'pending',
     citizen: {
       firstName: 'Ahmed',

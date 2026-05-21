@@ -27,6 +27,7 @@ export interface Request {
   serviceType: string;
   createdAt: string;
   assignedTo: string;
+  dateTraitement?: string | null;
 }
 
 export function useRealRequests(employeeId: string) {
@@ -86,6 +87,7 @@ export function useRealRequests(employeeId: string) {
             createdAt: req.date_demande || req.created_at,
             assignedTo: req.user_id,
             documentStatus: 'pending',
+            dateTraitement: req.date_traitement || null,
           };
         }) || [];
 

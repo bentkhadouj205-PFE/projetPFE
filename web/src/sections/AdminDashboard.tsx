@@ -145,10 +145,10 @@ const SERVICES = [
     documents: [
       { en: 'Birth Certificate', fr: 'Acte de naissance' },
       { en: 'Marriage Certificate', fr: 'Certificat de mariage' },
-      { en: 'Residence Form', fr: 'Fiche de résidence' },
+      { en: 'Residence Card', fr: 'Carte de Résidence' },
       { en: 'Residence Certificate', fr: 'Certificat de résidence' }
     ],
-    keywords: ['fiche_residence', 'fiche de residence', 'certificat_residence', 'certificat de residence', 'acte_naissance', 'acte de naissance', 'certificat_mariage', 'certificat de mariage', 'etat civil', 'état civil'],
+    keywords: ['carte_residence', 'carte de residence', 'fiche_residence', 'fiche de residence', 'certificat_residence', 'certificat de residence', 'acte_naissance', 'acte de naissance', 'certificat_mariage', 'certificat de mariage', 'etat civil', 'état civil'],
   },
   {
     id: 'autorisation', name: 'Road Occupancy Permit', nameFr: 'Autorisation de voirie', color: 'bg-green-500',
@@ -163,6 +163,7 @@ const SERVICE_LABELS: Record<string, { en: string; fr: string }> = {
   'civil status': { en: 'Civil Status', fr: 'État Civil' },
   'état civil': { en: 'Civil Status', fr: 'État Civil' },
   'fiche de residence': { en: 'Civil Status', fr: 'État Civil' },
+  'carte de residence': { en: 'Civil Status', fr: 'État Civil' },
   'certificat de residence': { en: 'Civil Status', fr: 'État Civil' },
   'acte de naissance': { en: 'Civil Status', fr: 'État Civil' },
   'certificat de mariage': { en: 'Civil Status', fr: 'État Civil' },
@@ -172,8 +173,10 @@ const SERVICE_LABELS: Record<string, { en: string; fr: string }> = {
 };
 
 const POSITION_LABELS: Record<string, { en: string; fr: string }> = {
-  'fiche_residence': { en: 'Residence Form', fr: 'Fiche de résidence' },
-  'fiche de résidence': { en: 'Residence Form', fr: 'Fiche de résidence' },
+  'fiche_residence': { en: 'Residence Card', fr: 'Carte de Résidence' },
+  'fiche de résidence': { en: 'Residence Card', fr: 'Carte de Résidence' },
+  'carte de residence': { en: 'Residence Card', fr: 'Carte de Résidence' },
+  'carte de résidence': { en: 'Residence Card', fr: 'Carte de Résidence' },
   'certificat_residence': { en: 'Residence Certificate', fr: 'Certificat de résidence' },
   'certificat de résidence': { en: 'Residence Certificate', fr: 'Certificat de résidence' },
   'acte_naissance': { en: 'Birth Certificate', fr: 'Acte de naissance' },
@@ -209,7 +212,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [newEmployeeService, setNewEmployeeService] = useState<string>('État civil');
-  const [newEmployeePosition, setNewEmployeePosition] = useState<string>('Fiche de résidence');
+  const [newEmployeePosition, setNewEmployeePosition] = useState<string>('Carte de Résidence');
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const { t, language } = useLanguage();
 
@@ -513,7 +516,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     });
     setIsAddEmployeeOpen(false);
     setNewEmployeeService('État civil');
-    setNewEmployeePosition('Fiche de résidence');
+    setNewEmployeePosition('Carte de Résidence');
     toast.success(language === 'fr' ? 'Employé ajouté' : 'Employee added');
   };
 
@@ -823,7 +826,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Acte de naissance">Acte de naissance</SelectItem>
-                            <SelectItem value="Fiche de résidence">Fiche de résidence</SelectItem>
+                            <SelectItem value="Carte de Résidence">Carte de Résidence</SelectItem>
                             <SelectItem value="Certificat de résidence">Certificat de résidence</SelectItem>
                             <SelectItem value="Certificat de mariage">Certificat de mariage</SelectItem>
                           </SelectContent>

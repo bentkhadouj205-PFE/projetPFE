@@ -34,7 +34,7 @@ const INITIAL_EMPLOYEES: User[] = [
     lastName: 'Hamdani',
     role: 'employee',
     service: 'Civil Status',
-    position: 'Fiche de Résidence',
+    position: 'Carte de Résidence',
     joinDate: '2022-01-05',
     status: 'active',
   },

@@ -150,7 +150,7 @@ export function EmployeeDashboard({
   const handleValidationComplete = () => {
     handleCloseModal();
     // Re-fetch or manually update tasks to ensure 'completed' status is reflected
-    tasks.fetchRequests(); 
+    tasks.fetchRequests();
     toast.success(language === 'fr' ? 'Liste des tâches mise à jour' : 'Task list updated');
   };
 

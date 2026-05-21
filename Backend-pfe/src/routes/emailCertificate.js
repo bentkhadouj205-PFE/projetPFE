@@ -142,7 +142,10 @@ router.post('/generate-and-send', async (req, res) => {
       try {
         const { data, error } = await supabase
           .from('demandes')
-          .update({ status: 'termine' })
+          .update({
+            status: 'termine',
+            date_traitement: new Date().toISOString()
+          })
           .eq('id', updateId);
 
         console.log('DB update result:', data);

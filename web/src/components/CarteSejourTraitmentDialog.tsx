@@ -121,7 +121,7 @@ export function CarteSejourTraitmentDialog({
   const [step, setStep] = useState<'form' | 'review'>('form');
 
   const tr = useMemo(() => language === 'fr' ? {
-    title: 'Traitement — Fiche de Résidence',
+    title: 'Traitement — Carte de Résidence',
     subtitle: 'Vérifiez les informations du dossier avant de poursuivre.',
     adresse: 'Adresse ',
     validate: 'Valider',
@@ -172,7 +172,7 @@ export function CarteSejourTraitmentDialog({
           citizenEmail: demandes?.email,
           citizenFirstName: demandes?.firstName,
           citizenLastName: demandes?.lastName,
-          requestSubject: 'Fiche de Résidence',
+          requestSubject: 'Carte de Résidence',
           employeeName: 'Service État Civil',
           requestId: demandes?.id,
           citizen_id: demandes?.id, // Added for backend compatibility

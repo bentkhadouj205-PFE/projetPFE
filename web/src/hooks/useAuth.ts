@@ -46,7 +46,7 @@ const MOCK_USERS: User[] = [
     lastName: 'Hamdani',
     role: 'employee',
     service: 'certificat_residence',
-    position: 'Fiche de résidence',
+    position: 'Carte de Résidence',
     joinDate: '2022-01-05',
     status: 'active',
   },

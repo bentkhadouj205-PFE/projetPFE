@@ -8,7 +8,7 @@ export interface Citizen {
   commune?: string;
   actYear?: string;
   actNumber?: string;
-  // fiche de résidence (Fatima)
+  // Carte de Résidence (Fatima)
   cni?: string;
   cniFileUrl?: string;
   factureFileUrl?: string;
@@ -47,7 +47,7 @@ export interface EmployeeNotification {
   citizenLastName?: string;
   actYear?: string;
   actNumber?: string;
-  // fiche de résidence(Fatima)
+  // Carte de Résidence (Fatima)
   cni?: string;
   cniFileUrl?: string;
   factureFileUrl?: string;

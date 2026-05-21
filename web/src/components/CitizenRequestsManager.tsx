@@ -11,7 +11,7 @@ export function CitizenRequestForm() {
     lastName: '',
     email: '',
     nin: '',
-    subject: 'Fiche de Résidence',
+    subject: 'Carte de Résidence',
     description: '',
     wilaya: '',
     commune: '',
@@ -60,7 +60,7 @@ export function CitizenRequestForm() {
           lastName: '',
           email: '',
           nin: '',
-          subject: 'Fiche de Résidence',
+          subject: 'Carte de Résidence',
           description: '',
           wilaya: '',
           commune: '',
@@ -126,7 +126,7 @@ export function CitizenRequestForm() {
           value={formData.subject}
           onChange={(e) => setFormData({...formData, subject: e.target.value})}
         >
-          <option>Fiche de Résidence</option>
+          <option>Carte de Résidence</option>
           <option>Certificat de résidence</option>
           <option>Certificat de Naissance</option>
           <option>Certificat de mariage</option>

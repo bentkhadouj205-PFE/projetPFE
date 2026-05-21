@@ -39,7 +39,7 @@ interface DocumentRequestFormProps {
 const documentTypes = [
   { value: 'birth', label: 'Certificat de Naissance', description: 'Certificat de naissance électronique' },
   { value: 'marriage', label: 'Acte de mariage', description: 'Certificat de mariage' },
-  { value: 'residence', label: 'Fiche de Résidence', description: 'Attestation de résidence' },
+  { value: 'residence', label: 'Carte de Résidence', description: 'Attestation de résidence' },
   { value: 'residence_cert', label: 'Certificat de résidence', description: 'Certificat de résidence' },
   { value: 'tichnical', label: 'Authorisation de voirie', description: 'Authorisation de voirie' },
 ];

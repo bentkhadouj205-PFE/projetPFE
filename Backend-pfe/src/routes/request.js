@@ -362,7 +362,8 @@ router.put('/validate-with-pdf/:requestId', async (req, res) => {
       .from('demandes')
       .update({
         status: dbStatus,
-        commentaire: comment || request.commentaire
+        commentaire: comment || request.commentaire,
+        date_traitement: dbStatus === 'termine' ? new Date().toISOString() : request.date_traitement
       })
       .eq('id', requestId)
       .select()
@@ -460,12 +461,17 @@ router.put('/:requestId/status', async (req, res) => {
     };
     const dbStatus = statusMap[status] || status;
 
+    const updatePayload = {
+      status: dbStatus,
+      commentaire: comment || undefined
+    };
+    if (dbStatus === 'termine') {
+      updatePayload.date_traitement = new Date().toISOString();
+    }
+
     const { data, error } = await supabase
       .from('demandes')
-      .update({
-        status: dbStatus,
-        commentaire: comment || undefined
-      })
+      .update(updatePayload)
       .eq('id', requestId)
       .select();
 

@@ -63,6 +63,7 @@ export const emailService = {
     const senderEmail = process.env.SMTP_USER || 'baladiyadigital27@gmail.com';
     console.log(`[BREVO] API key: ${apiKey ? '***set***' : 'MISSING!'} | Sender: ${senderEmail}`);
 
+
     const htmlContent = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden">
         <div style="background:#00782B;padding:20px;text-align:center">
@@ -86,7 +87,7 @@ export const emailService = {
       requestSubject.toLowerCase().includes('résidence') ||
       requestSubject.toLowerCase().includes('residence')
     );
-    const attachmentName = isResidence ? 'Fiche_de_Residence.pdf' : 'Certificat_de_Naissance.pdf';
+    const attachmentName = isResidence ? 'Carte_de_Residence.pdf' : 'Certificat_de_Naissance.pdf';
 
     const payload = {
       sender: { name: 'Baladiya Digital', email: senderEmail },
