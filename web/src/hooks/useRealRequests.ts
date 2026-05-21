@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://uvmruxcjpgovdrwvykyn.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_GF__NHm1x5YVLBdPIA5hsw_FauKPiRA';
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -100,6 +106,53 @@ export function useRealRequests(employeeId: string) {
       setLoading(false);
     }
   }, [employeeId]);
+  useEffect(() => {
+    if (!employeeId) return;
+
+    const channel = supabase
+      .channel('demandes-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'demandes' },
+        (payload) => {
+          console.log(' Realtime change detected:', payload);
+
+          if (payload.eventType === 'UPDATE') {
+            setRequests(prev => prev.map(req => {
+              if (req.id !== payload.new.id) return req;
+
+              const rawStatus = (payload.new.status || '').toLowerCase();
+              const st = ['en_attente', 'pending'].includes(rawStatus) ? 'pending'
+                : ['en_traitement', 'in-progress'].includes(rawStatus) ? 'in-progress'
+                  : ['approuve', 'completed', 'termine', 'terminé'].includes(rawStatus) ? 'completed'
+                    : ['rejete', 'rejected'].includes(rawStatus) ? 'rejected'
+                      : rawStatus || 'pending';
+
+              return {
+                ...req,
+                status: st,
+                dateTraitement: payload.new.date_traitement || req.dateTraitement,
+              };
+            }));
+          }
+
+          if (payload.eventType === 'INSERT') {
+            fetchRequests();
+          }
+
+          if (payload.eventType === 'DELETE') {
+            setRequests(prev => prev.filter(req => req.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [employeeId, fetchRequests]);
 
   const getTasksByEmployee = (id: string) => requests.filter(r => r.assignedTo === id);
 
