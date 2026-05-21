@@ -358,12 +358,19 @@ router.put('/validate-with-pdf/:requestId', async (req, res) => {
     const dbStatus = statusMap[status] || status;
 
     // 2. Update request in Supabase (table 'demandes' uses 'status' and 'commentaire')
+    const now = new Date().toISOString();
+    const isResidence = request.type_document === 'certificat_residence';
+    const dateExpiration = isResidence
+      ? new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString()   // 6 months
+      : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();      // 1 year
+
     const { data: updated, error: updateErr } = await supabase
       .from('demandes')
       .update({
         status: dbStatus,
         commentaire: comment || request.commentaire,
-        date_traitement: dbStatus === 'termine' ? new Date().toISOString() : request.date_traitement
+        date_traitement: dbStatus === 'termine' ? now : request.date_traitement,
+        date_expiration: dbStatus === 'termine' ? dateExpiration : request.date_expiration
       })
       .eq('id', requestId)
       .select()
@@ -466,7 +473,18 @@ router.put('/:requestId/status', async (req, res) => {
       commentaire: comment || undefined
     };
     if (dbStatus === 'termine') {
+      // Fetch type_document to determine expiration period
+      const { data: demandeInfo } = await supabase
+        .from('demandes')
+        .select('type_document')
+        .eq('id', requestId)
+        .single();
+
+      const isResidence = demandeInfo?.type_document === 'certificat_residence';
       updatePayload.date_traitement = new Date().toISOString();
+      updatePayload.date_expiration = isResidence
+        ? new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString()   // 6 months
+        : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();      // 1 year
     }
 
     const { data, error } = await supabase

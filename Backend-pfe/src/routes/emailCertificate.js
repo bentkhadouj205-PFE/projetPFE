@@ -140,11 +140,17 @@ router.post('/generate-and-send', async (req, res) => {
 
     if (updateId) {
       try {
+        const now = new Date().toISOString();
+        const dateExpiration = isResidenceCard
+          ? new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString()   // 6 months
+          : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();      // 1 year
+
         const { data, error } = await supabase
           .from('demandes')
           .update({
             status: 'termine',
-            date_traitement: new Date().toISOString()
+            date_traitement: now,
+            date_expiration: dateExpiration
           })
           .eq('id', updateId);
 
