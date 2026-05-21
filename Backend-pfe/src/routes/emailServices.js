@@ -118,5 +118,59 @@ export const emailService = {
 
     console.log('[Brevo Success] messageId:', result.messageId);
     return { messageId: result.messageId };
+  },
+
+  async sendRejectionEmail(citizenEmail, citizenFirstName, requestSubject, employeeName, comment) {
+    const apiKey = process.env.BREVO_API_KEY;
+    const senderEmail = process.env.SMTP_USER || 'baladiyadigital27@gmail.com';
+    console.log(`[BREVO REJECTION] API key: ${apiKey ? '***set***' : 'MISSING!'} | Sender: ${senderEmail}`);
+
+    const htmlContent = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden">
+        <div style="background:#E53E3E;padding:20px;text-align:center">
+          <h1 style="color:#fff;margin:0;font-size:22px">Baladiya Digital</h1>
+          <p style="color:#fed7d7;margin:4px 0 0">Service d'état civil en ligne</p>
+        </div>
+        <div style="padding:24px">
+          <p style="font-size:16px">Bonjour <strong>${citizenFirstName || ''}</strong>,</p>
+          <p>Nous vous informons que votre demande pour le document : <span style="color:#E53E3E;font-weight:bold">${requestSubject || 'Document'}</span> a été <strong>rejetée</strong>.</p>
+          <p>Message / Motif :</p>
+          <p style="background:#fff5f5;padding:12px;border-radius:6px;border-left:4px solid #E53E3E;color:#c53030;font-style:italic">
+            ${comment || 'Votre demande a été rejetée. Veuillez réessayer.'}
+          </p>
+          <p style="margin-top:20px;color:#4A5568;">Veuillez soumettre une nouvelle demande en vous assurant que toutes les informations et documents joints sont corrects et lisibles.</p>
+          <p style="color:#888;font-size:13px;margin-top:20px">Traité par : <strong>${employeeName || "service d'état civil"}</strong></p>
+        </div>
+        <div style="background:#f9f9f9;padding:12px;text-align:center;font-size:11px;color:#aaa">
+          Baladiya Digital — Document généré automatiquement
+        </div>
+      </div>
+    `;
+
+    const payload = {
+      sender: { name: 'Baladiya Digital', email: senderEmail },
+      to: [{ email: citizenEmail, name: citizenFirstName || 'Citoyen' }],
+      subject: `Mise à jour de votre demande - ${requestSubject || 'Document'} rejetée`,
+      htmlContent,
+    };
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': apiKey,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || `Brevo API error: ${response.status}`);
+    }
+
+    console.log('[Brevo Rejection Success] messageId:', result.messageId);
+    return { messageId: result.messageId };
   }
 };

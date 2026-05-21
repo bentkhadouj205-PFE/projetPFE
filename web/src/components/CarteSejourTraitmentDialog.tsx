@@ -77,13 +77,7 @@ function ReviewStep({
         )}
       </div>
 
-      {/* Email notice */}
-      <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2.5 text-sm text-slate-600 dark:text-slate-300">
-        <Mail className="w-4 h-4 text-blue-500 shrink-0" />
-        {fr
-          ? 'Un email de confirmation sera envoyé automatiquement au citoyen.'
-          : 'A confirmation email will be sent automatically to the citizen.'}
-      </div>
+
 
       {/* Actions */}
       <div className="flex gap-3 pt-1">
@@ -206,12 +200,51 @@ export function CarteSejourTraitmentDialog({
     }
   };
 
-  const handleReject = () => {
-    onOpenChange(false);
-    toast.error(
-      language === 'fr' ? 'Demande rejetée' : 'Request rejected',
-      { duration: 3000 }
-    );
+  const handleReject = async () => {
+    if (!demandes?.email) {
+      toast.error(language === 'fr' ? 'Aucun email disponible' : 'No email available');
+      return;
+    }
+
+    setSending(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/email/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify({
+          citizenEmail: demandes?.email,
+          citizenFirstName: demandes?.firstName,
+          citizenLastName: demandes?.lastName,
+          requestSubject: 'Carte de Résidence',
+          employeeName: 'Service État Civil',
+          requestId: demandes?.id,
+          citizenNin: demandes?.nin,
+          comment: language === 'fr'
+            ? 'Votre demande a été rejetée. Veuillez réessayer.'
+            : 'Your request has been rejected, please try again.',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send rejection email');
+      }
+
+      onValidate();
+      onOpenChange(false);
+      toast.error(
+        language === 'fr' ? 'Demande rejetée' : 'Request rejected',
+        { duration: 3000 }
+      );
+    } catch (error: any) {
+      console.error('Rejection error:', error);
+      toast.error(language === 'fr' ? `Erreur: ${error.message}` : `Error: ${error.message}`);
+    } finally {
+      setSending(false);
+    }
   };
 
   const Row = ({ label, children }: { label: string; children: ReactNode }) => (

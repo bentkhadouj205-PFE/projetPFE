@@ -226,4 +226,72 @@ router.post('/send-official-acte/:acteId', async (req, res) => {
   }
 });
 
+// ── POST /api/email/reject ──────────────────────────────────────────
+// Updates status to 'refuse' and sends rejection email to the citizen
+router.post('/reject', async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  console.log('[Start] reject request received');
+  try {
+    const { citizenEmail, citizenFirstName, citizenLastName, requestSubject, employeeName, comment, requestId, citizenNin } = req.body;
+
+    const targetEmail = citizenEmail;
+    const targetFirstName = citizenFirstName || 'Citoyen';
+    const targetSubject = requestSubject || 'Document';
+    const targetEmployeeName = employeeName || 'Service État Civil';
+    const rejectionComment = comment || 'Votre demande a été rejetée. Veuillez réessayer.';
+
+    // Send rejection email (no PDF)
+    console.log(` [EMAIL] Sending rejection in background to: "${targetEmail}"`);
+    emailService.sendRejectionEmail(
+      targetEmail,
+      targetFirstName,
+      targetSubject,
+      targetEmployeeName,
+      rejectionComment
+    ).catch(err => {
+      console.error('Background sendRejectionEmail error:', err);
+    });
+
+    // Update status in DB to 'refuse'
+    const updateId = requestId;
+    console.log('updateId to reject:', updateId);
+
+    if (updateId) {
+      try {
+        const { data, error } = await supabase
+          .from('demandes')
+          .update({
+            status: 'refuse',
+            commentaire: rejectionComment,
+            date_traitement: new Date().toISOString()
+          })
+          .eq('id', updateId);
+
+        console.log('DB reject update result:', data);
+        console.log('DB reject update error:', error);
+
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('status-update', { id: updateId, status: 'refuse' });
+
+          const room = `citizen_${citizenNin}`;
+          io.to(room).emit('document-notification', {
+            message: `${targetSubject} - Votre demande a été rejetée`,
+            documentType: targetSubject,
+            status: 'refuse',
+            dateApprobation: new Date().toISOString()
+          });
+        }
+      } catch (dbErr) {
+        console.error('[DB Reject Status Update Error]', dbErr.message);
+      }
+    }
+
+    res.json({ success: true, message: 'Rejection processed successfully' });
+  } catch (err) {
+    console.error('reject error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
