@@ -47,12 +47,12 @@ function ensureCommuneOption(commune: string, list: string[]): string[] {
 }
 
 // ─── Step 2: Demande d'Acte de Naissance ─────────────────────────────────────
+// ─── Step 2: Demande d'Acte de Naissance ─────────────────────────────────────
 function DemandePreview({
-  citizen, wilaya, commune, actYear, actNumber,
+  citizen,
   language, onSendEmail, onBack, sending,
 }: {
   citizen: BirthActCitizenShape;
-  wilaya: string; commune: string; actYear: string; actNumber: string;
   language: 'fr' | 'en';
   onSendEmail: () => void; onBack: () => void;
   sending: boolean;
@@ -83,30 +83,6 @@ function DemandePreview({
             <div key={label} className="flex justify-between border-b border-slate-100 pb-1 last:border-0">
               <span className="text-slate-500">{label}:</span>
               <span className={`font-medium ${label === 'Email' ? 'text-blue-600' : 'text-slate-800'} ${label === 'NIN' ? 'font-mono' : ''}`}>
-                {value || '—'}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Acte Information — Blue Card */}
-      <div className="rounded-lg border border-blue-200 overflow-hidden shadow-sm">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2.5">
-          <p className="text-center font-semibold text-white text-sm">
-            {language === 'fr' ? "Informations de l'Acte" : 'Act Information'}
-          </p>
-        </div>
-        <div className="bg-blue-50 p-4 space-y-2 text-sm">
-          {[
-            { label: 'Wilaya', value: wilaya },
-            { label: language === 'fr' ? 'Commune' : 'Municipality', value: commune },
-            { label: language === 'fr' ? "Année de l'acte" : 'Year of act', value: actYear },
-            { label: language === 'fr' ? "N° de l'acte" : 'Act Number', value: actNumber },
-          ].map(({ label, value }) => (
-            <div key={label} className="flex justify-between border-b border-blue-100 pb-1.5 last:border-0">
-              <span className="text-blue-600 font-medium">{label}:</span>
-              <span className="font-semibold text-blue-900">
                 {value || '—'}
               </span>
             </div>
@@ -235,10 +211,6 @@ export function BirthActTraitmentDialog({
             </DialogHeader>
             <DemandePreview
               citizen={citizen}
-              wilaya={wilaya}
-              commune={commune}
-              actYear={actYear}
-              actNumber={actNumber}
               language={language}
               onSendEmail={handleSendEmail}
               onBack={() => onOpenChange(false)}

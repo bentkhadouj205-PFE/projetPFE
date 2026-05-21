@@ -124,8 +124,8 @@ function App() {
   };
 
   const isLoading =
-    (vueActuelle === 'employe' && loading) ||
-    (vueActuelle === 'municipal_agent' && adminLoading);
+    (vueActuelle === 'employe' && loading && requests.length === 0) ||
+    (vueActuelle === 'municipal_agent' && adminLoading && adminEmployees.length === 0);
 
   if (isLoading) {
     return (
