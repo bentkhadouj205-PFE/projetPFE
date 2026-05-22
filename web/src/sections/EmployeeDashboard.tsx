@@ -597,9 +597,13 @@ export function EmployeeDashboard({
         demandes={carteSejourTask ? { ...carteSejourTask.citizen, id: carteSejourTask.id } : null}
         language={language}
         onCancel={() => setCarteSejourTask(null)}
-        onValidate={() => {
+        onValidate={(action) => {
           if (carteSejourTask) {
-            tasks.completeTask(carteSejourTask.id);
+            if (action === 'rejected') {
+              tasks.fetchRequests();
+            } else {
+              tasks.completeTask(carteSejourTask.id);
+            }
           }
         }}
       />

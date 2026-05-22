@@ -34,7 +34,7 @@ interface CarteSejourTraitmentDialogProps {
   onOpenChange: (open: boolean) => void;
   demandes: CarteSejourCitizenShape | null;
   language: 'fr' | 'en';
-  onValidate: () => void;
+  onValidate: (action?: 'completed' | 'rejected') => void;
   onCancel: () => void;
 }
 
@@ -183,7 +183,7 @@ export function CarteSejourTraitmentDialog({
         throw new Error(errorData.error || 'Failed to send email');
       }
 
-      onValidate();
+      onValidate('completed');
       onOpenChange(false);
       toast.success(tr.emailSent, {
         icon: <Mail className="w-4 h-4 text-green-600" />,
@@ -233,7 +233,7 @@ export function CarteSejourTraitmentDialog({
         throw new Error(errorData.error || 'Failed to send rejection email');
       }
 
-      onValidate();
+      onValidate('rejected');
       onOpenChange(false);
       toast.error(
         language === 'fr' ? 'Demande rejetée' : 'Request rejected',

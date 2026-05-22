@@ -134,10 +134,7 @@ export const emailService = {
         <div style="padding:24px">
           <p style="font-size:16px">Bonjour <strong>${citizenFirstName || ''}</strong>,</p>
           <p>Nous vous informons que votre demande pour le document : <span style="color:#E53E3E;font-weight:bold">${requestSubject || 'Document'}</span> a été <strong>rejetée</strong>.</p>
-          <p>Message / Motif :</p>
-          <p style="background:#fff5f5;padding:12px;border-radius:6px;border-left:4px solid #E53E3E;color:#c53030;font-style:italic">
-            ${comment || 'Votre demande a été rejetée. Veuillez réessayer.'}
-          </p>
+
           <p style="margin-top:20px;color:#4A5568;">Veuillez soumettre une nouvelle demande en vous assurant que toutes les informations et documents joints sont corrects et lisibles.</p>
           <p style="color:#888;font-size:13px;margin-top:20px">Traité par : <strong>${employeeName || "service d'état civil"}</strong></p>
         </div>

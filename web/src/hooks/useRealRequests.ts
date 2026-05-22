@@ -63,7 +63,7 @@ export function useRealRequests(employeeId: string) {
           const st = ['en_attente', 'pending', 'en attente'].includes(rawStatus) ? 'pending'
             : ['en_traitement', 'in-progress', 'in progress'].includes(rawStatus) ? 'in-progress'
               : ['approuve', 'completed', 'termine', 'terminé', 'approuvé'].includes(rawStatus) ? 'completed'
-                : ['rejete', 'rejected', 'rejeté'].includes(rawStatus) ? 'rejected'
+                : ['rejete', 'rejected', 'rejeté', 'refuse', 'refusé'].includes(rawStatus) ? 'rejected'
                   : rawStatus || 'pending';
 
           return {
@@ -125,7 +125,7 @@ export function useRealRequests(employeeId: string) {
               const st = ['en_attente', 'pending'].includes(rawStatus) ? 'pending'
                 : ['en_traitement', 'in-progress'].includes(rawStatus) ? 'in-progress'
                   : ['approuve', 'completed', 'termine', 'terminé'].includes(rawStatus) ? 'completed'
-                    : ['rejete', 'rejected'].includes(rawStatus) ? 'rejected'
+                    : ['rejete', 'rejected', 'refuse', 'refusé'].includes(rawStatus) ? 'rejected'
                       : rawStatus || 'pending';
 
               return {
