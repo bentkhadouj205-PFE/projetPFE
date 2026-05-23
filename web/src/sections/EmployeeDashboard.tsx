@@ -400,7 +400,10 @@ export function EmployeeDashboard({
                 unreadCount={unreadNotifications}
                 onMarkAsRead={notifications.markNotificationAsRead}
                 onMarkAllAsRead={notifications.markAllAsRead}
-                onViewRequest={(rid) => { if (rid) handleOpenModal(rid); }}
+                onViewRequest={(rid) => {
+                  setActiveTab('tasks');
+                  if (rid) handleOpenModal(rid);
+                }}
                 onGoToTasks={() => setActiveTab('tasks')}
               />
               <div className="text-right">
