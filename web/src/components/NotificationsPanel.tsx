@@ -54,10 +54,19 @@ export function NotificationsPanel({
 
 
 
+  const handleBellClick = (e: React.MouseEvent) => {
+    if (onGoToTasks) {
+      e.preventDefault();
+      e.stopPropagation();
+      onGoToTasks();
+      setIsOpen(false);
+    }
+  };
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative hover:bg-slate-100 dark:hover:bg-slate-800">
+        <Button variant="ghost" size="icon" className="relative hover:bg-slate-100 dark:hover:bg-slate-800" onClick={handleBellClick}>
           <Bell className="w-5 h-5 text-slate-700 dark:text-slate-200" />
           {unreadCount > 0 && (
             <Badge variant="destructive"
