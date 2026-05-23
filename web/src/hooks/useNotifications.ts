@@ -38,13 +38,23 @@ export function useNotifications(employeeId: string, service?: string) {
       const rawItems = data.requests || [];
       console.log('REQUESTS BEFORE SET:', rawItems);
 
+      const getFrenchDocName = (doc: string): string => {
+        const map: Record<string, string> = {
+          extrait_naissance: "d'extrait de naissance",
+          certificat_residence: "de certificat de résidence",
+          certificat_mariage: "de certificat de mariage",
+          autorisation_voirie: "d'autorisation de voirie",
+        };
+        return map[doc] || doc;
+      };
+
       const mapped = rawItems.map((n: any) => ({
         id: n.id,
         requestId: n.id,
-        title: n.title || `Demande de ${n.type_document || 'document'}`,
-        message: n.message || `Nouvelle demande de ${n.prenom || ''} ${n.nom || ''}`,
+        title: `Demande ${getFrenchDocName(n.type_document || '')}`,
+        message: `Nouvelle demande de ${n.prenom || ''} ${n.nom || ''}`,
         type: n.service || n.type_document || 'general',
-        read: n.is_read ?? false,
+        read: n.status === 'lu' || (n.is_read ?? false),
         createdAt: n.created_at ?? n.date_demande ?? new Date().toISOString(),
         position: n.position || '',
         link: '#',
@@ -99,12 +109,16 @@ export function useNotifications(employeeId: string, service?: string) {
 
   const markAllAsRead = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/notifications/employee/${employeeId}/read-all`, {
-        method: 'PUT',
-      });
-      if (res.ok) {
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      }
+      // Optimistically mark all in frontend state
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+
+      // Send requests to mark all unread demands as 'lu' in parallel
+      const unreadNotifs = notifications.filter(n => !n.read);
+      await Promise.all(
+        unreadNotifs.map(n =>
+          fetch(`${API_BASE_URL}/requests/${n.id}/read`, { method: 'PUT' })
+        )
+      );
     } catch (err) {
       console.error('Failed to mark all as read', err);
     }

@@ -7,8 +7,7 @@ import { toast } from 'sonner';
 import type { EmployeeNotification } from '@/types/citizen';
 import {
   Bell, Check, CheckCheck, FileText, User, AlertCircle,
-  ChevronRight, MapPin, Hash, Calendar, CreditCard, FileImage, Home,
-  CheckSquare,
+  ChevronRight, CheckSquare,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -53,9 +52,7 @@ export function NotificationsPanel({
     }
   };
 
-  // Detect if this notification is for Carte de séjour (Fatima)
-  const isCarteSejourNotif = (n: EmployeeNotification) =>
-    !!(n.cni || n.factureFileUrl || n.cniFileUrl || n.dateNaissance || n.adresse);
+
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -139,89 +136,6 @@ export function NotificationsPanel({
                             {notification.citizenName || 'Non spécifié'}
                           </span>
                         </div>
-
-                        {/* NIN */}
-                        {notification.citizenNin && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">
-                              NIN: {notification.citizenNin}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* ── Acte de naissance fields (Sarah) ── */}
-                        {(notification.wilaya || notification.commune || notification.actYear || notification.actNumber) && (
-                          <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-2 border-t border-slate-100 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-400">
-                            {notification.wilaya && (
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                                <span className="truncate"><span className="font-medium">Wilaya</span> {notification.wilaya}</span>
-                              </div>
-                            )}
-                            {notification.commune && (
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                                <span className="truncate"><span className="font-medium">Commune</span> {notification.commune}</span>
-                              </div>
-                            )}
-                            {notification.actYear && (
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <Calendar className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                                <span className="truncate"><span className="font-medium">Année</span> {notification.actYear}</span>
-                              </div>
-                            )}
-                            {notification.actNumber && (
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <Hash className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                                <span className="truncate"><span className="font-medium">N° acte</span> {notification.actNumber}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* ── Carte de séjour fields (Fatima) ── */}
-                        {isCarteSejourNotif(notification) && (
-                          <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-2 border-t border-slate-100 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-400">
-                            {notification.cni && (
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <CreditCard className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                                <span className="truncate"><span className="font-medium">CNI</span> {notification.cni}</span>
-                              </div>
-                            )}
-                            {notification.dateNaissance && (
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <Calendar className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                                <span className="truncate"><span className="font-medium">Naissance</span> {notification.dateNaissance}</span>
-                              </div>
-                            )}
-                            {notification.adresse && (
-                              <div className="flex items-center gap-1.5 col-span-2 min-w-0">
-                                <Home className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                                <span className="truncate"><span className="font-medium">سكن</span> {notification.adresse}</span>
-                              </div>
-                            )}
-                            {notification.cniFileUrl && (
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <FileImage className="w-3.5 h-3.5 shrink-0 text-blue-400" />
-                                <a href={notification.cniFileUrl} target="_blank" rel="noopener noreferrer"
-                                  onClick={e => e.stopPropagation()}
-                                  className="text-blue-500 hover:underline truncate">
-                                  CNI Photo
-                                </a>
-                              </div>
-                            )}
-                            {notification.factureFileUrl && (
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <FileImage className="w-3.5 h-3.5 shrink-0 text-blue-400" />
-                                <a href={notification.factureFileUrl} target="_blank" rel="noopener noreferrer"
-                                  onClick={e => e.stopPropagation()}
-                                  className="text-blue-500 hover:underline truncate">
-                                  Facture Photo
-                                </a>
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
 
