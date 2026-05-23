@@ -256,10 +256,23 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
 
   const employeesByService = SERVICES.map((s) => ({
     ...s,
-    employees: employees.employees.filter((e) =>
-      e.service?.toLowerCase() === s.nameFr.toLowerCase() ||
-      e.service?.toLowerCase() === s.name.toLowerCase()
-    ),
+    employees: employees.employees.filter((e) => {
+      const empService = e.service?.toLowerCase().trim();
+      const serviceName = s.name.toLowerCase();
+      const serviceNameFr = s.nameFr.toLowerCase();
+      
+      // Direct name matches
+      if (empService === serviceName || empService === serviceNameFr) return true;
+      
+      // Keywords / Alternative names matches
+      if (s.id === 'civil') {
+        return ['civil status', 'état civil', 'etat civil', 'civil_status'].includes(empService ?? '');
+      }
+      if (s.id === 'autorisation') {
+        return ['technical service', 'service technique', 'autorisation de voirie', 'autorisation_voirie', 'road occupancy permit', 'road_occupancy_permit'].includes(empService ?? '');
+      }
+      return false;
+    }),
   }));
 
   // ── Fetch Data ─────────────────────────────────────────────────────────
@@ -871,7 +884,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                                 {emp.status === 'active' ? (language === 'fr' ? 'actif' : 'active') : (language === 'fr' ? 'inactif' : 'inactive')}
                               </Badge>
                             </TableCell>
-                            <TableCell className="dark:text-slate-300">{emp.joinDate}</TableCell>
+                            <TableCell className="dark:text-slate-300">{emp.joinDate ?? (emp.join_date ? emp.join_date.split('T')[0] : '-')}</TableCell>
                             <TableCell>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>

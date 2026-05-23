@@ -114,6 +114,53 @@ router.get('/employees/:id', async (req, res) => {
   }
 });
 
+// PUT /admin/employees/:id — update employee status, service, position, etc.
+router.put('/employees/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, service, position, first_name, last_name, email } = req.body;
+
+    const updateData = {};
+    if (status !== undefined) updateData.status = status;
+    if (service !== undefined) updateData.service = service;
+    if (position !== undefined) updateData.position = position;
+    if (first_name !== undefined) updateData.first_name = first_name;
+    if (last_name !== undefined) updateData.last_name = last_name;
+    if (email !== undefined) updateData.email = email;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('employees')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ message: 'Employé mis à jour', employee: data });
+  } catch (error) {
+    console.error('Erreur update employee:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE /admin/employees/:id — delete employee
+router.delete('/employees/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase
+      .from('employees')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    res.json({ message: 'Employé supprimé avec succès' });
+  } catch (error) {
+    console.error('Erreur delete employee:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // GET /admin/all-requests — each row includes `reg` from registry DB matched by citizen_nin
 router.get('/all-requests', async (req, res) => {
   try {

@@ -174,9 +174,58 @@ function App() {
                   toast.error('Erreur lors de l\'ajout');
                 }
               },
-              deleteEmployee: (id: string) => console.log('Delete', id),
-              toggleEmployeeStatus: (id: string) => console.log('Toggle', id),
-              updateEmployee: (id: string, updates: any) => console.log('Update', id, updates),
+              deleteEmployee: async (id: string) => {
+                try {
+                  const response = await fetch(`${API_BASE_URL}/admin/employees/${id}`, {
+                    method: 'DELETE',
+                  });
+                  if (response.ok) {
+                    toast.success('Employé supprimé avec succès');
+                    adminData.fetchEmployees();
+                  } else {
+                    toast.error('Erreur lors de la suppression');
+                  }
+                } catch (error) {
+                  toast.error('Erreur de connexion');
+                }
+              },
+              toggleEmployeeStatus: async (id: string) => {
+                try {
+                  const emp = adminEmployees.find((e: any) => e.id === id || e._id === id);
+                  if (!emp) return;
+                  const newStatus = emp.status === 'active' ? 'inactive' : 'active';
+                  const response = await fetch(`${API_BASE_URL}/admin/employees/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus }),
+                  });
+                  if (response.ok) {
+                    toast.success(newStatus === 'active' ? 'Employé activé' : 'Employé désactivé');
+                    adminData.fetchEmployees();
+                  } else {
+                    toast.error('Erreur lors de la mise à jour');
+                  }
+                } catch (error) {
+                  toast.error('Erreur de connexion');
+                }
+              },
+              updateEmployee: async (id: string, updates: any) => {
+                try {
+                  const response = await fetch(`${API_BASE_URL}/admin/employees/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates),
+                  });
+                  if (response.ok) {
+                    toast.success('Employé mis à jour');
+                    adminData.fetchEmployees();
+                  } else {
+                    toast.error('Erreur lors de la mise à jour');
+                  }
+                } catch (error) {
+                  toast.error('Erreur de connexion');
+                }
+              },
             } as any}
             tasks={{ tasks: requests, updateTask, completeTask, getTasksByEmployee, fetchRequests } as any}
             isDark={isDark}
