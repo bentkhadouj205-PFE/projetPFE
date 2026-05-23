@@ -146,25 +146,7 @@ export function LoginPage({ onLogin, isDark, toggleDarkMode }: LoginPageProps) {
               </Button>
             </form>
 
-            <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
-                {t('login') === 'Login' ? 'Demo credentials:' : 'Identifiants de démonstration :'}
-              </p>
-              <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
-                <p>
-                  <span className="font-medium">
-                    {t('login') === 'Login' ? 'Municipal Agent:' : 'Agent Municipal :'}
-                  </span>{' '}
-                  municipal_agent@gmail.com / municipalagent123
-                </p>
-                <p>
-                  <span className="font-medium">
-                    {t('login') === 'Login' ? 'Employee:' : 'Employé :'}
-                  </span>{' '}
-                  name@gmail.com / employee123
-                </p>
-              </div>
-            </div>
+
           </CardContent>
         </Card>
 
