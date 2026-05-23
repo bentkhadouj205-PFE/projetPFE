@@ -1324,8 +1324,8 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                 <CardContent className="space-y-6">
                   <div className="space-y-2"><Label>{t('email')}</Label><Input value={user.email} disabled /></div>
                   <div className="space-y-2"><Label>{language === 'fr' ? 'Nom complet' : 'Full Name'}</Label><Input value={`${user.firstName} ${user.lastName}`} disabled /></div>
-                  <div className="space-y-2"><Label>{t('service')}</Label><Input value={user.service} disabled /></div>
-                  <div className="space-y-2"><Label>{language === 'fr' ? 'Poste' : 'Position'}</Label><Input value={user.position} disabled /></div>
+                  <div className="space-y-2"><Label>{t('service')}</Label><Input value={t(user.service)} disabled /></div>
+                  <div className="space-y-2"><Label>{language === 'fr' ? 'Poste' : 'Position'}</Label><Input value={t(user.position)} disabled /></div>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div>

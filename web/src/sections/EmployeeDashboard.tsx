@@ -237,8 +237,6 @@ export function EmployeeDashboard({
               {/* Sarah columns */}
               {showBirthActColumns && (
                 <>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('wilaya')}</th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('commune')}</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('firstName')}</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('lastName')}</th>
                 </>
@@ -271,8 +269,6 @@ export function EmployeeDashboard({
                 {/* Sarah row cells */}
                 {showBirthActColumns && (
                   <>
-                    <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.wilaya)}</td>
-                    <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.commune)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.firstName)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{dash(task.citizen?.lastName)}</td>
                   </>
@@ -377,7 +373,7 @@ export function EmployeeDashboard({
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm truncate dark:text-white">{user.firstName} {user.lastName}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.position}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t(user.position)}</p>
             </div>
           </div>
           <Button variant="outline" className="w-full" onClick={onLogout}>
@@ -405,6 +401,7 @@ export function EmployeeDashboard({
                 onMarkAsRead={notifications.markNotificationAsRead}
                 onMarkAllAsRead={notifications.markAllAsRead}
                 onViewRequest={(rid) => { if (rid) handleOpenModal(rid); }}
+                onGoToTasks={() => setActiveTab('tasks')}
               />
               <div className="text-right">
                 <p className="text-sm font-medium dark:text-white">
@@ -461,7 +458,6 @@ export function EmployeeDashboard({
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-end bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-slate-500" />
                   <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
                     className="border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary">
                     <option value="all">{language === 'fr' ? 'Tous les statuts' : 'All statuses'}</option>
@@ -507,7 +503,7 @@ export function EmployeeDashboard({
                         <div className="space-y-2"><Label htmlFor="lastName">{t('lastName')}</Label><Input id="lastName" name="lastName" defaultValue={user.lastName} required /></div>
                       </div>
                       <div className="space-y-2"><Label htmlFor="email">{t('email')}</Label><Input id="email" value={user.email} disabled /></div>
-                      <div className="space-y-2"><Label>{t('service')}</Label><Input value={user.service} disabled /></div>
+                      <div className="space-y-2"><Label>{t('service')}</Label><Input value={t(user.service)} disabled /></div>
                       <div className="flex gap-4">
                         <Button type="submit">{t('save')}</Button>
                         <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>{t('cancel')}</Button>
@@ -521,8 +517,8 @@ export function EmployeeDashboard({
                         </Avatar>
                         <div>
                           <h3 className="text-2xl font-bold dark:text-white">{user.firstName} {user.lastName}</h3>
-                          <p className="text-slate-500">{user.position}</p>
-                          <Badge className="mt-2">{user.service}</Badge>
+                          <p className="text-slate-500">{t(user.position)}</p>
+                          <Badge className="mt-2">{t(user.service)}</Badge>
                         </div>
                       </div>
                       <Separator />
@@ -537,8 +533,8 @@ export function EmployeeDashboard({
                         </div>
                         <div className="space-y-4">
                           {[
-                            { icon: Building, label: t('service'), value: user.service },
-                            { icon: Briefcase, label: language === 'fr' ? 'Poste' : 'Position', value: user.position },
+                            { icon: Building, label: t('service'), value: t(user.service) },
+                            { icon: Briefcase, label: language === 'fr' ? 'Poste' : 'Position', value: t(user.position) },
                             { icon: Calendar, label: language === 'fr' ? "Date d'adhésion" : 'Join Date', value: user.joinDate },
                           ].map(({ icon: Icon, label, value }) => (
                             <div key={label} className="flex items-center gap-3">
@@ -566,7 +562,7 @@ export function EmployeeDashboard({
                 <CardContent className="space-y-6">
                   <div className="space-y-2"><Label>{t('email')}</Label><Input value={user.email} disabled /><p className="text-sm text-slate-500">{language === 'fr' ? 'Votre email ne peut pas être modifié' : 'Your email cannot be changed'}</p></div>
                   <div className="space-y-2"><Label>{language === 'fr' ? 'Nom complet' : 'Full Name'}</Label><Input value={`${user.firstName} ${user.lastName}`} disabled /></div>
-                  <div className="space-y-2"><Label>{t('service')}</Label><Input value={user.service} disabled /></div>
+                  <div className="space-y-2"><Label>{t('service')}</Label><Input value={t(user.service)} disabled /></div>
                   <Separator />
                   <Button variant="outline" onClick={onLogout}><LogOut className="w-4 h-4 mr-2" />{t('logout')}</Button>
                 </CardContent>

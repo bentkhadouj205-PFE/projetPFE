@@ -40,13 +40,30 @@ export function useNotifications(employeeId: string, service?: string) {
 
       const mapped = rawItems.map((n: any) => ({
         id: n.id,
-        title: n.title || `Demande de ${n.type_document}`,
-        message: n.message || `Nouvelle demande de ${n.prenom} ${n.nom}`,
+        requestId: n.id,
+        title: n.title || `Demande de ${n.type_document || 'document'}`,
+        message: n.message || `Nouvelle demande de ${n.prenom || ''} ${n.nom || ''}`,
         type: n.service || n.type_document || 'general',
         read: n.is_read ?? false,
         createdAt: n.created_at ?? n.date_demande ?? new Date().toISOString(),
         position: n.position || '',
-        link: '#'
+        link: '#',
+        // Populate additional fields so notifications render details nicely
+        citizenName: n.prenom && n.nom ? `${n.prenom} ${n.nom}` : undefined,
+        citizenNin: n.nin || undefined,
+        citizenEmail: n.email || undefined,
+        wilaya: n.wilaya_naissance || n.wilaya || undefined,
+        commune: n.commune || undefined,
+        citizenFirstName: n.prenom || undefined,
+        citizenLastName: n.nom || undefined,
+        actYear: n.annee_acte || undefined,
+        actNumber: n.num_acte || undefined,
+        // Carte de séjour fields
+        cni: n.nin || undefined,
+        dateNaissance: n.date_naissance || undefined,
+        adresse: n.adresse || undefined,
+        cniFileUrl: n.cni_recto_path || n.cni_scan_path || undefined,
+        factureFileUrl: n.facture_resid_url || n.photo_domicile_path || undefined,
       }));
 
       setNotifications([...mapped]);

@@ -8,7 +8,9 @@ import type { EmployeeNotification } from '@/types/citizen';
 import {
   Bell, Check, CheckCheck, FileText, User, AlertCircle,
   ChevronRight, MapPin, Hash, Calendar, CreditCard, FileImage, Home,
+  CheckSquare,
 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface NotificationsPanelProps {
   notifications: EmployeeNotification[];
@@ -16,11 +18,13 @@ interface NotificationsPanelProps {
   onMarkAsRead: (notificationId: string) => void;
   onMarkAllAsRead: () => void;
   onViewRequest: (requestId: string) => void;
+  onGoToTasks?: () => void;
 }
 
 export function NotificationsPanel({
-  notifications, unreadCount, onMarkAsRead, onMarkAllAsRead, onViewRequest,
+  notifications, unreadCount, onMarkAsRead, onMarkAllAsRead, onViewRequest, onGoToTasks,
 }: NotificationsPanelProps) {
+  const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleMarkAsRead = (e: React.MouseEvent, notificationId: string) => {
@@ -243,9 +247,18 @@ export function NotificationsPanel({
 
         {notifications.length > 0 && (
           <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-center">
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Affichage de {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
-            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onGoToTasks?.();
+                setIsOpen(false);
+              }}
+              className="text-xs font-semibold text-primary hover:bg-slate-200 dark:hover:bg-slate-700 w-full flex items-center justify-center gap-1.5 h-8"
+            >
+              <CheckSquare className="w-3.5 h-3.5" />
+              {language === 'fr' ? 'Accéder à mes tâches' : 'Go to my tasks'}
+            </Button>
           </div>
         )}
       </PopoverContent>

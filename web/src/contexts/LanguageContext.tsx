@@ -91,8 +91,18 @@ const translations = {
     statistics: 'Statistiques',
     addEmployee: 'Ajouter un employé',
 
-    // ── Add new words here (fr) ──
-    // newWord: 'Nouvelle traduction',
+    // Services & Positions
+    extrait_naissance: 'Acte de naissance',
+    certificat_residence: 'Certificat de résidence',
+    certificat_mariage: 'Certificat de mariage',
+    autorisation_voirie: 'Autorisation de voirie',
+    'Acte de naissance': 'Acte de naissance',
+    'Certificat de résidence': 'Certificat de résidence',
+    'Carte de Résidence': 'Carte de Résidence',
+    'Certificat de mariage': 'Certificat de mariage',
+    'Autorisation de voirie': 'Autorisation de voirie',
+    'System Administrator': 'Administrateur Système',
+    'Municipal_Agent': 'Agent Municipal',
   },
   en: {
     // Navigation
@@ -180,6 +190,18 @@ const translations = {
     statistics: 'Statistics',
     addEmployee: 'Add Employee',
 
+    // Services & Positions
+    extrait_naissance: 'Birth Certificate',
+    certificat_residence: 'Residence Certificate',
+    certificat_mariage: 'Marriage Certificate',
+    autorisation_voirie: 'Road Authorization',
+    'Acte de naissance': 'Birth Act Agent',
+    'Certificat de résidence': 'Residence Certificate Agent',
+    'Carte de Résidence': 'Residence Card Agent',
+    'Certificat de mariage': 'Marriage Certificate Agent',
+    'Autorisation de voirie': 'Road Authorization Agent',
+    'System Administrator': 'System Administrator',
+    'Municipal_Agent': 'Municipal Agent',
   }
 };
 
