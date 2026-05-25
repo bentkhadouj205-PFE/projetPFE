@@ -22,6 +22,7 @@ import {
   LayoutDashboard, CheckSquare, UserCircle, Settings, LogOut,
   Mail, Briefcase, Building, Calendar, Clock,
   CheckCircle2, Award, Bell, Moon, Sun, FileText, Search, Filter, Eye,
+  Sparkles,
 } from 'lucide-react';
 
 interface EmployeeDashboardProps {
@@ -423,7 +424,10 @@ export function EmployeeDashboard({
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-2xl font-bold mb-2">{language === 'fr' ? `Bonjour, ${user.firstName} ! 👋` : `Hello, ${user.firstName}! 👋`}</h2>
+                      <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                        {language === 'fr' ? `Bonjour, ${user.firstName} !` : `Hello, ${user.firstName}!`}
+                        <Sparkles className="w-6 h-6 text-amber-300 animate-pulse" />
+                      </h2>
                       <p className="text-primary-foreground/80">
                         {language === 'fr' ? `Vous avez ${pendingTasks.length} dossiers en attente et ${unreadNotifications} notifications non lues.` : `You have ${pendingTasks.length} pending dossiers and ${unreadNotifications} unread notifications.`}
                       </p>

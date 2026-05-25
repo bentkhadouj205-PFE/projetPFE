@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { getSocket, connectSocket, disconnectSocket } from '@/services/socket';
-import { API_BASE_URL, BACKEND_URL } from '@/lib/apiBase';
+import { useState, useEffect, useRef } from 'react';
+import { getSocket, connectSocket } from '@/services/socket';
+import { BACKEND_URL } from '@/lib/apiBase';
 import { toast } from 'sonner';
 import type { User, Task } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -17,15 +17,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/lib/supabaseClient';
+
 import {
   LayoutDashboard, Users, CheckSquare, Settings, LogOut, Plus, Search,
   MoreVertical, Trash2, UserCheck, UserX, Briefcase, Calendar, TrendingUp,
   CheckCircle2, Moon, Sun, XCircle, Eye, ArrowLeft,
-  ShieldCheck, ShieldX, MessageSquare, Send, Bell,
-  FileText, Clock, Shield, FileCheck, AlertTriangle
+  ShieldCheck, Bell,
+  FileText
 } from 'lucide-react';
-import axios from 'axios';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface RegistrationRequest {
@@ -50,21 +49,7 @@ interface RegistrationRequest {
   };
 }
 
-interface Demande {
-  id: string;
-  userId: string;
-  typeDocument: string;
-  firstName: string;
-  lastName: string;
-  nin: string;
-  commune: string;
-  dateNaissance: string;
-  dateDemande: string;
-  status: string;
-  rejectionReason?: string;
-  photoCniPath?: string;
-  photoDomicilePath?: string;
-}
+
 
 const mapStatus = (s: string): RegistrationRequest['status'] => {
   const status = String(s || '').toLowerCase().trim();
@@ -102,20 +87,7 @@ const normalizeRequest = (raw: any): RegistrationRequest => ({
   },
 });
 
-interface ChatMessage {
-  id: number;
-  from: 'citizen' | 'agent';
-  text: string;
-  time: string;
-  read: boolean;
-}
 
-interface CitizenChat {
-  citizenId: number;
-  citizenName: string;
-  citizenEmail: string;
-  messages: ChatMessage[];
-}
 
 interface MunicipalAgentDashboardProps {
   user: User;
@@ -218,28 +190,16 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
 
   // ── Validation state ───────────────────────────────────────────────────
   const [requests, setRequests] = useState<RegistrationRequest[]>([]);
-  const [demandes, setDemandes] = useState<Demande[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
   const [validationView, setValidationView] = useState<'table' | 'detail'>('table');
   const [rejectReason, setRejectReason] = useState('');
   const [requestSearch, setRequestSearch] = useState('');
   const [validationStatusFilter, setValidationStatusFilter] = useState<'all' | 'en_attente' | 'termine' | 'refuse'>('all');
 
-  // ── Chat state ─────────────────────────────────────────────────────────
-  const [chats, setChats] = useState<CitizenChat[]>([]);
-  const [activeChatId, setActiveChatId] = useState<number | null>(null);
-  const [chatMessage, setChatMessage] = useState('');
-  const [isSocketConnected, setIsSocketConnected] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  // ── Socket state ───────────────────────────────────────────────────────
   const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
 
-  const [citizens, setCitizens] = useState<any[]>([]);
-
   const pendingCount = requests.filter((r) => r.status === 'en_attente').length;
-  const unreadCount = chats.reduce((acc, c) => acc + c.messages.filter((m) => !m.read && m.from === 'citizen').length, 0);
-  const activeChat = chats.find((c) => c.citizenId === activeChatId) ?? null;
-  const currentRequestStatus = selectedRequest ? selectedRequest.status : 'en_attente';
-  const isProcessed = currentRequestStatus === 'termine' || currentRequestStatus === 'refuse';
 
   const totalEmployees = employees.employees.length;
   const activeEmployees = employees.employees.filter((e) => e.status === 'active').length;
@@ -289,40 +249,10 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       if (data.data) {
         const normalized = data.data.map((req: any) => normalizeRequest(req));
         setRequests(normalized);
-        setDemandes(data.data.map((d: any) => ({
-          id: d.id,
-          userId: d.user_id,
-          typeDocument: d.type_document,
-          firstName: d.firstName || d.prenom,
-          lastName: d.nom,
-          nin: d.nin,
-          commune: d.commune,
-          dateNaissance: d.date_naissance,
-          dateDemande: d.date_demande,
-          status: d.status,
-          rejectionReason: d.commentaire,
-          photoCniPath: d.photo_cni_path,
-          photoDomicilePath: d.photo_domicile_path
-        })));
       }
     } catch (err) {
       console.error('Validations fetch error:', err);
       setRequests([]);
-    }
-
-    try {
-      const { data, error } = await supabase
-        .schema('register')
-        .from('citizens_safe')
-        .select('*');
-
-      if (error) {
-        console.error('Supabase citizens_safe error:', error.message);
-        return;
-      }
-      setCitizens(data);
-    } catch (err) {
-      console.error('Supabase fetch failed:', err);
     }
   };
 
@@ -337,104 +267,16 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     const socket = connectSocket();
     socketRef.current = socket;
 
-    socket.on('connect', () => {
-      setIsSocketConnected(true);
-      socket.emit('agent:join');
-      socket.emit('chat:get-conversations');
-    });
-
-    socket.on('chat:conversations', (conversations: CitizenChat[]) => {
-      setChats(conversations);
-    });
-
-    socket.on('chat:new-message', (data) => {
-      setChats((prev) => {
-        const existing = prev.find((c) => c.citizenId === data.citizenId);
-        if (existing) {
-          return prev.map((c) =>
-            c.citizenId === data.citizenId
-              ? { ...c, messages: [...c.messages, data.message] }
-              : c
-          );
-        }
-        return [...prev, {
-          citizenId: data.citizenId,
-          citizenName: data.citizenName,
-          citizenEmail: data.citizenEmail,
-          messages: [data.message]
-        }];
-      });
-
-      if (activeChatId !== data.citizenId && data.message.from === 'citizen') {
-        toast.info(`New message from ${data.citizenName}`);
-      }
-    });
-
-    socket.on('chat:message-sent', (data) => {
-      setChats((prev) =>
-        prev.map((c) =>
-          c.citizenId === data.citizenId
-            ? { ...c, messages: [...c.messages, data.message] }
-            : c
-        )
-      );
-    });
-
     socket.on('new_demande', (data: any) => {
-      const mapped: Demande = {
-        id: data.id,
-        userId: data.user_id,
-        typeDocument: data.type_document,
-        firstName: data.prenom,
-        lastName: data.nom,
-        nin: data.nin,
-        commune: data.commune || '',
-        dateNaissance: data.date_naissance || '',
-        dateDemande: data.date_demande,
-        status: data.status,
-        rejectionReason: data.commentaire || '',
-        photoCniPath: data.photo_cni_path,
-        photoDomicilePath: data.photo_domicile_path
-      };
-      setDemandes(prev => [mapped, ...prev]);
       toast.info(`Nouvelle demande de ${data.prenom} ${data.nom}`);
     });
 
     return () => {
-      socket.off('connect');
-      socket.off('chat:conversations');
-      socket.off('chat:new-message');
-      socket.off('chat:message-sent');
       socket.off('new_demande');
     };
   }, [user.id]);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeChat?.messages.length]);
 
-  const openChat = useCallback((citizenId: number) => {
-    setActiveChatId(citizenId);
-    setChats((prev) =>
-      prev.map((c) =>
-        c.citizenId === citizenId
-          ? { ...c, messages: c.messages.map((m) => ({ ...m, read: true })) }
-          : c
-      )
-    );
-    socketRef.current?.emit('chat:mark-read', { citizenId });
-  }, []);
-
-  const sendAgentMessage = useCallback(() => {
-    if (!chatMessage.trim() || !activeChatId || !socketRef.current) return;
-    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    socketRef.current.emit('chat:send-message', {
-      citizenId: activeChatId,
-      text: chatMessage.trim(),
-      time: now,
-    });
-    setChatMessage('');
-  }, [chatMessage, activeChatId]);
 
   const filteredRequests = requests.filter((r) => {
     const q = (requestSearch || '').toLowerCase();
@@ -477,7 +319,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       setSelectedRequest((prev) => prev ? { ...prev, status: 'termine' } : prev);
       await fetchData();
       toast.success(language === 'fr' ? "Email d'activation envoyé" : 'Activation email sent');
-    } catch (error) {
+    } catch {
       toast.error(language === 'fr' ? 'Erreur de validation' : 'Validation failed');
     }
   };
@@ -557,26 +399,12 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       employees: { fr: 'Gestion des employés', en: 'Employee Management' },
       tasks: { fr: 'Gestion des tâches', en: 'Task Management' },
       validations: { fr: 'Validation des inscriptions', en: 'Registration Validations' },
-      messages: { fr: 'Messages citoyens', en: 'Citizen Messages' },
       settings: { fr: 'Paramètres', en: 'Settings' },
     };
     return titles[activeTab]?.[language] ?? activeTab;
   };
 
   // ── Sub-components ─────────────────────────────────────────────────────
-  const CompactEmployeeCard = ({ employee }: { employee: any }) => {
-    const { first, last } = getEmpName(employee);
-    return (
-      <div className="flex items-center gap-2 p-2 bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
-        <Avatar className="w-8 h-8"><AvatarFallback className="text-xs bg-primary text-primary-foreground">{first[0]}{last[0]}</AvatarFallback></Avatar>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate dark:text-white">{first} {last}</p>
-          <p className="text-xs text-slate-500 truncate">{employee.position || employee.service}</p>
-        </div>
-        <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-      </div>
-    );
-  };
 
   const SidebarItem = ({ icon: Icon, label, value, badge }: { icon: React.ElementType; label: string; value: string; badge?: number }) => (
     <button
@@ -651,7 +479,6 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
             <SidebarItem icon={LayoutDashboard} label={t('dashboard')} value="dashboard" />
             <SidebarItem icon={Users} label={t('employees')} value="employees" />
             <SidebarItem icon={ShieldCheck} label={language === 'fr' ? "Demandes d'inscriptions" : 'Registration Requests'} value="validations" badge={pendingCount} />
-            <SidebarItem icon={MessageSquare} label={language === 'fr' ? 'Messagerie assistée' : 'Assisted messaging'} value="messages" badge={unreadCount} />
             <SidebarItem icon={Settings} label={t('settings')} value="settings" />
           </div>
         </ScrollArea>
@@ -1203,115 +1030,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
               )}
             </div>
           )}
-          {/* ── Messages ── */}
-          {activeTab === 'messages' && (
-            <div className="flex gap-6 h-[calc(100vh-180px)]">
-              <div className="w-72 flex-shrink-0">
-                <Card className="dark:bg-slate-800 dark:border-slate-700 h-full">
-                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                    <CardTitle className="text-sm font-medium dark:text-white">
-                      {language === 'fr' ? 'Conversations' : 'Conversations'}
-                    </CardTitle>
-                    <div className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-green-500' : 'bg-red-500'}`} title={isSocketConnected ? 'Connected' : 'Disconnected'} />
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <ScrollArea className="h-[calc(100%-60px)]">
-                      {chats.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-slate-400">
-                          {language === 'fr' ? 'Aucune conversation' : 'No conversations yet'}
-                        </div>
-                      ) : (
-                        chats.map((chat) => {
-                          const unread = chat.messages.filter((m) => !m.read && m.from === 'citizen').length;
-                          const last = chat.messages[chat.messages.length - 1];
-                          return (
-                            <button
-                              key={chat.citizenId}
-                              onClick={() => openChat(chat.citizenId)}
-                              className={`w-full flex items-start gap-3 p-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${activeChatId === chat.citizenId ? 'bg-slate-50 dark:bg-slate-700' : ''}`}
-                            >
-                              <Avatar className="w-9 h-9 flex-shrink-0">
-                                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                  {chat.citizenName.split(' ').map((n) => n[0]).join('')}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0 text-left">
-                                <div className="flex items-center justify-between">
-                                  <p className="text-sm font-medium dark:text-white truncate">{chat.citizenName}</p>
-                                  {unread > 0 && (
-                                    <span className="ml-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-medium flex items-center justify-center px-1 flex-shrink-0">{unread}</span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-slate-500 truncate mt-0.5">{last?.text || (language === 'fr' ? 'Nouvelle conversation' : 'New conversation')}</p>
-                                <p className="text-[10px] text-slate-400 mt-0.5">{last?.time}</p>
-                              </div>
-                            </button>
-                          );
-                        })
-                      )}
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </div>
 
-              <div className="flex-1">
-                {!activeChat ? (
-                  <Card className="dark:bg-slate-800 dark:border-slate-700 h-full flex items-center justify-center">
-                    <div className="text-center text-slate-400">
-                      <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                      <p className="text-sm">{language === 'fr' ? 'Sélectionnez une conversation' : 'Select a conversation'}</p>
-                      {!isSocketConnected && <p className="text-xs text-red-400 mt-2">{language === 'fr' ? 'Connexion en cours...' : 'Connecting...'}</p>}
-                    </div>
-                  </Card>
-                ) : (
-                  <Card className="dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col">
-                    <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 dark:border-slate-700">
-                      <Avatar className="w-9 h-9">
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                          {activeChat.citizenName.split(' ').map((n) => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-medium dark:text-white text-sm">{activeChat.citizenName}</p>
-                        <p className="text-xs text-slate-500">{activeChat.citizenEmail}</p>
-                      </div>
-                      <div className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-                    </div>
-
-                    <ScrollArea className="flex-1 px-5 py-4">
-                      <div className="space-y-3">
-                        {activeChat.messages.map((msg) => (
-                          <div key={msg.id} className={`flex ${msg.from === 'agent' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${msg.from === 'agent' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-bl-sm'}`}>
-                              <p className="text-sm leading-relaxed">{msg.text}</p>
-                              <p className={`text-[10px] mt-1 ${msg.from === 'agent' ? 'text-primary-foreground/70 text-right' : 'text-slate-400'}`}>{msg.time}</p>
-                            </div>
-                          </div>
-                        ))}
-                        <div ref={chatEndRef} />
-                      </div>
-                    </ScrollArea>
-
-                    <div className="px-5 py-4 border-t border-slate-100 dark:border-slate-700">
-                      <div className="flex gap-3">
-                        <Input
-                          placeholder={language === 'fr' ? 'Écrire un message...' : 'Type a message...'}
-                          value={chatMessage}
-                          onChange={(e) => setChatMessage(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAgentMessage(); } }}
-                          disabled={!isSocketConnected}
-                          className="flex-1"
-                        />
-                        <Button onClick={sendAgentMessage} disabled={!chatMessage.trim() || !isSocketConnected} size="icon">
-                          <Send className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* ── Settings ── */}
           {activeTab === 'settings' && (
