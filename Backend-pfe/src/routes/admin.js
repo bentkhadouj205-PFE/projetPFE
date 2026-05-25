@@ -63,10 +63,10 @@ router.get('/employees', async (req, res) => {
 // POST /admin/employees — create new employee
 router.post('/employees', async (req, res) => {
   try {
-    const { email, firstName, lastName, role, service, position, status } = req.body;
+    const { email, firstName, lastName, role, service, position, status, password } = req.body;
     
     // Default password for new employees
-    const defaultPassword = 'employee123';
+    const defaultPassword = password || 'employee123';
     const password_hash = await bcrypt.hash(defaultPassword, 10);
 
     const { data, error } = await supabase

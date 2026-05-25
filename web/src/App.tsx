@@ -226,6 +226,22 @@ function App() {
                   toast.error('Erreur de connexion');
                 }
               },
+              changePassword: async (id: string, password: string) => {
+                try {
+                  const response = await fetch(`${API_BASE_URL}/admin/employees/${id}/password`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password }),
+                  });
+                  if (response.ok) {
+                    toast.success('Mot de passe mis à jour avec succès');
+                  } else {
+                    toast.error('Erreur lors de la mise à jour du mot de passe');
+                  }
+                } catch (error) {
+                  toast.error('Erreur de connexion');
+                }
+              },
             } as any}
             tasks={{ tasks: requests, updateTask, completeTask, getTasksByEmployee, fetchRequests } as any}
             isDark={isDark}

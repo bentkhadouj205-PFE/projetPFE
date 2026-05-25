@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -23,7 +23,7 @@ import {
   MoreVertical, Trash2, UserCheck, UserX, Briefcase, Calendar, TrendingUp,
   CheckCircle2, Moon, Sun, XCircle, Eye, ArrowLeft,
   ShieldCheck, Bell,
-  FileText
+  FileText, KeyRound
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -96,10 +96,11 @@ interface MunicipalAgentDashboardProps {
   toggleDarkMode: () => void;
   employees: {
     employees: User[];
-    addEmployee: (employee: Omit<User, 'id'>) => User;
+    addEmployee: (employee: Omit<User, 'id'> & { password?: string }) => User;
     updateEmployee: (id: string, updates: Partial<User>) => void;
     deleteEmployee: (id: string) => void;
     toggleEmployeeStatus: (id: string) => void;
+    changePassword: (id: string, password: string) => Promise<void>;
   };
   tasks: {
     tasks: Task[];
@@ -186,6 +187,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const [newEmployeeService, setNewEmployeeService] = useState<string>('État civil');
   const [newEmployeePosition, setNewEmployeePosition] = useState<string>('Carte de Résidence');
   const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [changePasswordEmployee, setChangePasswordEmployee] = useState<any | null>(null);
   const { t, language } = useLanguage();
 
   // ── Validation state ───────────────────────────────────────────────────
@@ -358,9 +360,17 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
   const handleAddEmployee = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const password = fd.get('password') as string;
+    const confirmPassword = fd.get('confirmPassword') as string;
+
+    if (password !== confirmPassword) {
+      toast.error(language === 'fr' ? 'Les mots de passe ne correspondent pas' : 'Passwords do not match');
+      return;
+    }
+
     employees.addEmployee({
       email: fd.get('email') as string,
-      password: 'employee123',
+      password,
       firstName: fd.get('firstName') as string,
       lastName: fd.get('lastName') as string,
       role: 'employee' as const,
@@ -373,6 +383,23 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
     setNewEmployeeService('État civil');
     setNewEmployeePosition('Carte de Résidence');
     toast.success(language === 'fr' ? 'Employé ajouté' : 'Employee added');
+  };
+
+  const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!changePasswordEmployee) return;
+
+    const fd = new FormData(e.currentTarget);
+    const password = fd.get('password') as string;
+    const confirmPassword = fd.get('confirmPassword') as string;
+
+    if (password !== confirmPassword) {
+      toast.error(language === 'fr' ? 'Les mots de passe ne correspondent pas' : 'Passwords do not match');
+      return;
+    }
+
+    await employees.changePassword(changePasswordEmployee.id, password);
+    setChangePasswordEmployee(null);
   };
 
   const handleAddTask = (e: React.FormEvent<HTMLFormElement>) => {
@@ -650,6 +677,16 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                         <div className="space-y-2"><Label>{t('lastName')}</Label><Input name="lastName" required /></div>
                       </div>
                       <div className="space-y-2"><Label>{t('email')}</Label><Input name="email" type="email" required /></div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>{language === 'fr' ? 'Mot de passe' : 'Password'}</Label>
+                          <Input name="password" type="password" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{language === 'fr' ? 'Confirmer le mot de passe' : 'Confirm Password'}</Label>
+                          <Input name="confirmPassword" type="password" required />
+                        </div>
+                      </div>
                       <div className="space-y-2">
                         <Label>{t('service')}</Label>
                         <Select name="service" required value={newEmployeeService} onValueChange={setNewEmployeeService}>
@@ -675,6 +712,36 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                       <DialogFooter>
                         <DialogClose asChild><Button type="button" variant="outline">{t('cancel')}</Button></DialogClose>
                         <Button type="submit">{language === 'fr' ? "Ajouter l'employé" : 'Add Employee'}</Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+
+                {/* ── Change Password Dialog ── */}
+                <Dialog open={changePasswordEmployee !== null} onOpenChange={(open) => { if (!open) setChangePasswordEmployee(null); }}>
+                  <DialogContent className="max-w-md dark:bg-slate-800">
+                    <DialogHeader>
+                      <DialogTitle className="dark:text-white">
+                        {language === 'fr' ? 'Changer le mot de passe' : 'Change Password'}
+                      </DialogTitle>
+                      <DialogDescription className="dark:text-slate-400">
+                        {language === 'fr' 
+                          ? `Définir un nouveau mot de passe pour ${changePasswordEmployee ? `${getEmpName(changePasswordEmployee).first} ${getEmpName(changePasswordEmployee).last}` : ''}`
+                          : `Set a new password for ${changePasswordEmployee ? `${getEmpName(changePasswordEmployee).first} ${getEmpName(changePasswordEmployee).last}` : ''}`}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleChangePassword} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>{language === 'fr' ? 'Nouveau mot de passe' : 'New Password'}</Label>
+                        <Input name="password" type="password" required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'fr' ? 'Confirmer le mot de passe' : 'Confirm Password'}</Label>
+                        <Input name="confirmPassword" type="password" required />
+                      </div>
+                      <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setChangePasswordEmployee(null)}>{t('cancel')}</Button>
+                        <Button type="submit">{language === 'fr' ? 'Mettre à jour' : 'Update Password'}</Button>
                       </DialogFooter>
                     </form>
                   </DialogContent>
@@ -720,6 +787,9 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                                     {emp.status === 'active'
                                       ? <><UserX className="w-4 h-4 mr-2" />{language === 'fr' ? 'Désactiver' : 'Deactivate'}</>
                                       : <><UserCheck className="w-4 h-4 mr-2" />{language === 'fr' ? 'Activer' : 'Activate'}</>}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setChangePasswordEmployee(emp)}>
+                                    <KeyRound className="w-4 h-4 mr-2" />{language === 'fr' ? 'Changer le mot de passe' : 'Change Password'}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => { employees.deleteEmployee(emp.id); toast.success('Deleted'); }} className="text-red-600">
                                     <Trash2 className="w-4 h-4 mr-2" />{t('delete')}
