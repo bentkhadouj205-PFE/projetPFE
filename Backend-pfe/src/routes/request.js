@@ -144,21 +144,29 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ message: 'Le paramètre service est requis' });
     }
 
-    // Mapping layer to ensure UI names match DB types
+    // Mapping layer to ensure UI names match DB enum values exactly:
+    // document_type ENUM: 'extrait_naissance','carte_sejour','certificat_residence','contrat_mariage','authorisation_de_voirie'
     const serviceMap = {
-      'Civil Status': 'certificat_naissance',
+      // UI display names → DB enum values
+      'Civil Status': 'extrait_naissance',
+      'Naissance': 'extrait_naissance',
       'Residence': 'certificat_residence',
-      'Mariage': 'certificat_mariage',
+      'Mariage': 'contrat_mariage',
       'Voirie': 'authorisation_de_voirie',
       'Technical Service': 'authorisation_de_voirie',
       'Service Technique': 'authorisation_de_voirie',
       'Road Occupancy Permit': 'authorisation_de_voirie',
       'autorisation de voirie': 'authorisation_de_voirie',
-      'authorisation_de_voirie': 'authorisation_de_voirie',
-      'autorisation_voirie': 'authorisation_de_voirie',
-      'certificat_naissance': 'certificat_naissance',
+      // Direct DB values (pass-through aliases)
+      'extrait_naissance': 'extrait_naissance',
+      'carte_sejour': 'carte_sejour',
       'certificat_residence': 'certificat_residence',
-      'certificat_mariage': 'certificat_mariage'
+      'contrat_mariage': 'contrat_mariage',
+      'authorisation_de_voirie': 'authorisation_de_voirie',
+      // Legacy aliases (wrong values sent by old frontend)
+      'certificat_naissance': 'extrait_naissance',
+      'certificat_mariage': 'contrat_mariage',
+      'autorisation_voirie': 'authorisation_de_voirie'
     };
 
     const dbService = serviceMap[service] || service;
