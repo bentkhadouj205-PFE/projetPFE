@@ -149,15 +149,16 @@ router.get('/', async (req, res) => {
       'Civil Status': 'certificat_naissance',
       'Residence': 'certificat_residence',
       'Mariage': 'certificat_mariage',
-      'Voirie': 'autorisation_voirie',
-      'Technical Service': 'autorisation_voirie',
-      'Service Technique': 'autorisation_voirie',
-      'Road Occupancy Permit': 'autorisation_voirie',
-      'autorisation de voirie': 'autorisation_voirie',
+      'Voirie': 'authorisation_de_voirie',
+      'Technical Service': 'authorisation_de_voirie',
+      'Service Technique': 'authorisation_de_voirie',
+      'Road Occupancy Permit': 'authorisation_de_voirie',
+      'autorisation de voirie': 'authorisation_de_voirie',
+      'authorisation_de_voirie': 'authorisation_de_voirie',
+      'autorisation_voirie': 'authorisation_de_voirie',
       'certificat_naissance': 'certificat_naissance',
       'certificat_residence': 'certificat_residence',
-      'certificat_mariage': 'certificat_mariage',
-      'autorisation_voirie': 'autorisation_voirie'
+      'certificat_mariage': 'certificat_mariage'
     };
 
     const dbService = serviceMap[service] || service;
@@ -205,7 +206,7 @@ router.get('/my-requests/:employeeId', async (req, res) => {
     } else if (position.includes('mariage')) {
       documentTypes = ['certificat_mariage'];
     } else if (position.includes('voirie')) {
-      documentTypes = ['autorisation_voirie'];
+      documentTypes = ['authorisation_de_voirie'];
     }
 
     if (!documentTypes.length) {
