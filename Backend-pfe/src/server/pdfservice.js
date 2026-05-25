@@ -455,7 +455,7 @@ export class PDFService {
                numero: data.numero || (data.id ? data.id.substring(0, 8).toUpperCase() : '131'),
                date: data.date || new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase(),
                nom: data.fullName || `${data.citizenFirstName || data.firstName || ''} ${data.citizenLastName || data.lastName || ''}`.trim() || 'CHERIFI MERIEM',
-               projet: data.projet || "CERTIFICAT D'URBANISME",
+               projet: data.projet || "AUTORISATION DE VOIRIE",
                montant: data.montant || '3000.00',
                montantLettre: data.montantLettre || 'TROIS MILLE DINARS',
             };
@@ -528,11 +528,6 @@ export class PDFService {
             const sigY = dataRowY + dataRowH + 50;
             doc.font('Helvetica-Bold').fontSize(11)
                .text('LE DIRECTEUR', L, sigY, { align: 'center', width: CW });
-            doc.font('Helvetica').fontSize(8.5)
-               .text('ع/ رئيس المجلس الشعبي البلدي', L, sigY + 22, { align: 'center', width: CW })
-               .text('و بالتفويض', L, sigY + 36, { align: 'center', width: CW })
-               .text('مدير التخطيط، متابعة المشاريع التنموية والتعمير', L, sigY + 50, { align: 'center', width: CW })
-               .text('إمضاه: شاشو أحمد', L, sigY + 64, { align: 'center', width: CW });
 
             doc.end();
          } catch (err) {

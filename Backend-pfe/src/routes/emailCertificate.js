@@ -114,7 +114,7 @@ router.post('/generate-and-send', async (req, res) => {
         pdfData.wilaya          = citizen.wilaya;
         pdfData.commune         = citizen.commune;
         pdfData.nom             = pdfData.fullName;
-        pdfData.projet          = isVoirie ? "CERTIFICAT D'URBANISME" : (requestSubject || "CERTIFICAT DE RESIDENCE");
+        pdfData.projet          = isVoirie ? "AUTORISATION DE VOIRIE" : (requestSubject || "CERTIFICAT DE RESIDENCE");
       }
     }
 

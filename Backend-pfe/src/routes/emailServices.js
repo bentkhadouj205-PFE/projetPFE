@@ -81,7 +81,7 @@ export const emailService = {
       ? `
           <p>Votre demande d'autorisation de voirie a été acceptée avec succès.</p>
           <p>Votre <strong>Ordre de Versement</strong> officiel a été généré et se trouve en pièce jointe au format PDF.</p>
-          <p>Veuillez vous présenter aux guichets de la commune muni de ce document afin d'effectuer le paiement requis.</p>
+          <p>Veuillez vous présenter aux guichets du service technique de la commune muni de ce document afin d'effectuer le paiement requis.</p>
         `
       : `
           <p>Votre demande a été acceptée : <span style="color:#00782B;font-weight:bold">${requestSubject || 'Certificat'}</span>.</p>
