@@ -124,6 +124,7 @@ export const emailService = {
       attachment: [{
         name: attachmentName,
         content: pdfBuffer.toString('base64'),
+        type: 'application/pdf',
       }],
     };
 
