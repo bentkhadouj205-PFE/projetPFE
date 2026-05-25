@@ -455,7 +455,7 @@ export class PDFService {
                numero: data.numero || (data.id ? data.id.substring(0, 8).toUpperCase() : '131'),
                date: data.date || new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase(),
                nom: data.fullName || `${data.citizenFirstName || data.firstName || ''} ${data.citizenLastName || data.lastName || ''}`.trim() || 'CHERIFI MERIEM',
-               projet: data.projet || data.subject || data.type_document || "AUTORISATION DE VOIRIE",
+               projet: data.projet || "CERTIFICAT D'URBANISME",
                montant: data.montant || '3000.00',
                montantLettre: data.montantLettre || 'TROIS MILLE DINARS',
             };
@@ -533,11 +533,6 @@ export class PDFService {
                .text('و بالتفويض', L, sigY + 36, { align: 'center', width: CW })
                .text('مدير التخطيط، متابعة المشاريع التنموية والتعمير', L, sigY + 50, { align: 'center', width: CW })
                .text('إمضاه: شاشو أحمد', L, sigY + 64, { align: 'center', width: CW });
-
-            doc.circle(W - 160, sigY + 60, 38).stroke('#666');
-            doc.font('Helvetica').fontSize(7).fillColor('#888')
-               .text('CACHET OFFICIEL', W - 188, sigY + 52)
-               .text('COMMUNE', W - 174, sigY + 62);
 
             doc.end();
          } catch (err) {
