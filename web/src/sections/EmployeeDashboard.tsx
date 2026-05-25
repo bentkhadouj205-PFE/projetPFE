@@ -15,6 +15,8 @@ import { NotificationsPanel } from '@/components/NotificationsPanel';
 import { CitizenRequestModal } from '@/components/CitizenRequestModal';
 import { BirthActTraitmentDialog } from '@/components/BirthActTraitmentDialog';
 import { CarteSejourTraitmentDialog } from '@/components/CarteSejourTraitmentDialog';
+import { AutorisationVoirieTraitmentDialog } from '@/components/AutorisationVoirieTraitmentDialog';
+import type { VoirieCitizenShape } from '@/components/AutorisationVoirieTraitmentDialog';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -84,6 +86,9 @@ export function EmployeeDashboard({
   const [carteSejourOpen, setCarteSejourOpen] = useState(false);
   const [carteSejourTask, setCarteSejourTask] = useState<TaskWithCitizen | null>(null);
 
+  const [voirieOpen, setVoirieOpen] = useState(false);
+  const [voirieTask, setVoirieTask] = useState<TaskWithCitizen | null>(null);
+
   const myTasks = (tasks.tasks || []) as TaskWithCitizen[];
 
   const serviceLower = (user.service || '').toLowerCase();
@@ -95,6 +100,10 @@ export function EmployeeDashboard({
     serviceLower.includes('résidence') || serviceLower.includes('residence') ||
     positionLower.includes('séjour') || positionLower.includes('sejour') ||
     positionLower.includes('résidence') || positionLower.includes('residence');
+  const isVoirieEmployee =
+    serviceLower.includes('voirie') || positionLower.includes('voirie') ||
+    serviceLower.includes('technique') || positionLower.includes('technique') ||
+    serviceLower.includes('road') || positionLower.includes('road');
 
   const showBirthActColumns = isBirthActEmployee;
   const showCarteSejourColumns = isCarteSejourEmployee;
@@ -131,6 +140,9 @@ export function EmployeeDashboard({
     } else if (isCarteSejourEmployee) {
       setCarteSejourTask(task);
       setCarteSejourOpen(true);
+    } else if (isVoirieEmployee) {
+      setVoirieTask(task);
+      setVoirieOpen(true);
     } else {
       handleOpenModal(task.id);
     }
@@ -606,6 +618,29 @@ export function EmployeeDashboard({
               tasks.fetchRequests();
             } else {
               tasks.completeTask(carteSejourTask.id);
+            }
+          }
+        }}
+      />
+
+      {/* Karim — Autorisation de voirie */}
+      <AutorisationVoirieTraitmentDialog
+        open={voirieOpen}
+        onOpenChange={(open) => { setVoirieOpen(open); if (!open) setVoirieTask(null); }}
+        demandes={voirieTask ? {
+          ...voirieTask.citizen,
+          id: voirieTask.id,
+          photo_cni_path: (voirieTask as any).photo_cni_path,
+          photo_domicile_path: (voirieTask as any).photo_domicile_path,
+        } as VoirieCitizenShape : null}
+        language={language}
+        onCancel={() => setVoirieTask(null)}
+        onValidate={(action) => {
+          if (voirieTask) {
+            if (action === 'rejected') {
+              tasks.fetchRequests();
+            } else {
+              tasks.completeTask(voirieTask.id);
             }
           }
         }}
