@@ -30,6 +30,7 @@ router.post('/generate-and-send', async (req, res) => {
     const { citizenNin, requestSubject, employeeName, comment, requestId } = req.body;
 
     const isResidenceCard = requestSubject && (requestSubject.toLowerCase().includes('résidence') || requestSubject.toLowerCase().includes('residence') || requestSubject.toLowerCase().includes('séjour'));
+    const isVoirie = requestSubject && (requestSubject.toLowerCase().includes('voirie') || requestSubject.toLowerCase().includes('road'));
 
     // 1. جيب الطلب من demandes بالـ NIN
     const { data: demande } = await supabase
@@ -40,7 +41,7 @@ router.post('/generate-and-send', async (req, res) => {
 
     // 2. جلب بيانات الأكت من Supabase (Only for birth certificates)
     let acte = null;
-    if (!isResidenceCard) {
+    if (!isResidenceCard && !isVoirie) {
       const { data: acteData, error: acteError } = await supabase
         .schema('register')
         .from('actes_naissance')
@@ -89,8 +90,8 @@ router.post('/generate-and-send', async (req, res) => {
       mentions_marginales: acte?.mentions_marginales || '',
     };
 
-    // 4. If Residence Card, fetch legal citizen data
-    if (isResidenceCard) {
+    // 4. If Residence Card or Road Authorization, fetch legal citizen data
+    if (isResidenceCard || isVoirie) {
       const { data: citizen } = await supabase
         .schema('register')
         .from('citizens')
@@ -101,7 +102,9 @@ router.post('/generate-and-send', async (req, res) => {
       console.log('citizen found:', citizen);
 
       if (citizen) {
-        pdfData.fullName        = `${citizen.prenom} ${citizen.nom}`;
+        const fn = citizen.prenom || citizen.first_name || '';
+        const ln = citizen.nom || citizen.last_name || '';
+        pdfData.fullName        = `${fn} ${ln}`.trim();
         pdfData.dateNaissance   = citizen.date_naissance;
         pdfData.lieu_naissance  = citizen.lieu_naissance || citizen.commune;
         pdfData.communeNaissance = citizen.lieu_naissance || citizen.commune;
@@ -110,6 +113,8 @@ router.post('/generate-and-send', async (req, res) => {
         pdfData.adresse         = citizen.adresse;
         pdfData.wilaya          = citizen.wilaya;
         pdfData.commune         = citizen.commune;
+        pdfData.nom             = pdfData.fullName;
+        pdfData.projet          = isVoirie ? "AUTORISATION DE VOIRIE" : (requestSubject || "CERTIFICAT DE RESIDENCE");
       }
     }
 
@@ -141,7 +146,7 @@ router.post('/generate-and-send', async (req, res) => {
     if (updateId) {
       try {
         const now = new Date().toISOString();
-        const dateExpiration = isResidenceCard
+        const dateExpiration = (isResidenceCard || isVoirie)
           ? new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString()   // 6 months
           : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();      // 1 year
 

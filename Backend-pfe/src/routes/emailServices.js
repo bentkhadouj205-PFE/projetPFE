@@ -40,11 +40,14 @@ export async function generateCertificatePDF(input) {
   const rawType = data.subject || data.type_document || data.requestSubject || '';
   const dType = rawType.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const isResidenceCard = dType.includes('residence') || dType.includes('sejour') || dType.includes('carte');
+  const isVoirie = dType.includes('voirie') || dType.includes('road');
 
-  console.log(`[PDF] Type: "${rawType}" → ${isResidenceCard ? 'Résidence' : 'Naissance'}`);
+  console.log(`[PDF] Type: "${rawType}" → ${isResidenceCard ? 'Résidence' : isVoirie ? 'Voirie (Ordre de Versement)' : 'Naissance'}`);
 
   if (isResidenceCard) {
     return await PDFService.generateCarteSejour(data);
+  } else if (isVoirie) {
+    return await PDFService.generateOrdreVersement(data);
   } else {
     return await PDFService.generateActeNaissance(data);
   }
@@ -64,18 +67,38 @@ export const emailService = {
     console.log(`[BREVO] API key: ${apiKey ? '***set***' : 'MISSING!'} | Sender: ${senderEmail}`);
 
 
+    const isResidence = requestSubject && (
+      requestSubject.toLowerCase().includes('résidence') ||
+      requestSubject.toLowerCase().includes('residence') ||
+      requestSubject.toLowerCase().includes('séjour')
+    );
+    const isVoirie = requestSubject && (
+      requestSubject.toLowerCase().includes('voirie') ||
+      requestSubject.toLowerCase().includes('road')
+    );
+
+    const messageBody = isVoirie 
+      ? `
+          <p>Votre demande d'autorisation de voirie a été acceptée avec succès.</p>
+          <p>Votre <strong>Ordre de Versement</strong> officiel a été généré et se trouve en pièce jointe au format PDF.</p>
+          <p>Veuillez vous présenter aux guichets de la commune muni de ce document afin d'effectuer le paiement requis.</p>
+        `
+      : `
+          <p>Votre demande a été acceptée : <span style="color:#00782B;font-weight:bold">${requestSubject || 'Certificat'}</span>.</p>
+          <p>Votre document officiel est joint en format PDF.</p>
+        `;
+
     const htmlContent = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden">
         <div style="background:#00782B;padding:20px;text-align:center">
           <h1 style="color:#fff;margin:0;font-size:22px">Baladiya Digital</h1>
-          <p style="color:#c8f5d8;margin:4px 0 0">Service d'état civil en ligne</p>
+          <p style="color:#c8f5d8;margin:4px 0 0">Services Administratifs en Ligne</p>
         </div>
         <div style="padding:24px">
           <p style="font-size:16px">Bonjour <strong>${citizenFirstName || ''}</strong>,</p>
-          <p>Votre demande a été acceptée : <span style="color:#00782B;font-weight:bold">${requestSubject || 'Certificat'}</span>.</p>
-          <p>Votre document officiel est joint en format PDF.</p>
+          ${messageBody}
           ${comment ? `<p style="background:#f0faf4;padding:12px;border-radius:6px;border-left:4px solid #00782B;color:#00782B;font-style:italic">Remarque : ${comment}</p>` : ''}
-          <p style="color:#888;font-size:13px;margin-top:20px">Traité par : <strong>${employeeName || "service d'état civil"}</strong></p>
+          <p style="color:#888;font-size:13px;margin-top:20px">Traité par : <strong>${employeeName || "administration municipale"}</strong></p>
         </div>
         <div style="background:#f9f9f9;padding:12px;text-align:center;font-size:11px;color:#aaa">
           Baladiya Digital — Document généré automatiquement
@@ -83,16 +106,20 @@ export const emailService = {
       </div>
     `;
 
-    const isResidence = requestSubject && (
-      requestSubject.toLowerCase().includes('résidence') ||
-      requestSubject.toLowerCase().includes('residence')
-    );
-    const attachmentName = isResidence ? 'Carte_de_Residence.pdf' : 'Certificat_de_Naissance.pdf';
+    let attachmentName = 'Certificat_de_Naissance.pdf';
+    let emailSubject = `Votre document est prêt - ${requestSubject || 'Certificat'}`;
+
+    if (isResidence) {
+      attachmentName = 'Carte_de_Residence.pdf';
+    } else if (isVoirie) {
+      attachmentName = 'Ordre_de_Versement.pdf';
+      emailSubject = `Ordre de Versement — ${requestSubject || 'Autorisation de voirie'}`;
+    }
 
     const payload = {
       sender: { name: 'Baladiya Digital', email: senderEmail },
       to: [{ email: citizenEmail, name: citizenFirstName || 'Citoyen' }],
-      subject: `Votre document est prêt - ${requestSubject || 'Certificat'}`,
+      subject: emailSubject,
       htmlContent,
       attachment: [{
         name: attachmentName,

@@ -433,6 +433,118 @@ export class PDFService {
          }
       });
    }
+
+   static generateOrdreVersement(data) {
+      return new Promise((resolve, reject) => {
+         try {
+            const doc = new PDFDocument({ size: 'A4', margin: 50 });
+            const chunks = [];
+            doc.on('data', chunk => chunks.push(chunk));
+            doc.on('end', () => resolve(Buffer.concat(chunks)));
+            doc.on('error', err => reject(err));
+
+            const W = doc.page.width;
+            const L = 50;
+            const R = W - 50;
+            const CW = R - L;
+
+            const d = {
+               wilaya: data.wilaya || 'DE MOSTAGANEM',
+               daira: data.daira || 'DE MOSTAGANEM',
+               commune: data.commune || 'DE MOSTAGANEM',
+               numero: data.numero || (data.id ? data.id.substring(0, 8).toUpperCase() : '131'),
+               date: data.date || new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase(),
+               nom: data.fullName || `${data.citizenFirstName || data.firstName || ''} ${data.citizenLastName || data.lastName || ''}`.trim() || 'CHERIFI MERIEM',
+               projet: data.projet || data.subject || data.type_document || "AUTORISATION DE VOIRIE",
+               montant: data.montant || '3000.00',
+               montantLettre: data.montantLettre || 'TROIS MILLE DINARS',
+            };
+
+            // Ensure uppercase for headers
+            if (typeof d.wilaya === 'string' && !d.wilaya.startsWith('DE ')) {
+               d.wilaya = `DE ${d.wilaya.toUpperCase()}`;
+            } else if (typeof d.wilaya === 'string') {
+               d.wilaya = d.wilaya.toUpperCase();
+            }
+            if (typeof d.daira === 'string' && !d.daira.startsWith('DE ')) {
+               d.daira = `DE ${d.daira.toUpperCase()}`;
+            } else if (typeof d.daira === 'string') {
+               d.daira = d.daira.toUpperCase();
+            }
+            if (typeof d.commune === 'string' && !d.commune.startsWith('DE ')) {
+               d.commune = `DE ${d.commune.toUpperCase()}`;
+            } else if (typeof d.commune === 'string') {
+               d.commune = d.commune.toUpperCase();
+            }
+
+            // Header
+            doc.fontSize(9).font('Helvetica')
+               .text('REPUBLIQUE ALGERIENNE DEMOCRATIQUE & POPULAIRE', L, 45, { align: 'center', width: CW });
+
+            doc.fontSize(8.5)
+               .text(`WILAYA    ${d.wilaya}`, L, 65)
+               .text(`DAIRA     ${d.daira}`, L, 78)
+               .text(`COMMUNE   ${d.commune}`, L, 91)
+               .text(`N°  ........${d.numero}........2026`, L, 104);
+
+            doc.fontSize(10).font('Helvetica-Bold')
+               .text(d.date, 0, 78, { align: 'right', width: W - 50 });
+
+            // Title
+            doc.fontSize(18).font('Helvetica-Bold')
+               .text('Ordre De Versement', L, 130, { align: 'center', width: CW, underline: true });
+
+            // Table
+            const tableTop = 175;
+            const col1W = 140, col2W = 240;
+            const col3W = CW - col1W - col2W;
+            const headerH = 35, dataRowH = 55;
+
+            function drawCell(x, y, w, h, text, opts = {}) {
+               doc.rect(x, y, w, h).stroke('#000');
+               const tOpts = { width: w - 10, align: opts.align || 'center', lineBreak: true };
+               doc.font(opts.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(opts.fontSize || 9);
+               const tY = y + (h - doc.heightOfString(text, tOpts)) / 2;
+               doc.text(text, x + 5, tY, tOpts);
+            }
+
+            // Header row
+            drawCell(L, tableTop, col1W, headerH, 'NOM\n&\nPRENOM', { bold: true, fontSize: 8.5 });
+            drawCell(L + col1W, tableTop, col2W, headerH, 'PROJET', { bold: true });
+            drawCell(L + col1W + col2W, tableTop, col3W, headerH, 'MONTANT', { bold: true });
+
+            // Data row
+            const dataRowY = tableTop + headerH;
+            drawCell(L, dataRowY, col1W, dataRowH, d.nom, { fontSize: 8 });
+            drawCell(L + col1W, dataRowY, col2W, dataRowH, d.projet.toUpperCase(), { bold: true });
+
+            doc.rect(L + col1W + col2W, dataRowY, col3W, dataRowH).stroke('#000');
+            doc.font('Helvetica-Bold').fontSize(13)
+               .text(d.montant, L + col1W + col2W + 5, dataRowY + 8, { width: col3W - 10, align: 'center' });
+            doc.font('Helvetica').fontSize(8)
+               .text(d.montantLettre, L + col1W + col2W + 5, dataRowY + 28, { width: col3W - 10, align: 'center' });
+
+            // Signature
+            const sigY = dataRowY + dataRowH + 50;
+            doc.font('Helvetica-Bold').fontSize(11)
+               .text('LE DIRECTEUR', L, sigY, { align: 'center', width: CW });
+            doc.font('Helvetica').fontSize(8.5)
+               .text('ع/ رئيس المجلس الشعبي البلدي', L, sigY + 22, { align: 'center', width: CW })
+               .text('و بالتفويض', L, sigY + 36, { align: 'center', width: CW })
+               .text('مدير التخطيط، متابعة المشاريع التنموية والتعمير', L, sigY + 50, { align: 'center', width: CW })
+               .text('إمضاه: شاشو أحمد', L, sigY + 64, { align: 'center', width: CW });
+
+            doc.circle(W - 160, sigY + 60, 38).stroke('#666');
+            doc.font('Helvetica').fontSize(7).fillColor('#888')
+               .text('CACHET OFFICIEL', W - 188, sigY + 52)
+               .text('COMMUNE', W - 174, sigY + 62);
+
+            doc.end();
+         } catch (err) {
+            reject(err);
+         }
+      });
+   }
 }
 
 export default PDFService;
