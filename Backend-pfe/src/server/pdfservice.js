@@ -216,6 +216,9 @@ export class PDFService {
             y += 15;
             doc.font('Helvetica-Bold').text(`Fait à Mostaganem le  ${formatDate(new Date())}`, W - 220, y);
 
+            // Temporarily set bottom margin to 0 for footer to prevent auto page break
+            doc.page.margins.bottom = 0;
+
             const H = 841.89;
             const footerY = H - 85;
             doc.fontSize(8).font('Helvetica').fillColor(gray)
@@ -259,7 +262,8 @@ export class PDFService {
             const H = 841.89;
             const marginX = 40;
             const contentW = W - marginX * 2;
-            const lineH = 22;
+            const lineH = 19;
+            const lineGap = 4;
 
             // Normalise DB row
             const d = {
@@ -301,52 +305,52 @@ export class PDFService {
             y += 28;
             doc.fontSize(8).font('ArabicFont')
                .text(ar('نسخة إلكترونية'), marginX, y, { align: 'center', width: contentW });
-            y += 40;
+            y += 35;
 
             // N° acte
             doc.fontSize(10).font('ArabicFont').fillColor(black);
             doc.text(ar(`رقم الشهادة : ${v(d.numeroChahada, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + 5;
+            y += lineH + lineGap;
 
             // Date & heure
             doc.text(ar(`تاريخ الميلاد : ${v(d.dateNaissance, '.....')}  الساعة : ${v(d.heureNaissance, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + 5;
+            y += lineH + lineGap;
 
             // Lieu naissance
             doc.text(ar(`مكان الميلاد : ${v(d.communeNaissance, '.....')}  ولاية : ${v(d.wilayaNaissance, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + 5;
+            y += lineH + lineGap;
 
             // Nom enfant
             doc.text(ar(`اسم ولقب المولود : ${v(d.fullName, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + 5;
+            y += lineH + lineGap;
 
             // Genre
             doc.text(ar(`الجنس : ${v(d.genre, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + 5;
+            y += lineH + lineGap;
 
             // Père
             doc.text(ar(`ابن / بنت : ${v(d.pereNomPrenom, '.....')}  السن : ${v(d.pereAge, '.....')}  المهنة : ${v(d.pereMetier, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + 5;
+            y += lineH + lineGap;
 
             // Mère
             doc.text(ar(`ومن : ${v(d.mereNomPrenom, '.....')}  السن : ${v(d.mereAge, '.....')}  المهنة : ${v(d.mereMetier, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + 5;
+            y += lineH + lineGap;
 
             // Domicile
             doc.text(ar(`المقيم بـ : ${v(d.domicile, '.....')}  بلدية : ${v(d.domicileCommune, '.....')}  ولاية : ${v(d.domicileWilaya, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + 5;
+            y += lineH + lineGap;
 
             // Date rédaction
             doc.text(ar(`حُرِّرَ بتاريخ : ${v(d.dateRedaction, '.....')}  على الساعة : ${v(d.heureRedaction, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + 5;
+            y += lineH + lineGap;
 
             // Déclarant
             doc.text(ar(`بناءً على تصريح : ${v(d.declarePar, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + 5;
+            y += lineH + lineGap;
 
             // Officier
             doc.text(ar(`ضابط الحالة المدنية : ${v(d.officierEtatCivil, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + 10;
+            y += lineH + lineGap + 3;
 
             // Mentions marginales
             doc.text(ar('الملاحظات الهامشية :'), marginX, y, { align: 'right', width: contentW });
@@ -358,15 +362,18 @@ export class PDFService {
             for (let i = 0; i < 5; i++) {
                doc.fontSize(10).font('ArabicFont').fillColor(black)
                   .text('........................................................................................................................................', marginX, y, { align: 'right', width: contentW });
-               y += 18;
+               y += 16;
             }
 
             // ── DATE / SIGNATURE ─────────────────────────────────────────────
-            y += 15;
+            y += 10;
             doc.fontSize(10).font('ArabicFont').fillColor(black)
                .text(ar(`حُرِّرَ في مستغانم بتاريخ  ${formatDate(new Date())}`), marginX, y, { align: 'left', width: contentW });
 
             // ── FOOTER ───────────────────────────────────────────────────────
+            // Temporarily set bottom margin to 0 for footer to prevent auto page break
+            doc.page.margins.bottom = 0;
+
             const footerY = H - 85;
             doc.fontSize(8).font('ArabicFont').fillColor(gray)
                .text(ar(`١- بالحروف : ${v(d.fullName, '')}`), marginX, footerY, { align: 'right', width: contentW })
