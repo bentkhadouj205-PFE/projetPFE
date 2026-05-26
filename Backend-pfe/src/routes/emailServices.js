@@ -85,7 +85,7 @@ export const emailService = {
       requestSubject.toLowerCase().includes('road')
     );
 
-    const messageBody = isVoirie 
+    const messageBody = isVoirie
       ? `
           <p>Votre demande d'autorisation de voirie a été acceptée avec succès.</p>
           <p>Votre <strong>Ordre de Versement</strong> officiel a été généré et se trouve en pièce jointe au format PDF.</p>
