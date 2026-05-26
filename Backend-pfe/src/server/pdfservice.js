@@ -67,7 +67,16 @@ export class PDFService {
             const black = '#000000';
             const gray = '#666666';
             const W = 595.28;
+            const H = 841.89;
             const marginX = 40;
+
+            // ── WATERMARK ───────────────────────────────────────────────────
+            doc.save();
+            doc.translate(W / 2, H / 2);
+            doc.rotate(-45);
+            doc.font('Helvetica-Bold').fontSize(100).fillColor('#f2f2f2')
+               .text('EXEMPLAIRE', -300, -50, { align: 'center', width: 600 });
+            doc.restore();
 
             // Normalise DB row — supports both real DB column names and legacy field names
             const d = {
@@ -213,8 +222,6 @@ export class PDFService {
 
             // Temporarily set bottom margin to 0 for footer to prevent auto page break
             doc.page.margins.bottom = 0;
-
-            const H = 841.89;
             const footerY = H - 95;
             doc.fontSize(8).font('Helvetica').fillColor(gray)
                .text(`1- En toutes lettres  ${v(d.fullName, '')}`, marginX, footerY)
@@ -257,6 +264,14 @@ export class PDFService {
             const H = 841.89;
             const marginX = 40;
             const contentW = W - marginX * 2;
+
+            // ── WATERMARK ───────────────────────────────────────────────────
+            doc.save();
+            doc.translate(W / 2, H / 2);
+            doc.rotate(-45);
+            doc.font('Helvetica-Bold').fontSize(100).fillColor('#f2f2f2')
+               .text('EXEMPLAIRE', -300, -50, { align: 'center', width: 600 });
+            doc.restore();
 
             // ── Normalise DB row (direct column names from actes_naissance) ──
             const d = {
@@ -305,11 +320,6 @@ export class PDFService {
             doc.fontSize(9).font('ArabicFont')
                .text(ar('نسخة الكترونية'), marginX, y, { align: 'center', width: contentW });
             y += 22;
-
-            // ── TWO-COLUMN SECTION ──────────────────────────────────────────
-            // Left block (acts like the right side in Arabic RTL doc):
-            //   رقم الشهادة + number + date placeholder (../../....)
-            // Right block (acts like left side): the date/time/place fields
 
             const lineH = 20;
             const lineGap = 3;
@@ -375,13 +385,10 @@ export class PDFService {
             doc.text(marginalesText, marginX, y, { width: contentW, align: 'right' });
             y += lineH;
 
-
-            // ── DATE / CITY ──────────────────────────────────────────────────
             y += 10;
             doc.fontSize(10).font('ArabicFont').fillColor(black)
                .text(ar(`حررت بـ مستغانم في ${formatDate(new Date())}`), marginX, y, { align: 'left', width: contentW });
 
-            // ── FOOTER ───────────────────────────────────────────────────────
             doc.page.margins.bottom = 0;
             const footerY = H - 90;
 
