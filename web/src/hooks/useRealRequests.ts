@@ -116,33 +116,8 @@ export function useRealRequests(employeeId: string) {
         { event: '*', schema: 'public', table: 'demandes' },
         (payload) => {
           console.log(' Realtime change detected:', payload);
-
-          if (payload.eventType === 'UPDATE') {
-            setRequests(prev => prev.map(req => {
-              if (req.id !== payload.new.id) return req;
-
-              const rawStatus = (payload.new.status || '').toLowerCase();
-              const st = ['en_attente', 'pending'].includes(rawStatus) ? 'pending'
-                : ['en_traitement', 'in-progress'].includes(rawStatus) ? 'in-progress'
-                  : ['approuve', 'completed', 'termine', 'terminé'].includes(rawStatus) ? 'completed'
-                    : ['rejete', 'rejected', 'refuse', 'refusé'].includes(rawStatus) ? 'rejected'
-                      : rawStatus || 'pending';
-
-              return {
-                ...req,
-                status: st,
-                dateTraitement: payload.new.date_traitement || req.dateTraitement,
-              };
-            }));
-          }
-
-          if (payload.eventType === 'INSERT') {
-            fetchRequests();
-          }
-
-          if (payload.eventType === 'DELETE') {
-            setRequests(prev => prev.filter(req => req.id !== payload.old.id));
-          }
+          // Directly refetch from the API to guarantee the table stays perfectly synced
+          fetchRequests();
         }
       )
       .subscribe((status) => {
