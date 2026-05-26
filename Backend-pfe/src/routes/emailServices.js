@@ -1,8 +1,17 @@
 import { supabase } from '../supabaseClient.js';
 import PDFService from '../server/pdfservice.js';
+import nodemailer from 'nodemailer';
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.SMTP_USER || 'baladiyadigital27@gmail.com',
+    pass: process.env.SMTP_PASS || 'ctrbiowopulkfocs',
+  },
+});
 
 export async function initializeEmail() {
-  console.log('Email Service ready (Brevo API + PDFKit)');
+  console.log('Email Service ready (Gmail SMTP + Brevo Fallback)');
   return true;
 }
 
@@ -64,8 +73,7 @@ export const emailService = {
 
     const apiKey = process.env.BREVO_API_KEY;
     const senderEmail = process.env.SMTP_USER || 'baladiyadigital27@gmail.com';
-    console.log(`[BREVO] API key: ${apiKey ? '***set***' : 'MISSING!'} | Sender: ${senderEmail}`);
-
+    console.log(`[EMAIL] Attempting delivery to: "${citizenEmail}" via SMTP...`);
 
     const isResidence = requestSubject && (
       requestSubject.toLowerCase().includes('résidence') ||
@@ -116,42 +124,61 @@ export const emailService = {
       emailSubject = 'Ordre de Versement — Autorisation de voirie';
     }
 
-    const payload = {
-      sender: { name: 'Baladiya Digital', email: senderEmail },
-      to: [{ email: citizenEmail, name: citizenFirstName || 'Citoyen' }],
-      subject: emailSubject,
-      htmlContent,
-      attachment: [{
-        name: attachmentName,
-        content: pdfBuffer.toString('base64'),
-        type: 'application/pdf',
-      }],
-    };
+    // Try Nodemailer/Gmail SMTP first
+    try {
+      const info = await transporter.sendMail({
+        from: `"Baladiya Digital" <${senderEmail}>`,
+        to: citizenEmail,
+        subject: emailSubject,
+        html: htmlContent,
+        attachments: [{
+          filename: attachmentName,
+          content: pdfBuffer,
+        }],
+      });
+      console.log('[Nodemailer Success] Sent via Gmail SMTP. Message ID:', info.messageId);
+      return { messageId: info.messageId };
+    } catch (smtpErr) {
+      console.warn('[Nodemailer Error] SMTP delivery failed, falling back to Brevo:', smtpErr.message);
 
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'api-key': apiKey,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+      // Fallback to Brevo
+      const payload = {
+        sender: { name: 'Baladiya Digital', email: senderEmail },
+        to: [{ email: citizenEmail, name: citizenFirstName || 'Citoyen' }],
+        subject: emailSubject,
+        htmlContent,
+        attachment: [{
+          name: attachmentName,
+          content: pdfBuffer.toString('base64'),
+          type: 'application/pdf',
+        }],
+      };
 
-    const result = await response.json();
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': apiKey,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-    if (!response.ok) {
-      throw new Error(result.message || `Brevo API error: ${response.status}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || `Brevo API error: ${response.status}`);
+      }
+
+      console.log('[Brevo Success] messageId:', result.messageId);
+      return { messageId: result.messageId };
     }
-
-    console.log('[Brevo Success] messageId:', result.messageId);
-    return { messageId: result.messageId };
   },
 
   async sendRejectionEmail(citizenEmail, citizenFirstName, requestSubject, employeeName, comment) {
     const apiKey = process.env.BREVO_API_KEY;
     const senderEmail = process.env.SMTP_USER || 'baladiyadigital27@gmail.com';
-    console.log(`[BREVO REJECTION] API key: ${apiKey ? '***set***' : 'MISSING!'} | Sender: ${senderEmail}`);
+    console.log(`[EMAIL] Attempting rejection to: "${citizenEmail}" via SMTP...`);
 
     let subjectFr = requestSubject || 'document';
     const subLower = subjectFr.toLowerCase();
@@ -172,7 +199,7 @@ export const emailService = {
         <div style="padding:24px">
           <p style="font-size:16px">Bonjour <strong>${citizenFirstName || ''}</strong>,</p>
           <p>Nous vous informons que votre demande pour le document : <span style="color:#E53E3E;font-weight:bold">${subjectFr}</span> a été <strong>rejetée</strong>.</p>
-
+          ${comment ? `<p style="background:#fff5f5;padding:12px;border-radius:6px;border-left:4px solid #E53E3E;color:#E53E3E;font-style:italic">Remarque : ${comment}</p>` : ''}
           <p style="margin-top:20px;color:#4A5568;">Veuillez soumettre une nouvelle demande en vous assurant que toutes les informations et documents joints sont corrects et lisibles.</p>
           <p style="color:#888;font-size:13px;margin-top:20px">Traité par : <strong>${employeeName || "service d'état civil"}</strong></p>
         </div>
@@ -182,30 +209,45 @@ export const emailService = {
       </div>
     `;
 
-    const payload = {
-      sender: { name: 'Baladiya Digital', email: senderEmail },
-      to: [{ email: citizenEmail, name: citizenFirstName || 'Citoyen' }],
-      subject: `Mise à jour de votre demande - ${subjectFr} rejetée`,
-      htmlContent,
-    };
+    // Try Nodemailer/Gmail SMTP first
+    try {
+      const info = await transporter.sendMail({
+        from: `"Baladiya Digital" <${senderEmail}>`,
+        to: citizenEmail,
+        subject: `Mise à jour de votre demande - ${subjectFr} rejetée`,
+        html: htmlContent,
+      });
+      console.log('[Nodemailer Rejection Success] Sent via Gmail SMTP. Message ID:', info.messageId);
+      return { messageId: info.messageId };
+    } catch (smtpErr) {
+      console.warn('[Nodemailer Rejection Error] SMTP failed, falling back to Brevo:', smtpErr.message);
 
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'api-key': apiKey,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+      // Fallback to Brevo
+      const payload = {
+        sender: { name: 'Baladiya Digital', email: senderEmail },
+        to: [{ email: citizenEmail, name: citizenFirstName || 'Citoyen' }],
+        subject: `Mise à jour de votre demande - ${subjectFr} rejetée`,
+        htmlContent,
+      };
 
-    const result = await response.json();
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': apiKey,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-    if (!response.ok) {
-      throw new Error(result.message || `Brevo API error: ${response.status}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || `Brevo API error: ${response.status}`);
+      }
+
+      console.log('[Brevo Rejection Success] messageId:', result.messageId);
+      return { messageId: result.messageId };
     }
-
-    console.log('[Brevo Rejection Success] messageId:', result.messageId);
-    return { messageId: result.messageId };
   }
 };
