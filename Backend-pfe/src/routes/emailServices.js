@@ -3,11 +3,14 @@ import PDFService from '../server/pdfservice.js';
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.SMTP_USER || 'baladiyadigital27@gmail.com',
     pass: process.env.SMTP_PASS || 'ctrbiowopulkfocs',
   },
+  family: 4 // Force IPv4 to prevent ENETUNREACH on broken IPv6 networks
 });
 
 export async function initializeEmail() {
