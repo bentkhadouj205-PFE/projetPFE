@@ -122,7 +122,10 @@ export class PDFService {
             y += 24;
             doc.fontSize(8).font('Helvetica')
                .text('Copie électronique', 0, y, { align: 'center', width: W });
-            y += 40;
+            y += 12;
+            doc.fontSize(9).font('Helvetica-Bold').fillColor('#b91c1c')
+               .text('EXEMPLAIRE EN GROS', 0, y, { align: 'center', width: W });
+            y += 28;
 
             doc.fontSize(10).font('Helvetica').fillColor(black);
 
@@ -313,7 +316,10 @@ export class PDFService {
             y += 28;
             doc.fontSize(8).font('ArabicFont')
                .text(ar('نسخة الكترونية'), marginX, y, { align: 'center', width: contentW });
-            y += 35;
+            y += 12;
+            doc.fontSize(9).font('ArabicFont').fillColor('#b91c1c')
+               .text(ar('نسخة كاملة (EXEMPLAIRE EN GROS)'), marginX, y, { align: 'center', width: contentW });
+            y += 26;
 
             // ── TWO COLUMN LAYOUT ────────────────────────────────────────────
             const rightColX = 470;
@@ -390,6 +396,8 @@ export class PDFService {
 
             const label1 = ar('١-بكامل الحروف ');
             const label2 = ar('٢-اسم ولقب الولد ');
+            const labelW1 = doc.font('ArabicFont').fontSize(8).widthOfString(label1);
+            const labelW2 = doc.font('ArabicFont').fontSize(8).widthOfString(label2);
 
             // Print headers
             doc.font('ArabicFont').fontSize(8).fillColor(gray)
