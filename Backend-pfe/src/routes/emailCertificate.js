@@ -220,7 +220,7 @@ router.post('/send-official-acte/:acteId', async (req, res) => {
     const { data: acte, error } = await supabase
       .schema('register')
       .from('actes_naissance')
-      .select('nom_prenom, numero_chahada, numero_acte, date_naissance, heure_naissance, wilaya_naissance, commune_naissance, sexe, pere_nom_prenom, pere_age, pere_metier, mere_nom_prenom, mere_age, mere_metier, domicile_commune, domicile_wilaya, heure_redaction, redige_a, declare_par, officier_etat_civil, marginal_notes, wilaya_delivrance, date_delivrance')
+      .select('nom_prenom_enfant, numero_acte, date_naissance, heure_naissance, wilaya_naissance, commune_naissance, genre_enfant, nom_prenom_pere, age_pere, metier_pere, nom_prenom_mere, age_mere, metier_mere, domicile, domicile_commune, domicile_wilaya, date_redaction, heure_redaction, declare_par, officier_etat_civil, mentions_marginales, nin, citizen_id')
       .eq('id', req.params.acteId)
       .single();
 
