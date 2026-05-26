@@ -113,7 +113,7 @@ export const emailService = {
       attachmentName = 'Carte_de_Residence.pdf';
     } else if (isVoirie) {
       attachmentName = 'Ordre_de_Versement.pdf';
-      emailSubject = `Ordre de Versement — ${requestSubject || 'Autorisation de voirie'}`;
+      emailSubject = 'Ordre de Versement — Autorisation de voirie';
     }
 
     const payload = {
@@ -153,6 +153,16 @@ export const emailService = {
     const senderEmail = process.env.SMTP_USER || 'baladiyadigital27@gmail.com';
     console.log(`[BREVO REJECTION] API key: ${apiKey ? '***set***' : 'MISSING!'} | Sender: ${senderEmail}`);
 
+    let subjectFr = requestSubject || 'document';
+    const subLower = subjectFr.toLowerCase();
+    if (subLower.includes('voirie') || subLower.includes('road')) {
+      subjectFr = 'autorisation de voirie';
+    } else if (subLower.includes('residence') || subLower.includes('sejour') || subLower.includes('carte')) {
+      subjectFr = 'carte de résidence';
+    } else if (subLower.includes('naissance') || subLower.includes('birth')) {
+      subjectFr = 'certificat de naissance';
+    }
+
     const htmlContent = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:8px;overflow:hidden">
         <div style="background:#E53E3E;padding:20px;text-align:center">
@@ -161,7 +171,7 @@ export const emailService = {
         </div>
         <div style="padding:24px">
           <p style="font-size:16px">Bonjour <strong>${citizenFirstName || ''}</strong>,</p>
-          <p>Nous vous informons que votre demande pour le document : <span style="color:#E53E3E;font-weight:bold">${requestSubject || 'Document'}</span> a été <strong>rejetée</strong>.</p>
+          <p>Nous vous informons que votre demande pour le document : <span style="color:#E53E3E;font-weight:bold">${subjectFr}</span> a été <strong>rejetée</strong>.</p>
 
           <p style="margin-top:20px;color:#4A5568;">Veuillez soumettre une nouvelle demande en vous assurant que toutes les informations et documents joints sont corrects et lisibles.</p>
           <p style="color:#888;font-size:13px;margin-top:20px">Traité par : <strong>${employeeName || "service d'état civil"}</strong></p>
@@ -175,7 +185,7 @@ export const emailService = {
     const payload = {
       sender: { name: 'Baladiya Digital', email: senderEmail },
       to: [{ email: citizenEmail, name: citizenFirstName || 'Citoyen' }],
-      subject: `Mise à jour de votre demande - ${requestSubject || 'Document'} rejetée`,
+      subject: `Mise à jour de votre demande - ${subjectFr} rejetée`,
       htmlContent,
     };
 

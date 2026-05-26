@@ -64,8 +64,8 @@ router.post('/generate-and-send', async (req, res) => {
       nin: citizenNin,
       wilaya: demande?.wilaya_naissance || req.body.wilaya,
       commune: demande?.commune || req.body.commune,
-      subject: requestSubject || 'Acte de Naissance',
-      type_document: requestSubject || 'Acte de Naissance',
+      subject: requestSubject || 'Certificat de Naissance',
+      type_document: requestSubject || 'Certificat de Naissance',
 
       // From actes_naissance
       numeroActe: acte?.numero_acte || req.body.actNumber,
