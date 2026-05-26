@@ -61,15 +61,36 @@ router.post('/generate-and-send', async (req, res) => {
          citizenForActe = citizenData;
        }
 
-       // Try to query actes_naissance by citizen_id or directly by NIN
-       let query = supabase.schema('register').from('actes_naissance').select('*');
-       if (citizenData) {
-         query = query.or(`citizen_id.eq.${citizenData.id},nin.eq.${citizenNin}`);
-       } else {
-         query = query.eq('nin', citizenNin);
+       const realCitizenId = citizenData?.id;
+       let acteData = null;
+       let acteError = null;
+
+       if (realCitizenId) {
+         const { data, error } = await supabase
+           .schema('register')
+           .from('actes_naissance')
+           .select('*')
+           .eq('citizen_id', realCitizenId)
+           .order('id', { ascending: false })
+           .limit(1)
+           .maybeSingle();
+         acteData = data;
+         acteError = error;
        }
 
-       const { data: acteData, error: acteError } = await query.order('id', { ascending: false }).limit(1).maybeSingle();
+       // Fallback: try by NIN
+       if (!acteData && citizenNin) {
+         const { data, error } = await supabase
+           .schema('register')
+           .from('actes_naissance')
+           .select('*')
+           .eq('nin', citizenNin)
+           .order('id', { ascending: false })
+           .limit(1)
+           .maybeSingle();
+         acteData = data;
+         if (!acteError) acteError = error;
+       }
 
        console.log('acte found:', acteData);
        console.log('acte error:', acteError);
@@ -140,6 +161,13 @@ router.post('/generate-and-send', async (req, res) => {
          officier_etat_civil: acte.officier_etat_civil,
          mentions_marginales: acte.mentions_marginales,
        });
+     } else {
+       // Fallback: citizen basic info only — acte fields will show as dots
+       console.warn(`[WARN] No acte found for citizen ${citizenData?.id} / NIN ${citizenNin}`);
+       pdfData.date_naissance    = citizenData?.date_naissance || '';
+       pdfData.commune_naissance = citizenData?.lieu_naissance || citizenData?.commune || '';
+       pdfData.wilaya_naissance  = citizenData?.wilaya || '';
+       pdfData.nom_prenom_enfant = `${citizenData?.prenom || ''} ${citizenData?.nom || ''}`.trim();
      }
 
     // 4. If Residence Card or Road Authorization, fetch legal citizen data

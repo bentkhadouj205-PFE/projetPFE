@@ -375,11 +375,6 @@ export class PDFService {
             doc.text(marginalesText, marginX, y, { width: contentW, align: 'right' });
             y += lineH;
 
-            for (let i = 0; i < 4; i++) {
-               doc.fontSize(10).font('ArabicFont').fillColor(black)
-                  .text(dots(80), marginX, y, { width: contentW, align: 'right' });
-               y += 17;
-            }
 
             // ── DATE / CITY ──────────────────────────────────────────────────
             y += 10;
