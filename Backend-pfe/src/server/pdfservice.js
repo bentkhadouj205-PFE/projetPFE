@@ -334,9 +334,9 @@ export class PDFService {
             doc.fontSize(10).font('ArabicFont').fillColor(black);
 
             // Left column labels (stacked)
-            doc.text(ar('رقم الشهادة'), stubX, y, { width: stubW, align: 'right' });
-            doc.text(fv(d.numeroActe, 8), stubX, y + lineH, { width: stubW, align: 'right' });
-            doc.text(ar('../../....'), stubX, y + lineH * 2, { width: stubW, align: 'right' });
+            doc.text(ar('رقم الشهادة'), fieldsX, y, { width: stubW, align: 'right' });
+            doc.text(fv(d.numeroActe, 8), fieldsX, y + lineH, { width: stubW, align: 'right' });
+            doc.text(ar('../../....'), fieldsX, y + lineH * 2, { width: stubW, align: 'right' });
 
             // Right column – في يوم / الساعة / ولد(ت)بـ
             doc.text(
@@ -377,6 +377,10 @@ export class PDFService {
             doc.fontSize(10).font('ArabicFont').fillColor(black)
                .text(ar('البيانات الهامشية'), marginX, y, { width: contentW, align: 'right' });
             y += lineH;
+            for (let i = 0; i < 4; i++) {
+               doc.text('........................................................................................................................................', marginX, y, { width: contentW, align: 'right' });
+               y += 18;
+            }
 
             const marginalesText = d.mentionsMarginales
                ? ar(d.mentionsMarginales)
