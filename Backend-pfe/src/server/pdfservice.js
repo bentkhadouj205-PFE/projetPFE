@@ -49,13 +49,13 @@ export class PDFService {
     * It reads `nom_prenom_enfant` (or any other name field) from the DB row
     * and decides which generator to use.
     */
-   static generateActeNaissanceAuto(data) {
-      const nameField = data.nom_prenom_enfant || data.fullName || '';
-      if (isArabic(nameField)) {
-         return PDFService.generateActeNaissanceArabic(data);
-      }
-      return PDFService.generateActeNaissanceFrench(data);
-   }
+    static generateActeNaissance(data) {
+       const nameField = data.nom_prenom_enfant || data.fullName || '';
+       if (isArabic(nameField)) {
+          return PDFService.generateActeNaissanceArabic(data);
+       }
+       return PDFService.generateActeNaissanceFrench(data);
+    }
 
    // ═══════════════════════════════════════════════════════════════════════════
    //  ACTE DE NAISSANCE – FRENCH (original, kept intact)
@@ -246,6 +246,9 @@ export class PDFService {
                bufferPages: true,
             });
 
+            const fontPath = path.join(__dirname, '../../fonts/NotoSansArabic-Regular.ttf');
+            doc.registerFont('ArabicFont', fontPath);
+
             const chunks = [];
             doc.on('data', chunk => chunks.push(chunk));
             doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -288,20 +291,20 @@ export class PDFService {
 
             const drawLine = (label, value, yPos) => {
                const line = ar(`${label} : ${v(value, '................................')}`);
-               doc.fontSize(10).font('Helvetica')
+               doc.fontSize(10).font('ArabicFont')
                   .fillColor(black)
                   .text(line, marginX, yPos, { align: 'right', width: contentW });
             };
 
             // ── HEADER ───────────────────────────────────────────────────────
-            doc.fillColor(black).fontSize(13).font('Helvetica-Bold')
+            doc.fillColor(black).fontSize(13).font('ArabicFont')
                .text(
                   ar('الجمهورية الجزائرية الديمقراطية الشعبية'),
                   marginX, 30,
                   { align: 'center', width: contentW }
                );
 
-            doc.fontSize(9).font('Helvetica')
+            doc.fontSize(9).font('ArabicFont')
                .text(
                   ar('وزارة الداخلية والجماعات المحلية'),
                   marginX, 52,
@@ -315,18 +318,18 @@ export class PDFService {
 
             // ── TITLE ────────────────────────────────────────────────────────
             let y = 95;
-            doc.fontSize(20).font('Helvetica-Bold')
+            doc.fontSize(20).font('ArabicFont')
                .text(ar('شهادة الميلاد'), marginX, y, { align: 'center', width: contentW });
             y += 22;
-            doc.fontSize(8).font('Helvetica')
+            doc.fontSize(8).font('ArabicFont')
                .text(ar('نسخة إلكترونية'), marginX, y, { align: 'center', width: contentW });
             y += 35;
 
             // ── N° ACT (right side) + date de naissance (right side below) ──
             // رقم الشهادة — top right
-            doc.fontSize(10).font('Helvetica-Bold')
+            doc.fontSize(10).font('ArabicFont')
                .text(ar('رقم الشهادة'), marginX, y, { align: 'right', width: contentW });
-            doc.font('Helvetica')
+            doc.font('ArabicFont')
                .text(v(d.numeroChahada, '.....'), marginX, y + 14, { align: 'right', width: contentW });
 
             y += 42;
@@ -340,7 +343,7 @@ export class PDFService {
             const communeLine = ar(
                `بلدية : ${v(d.communeNaissance, '...............')}    ولاية : ${v(d.wilayaNaissance, '...............')}`
             );
-            doc.fontSize(10).font('Helvetica').fillColor(black)
+            doc.fontSize(10).font('ArabicFont').fillColor(black)
                .text(communeLine, marginX, y, { align: 'right', width: contentW });
             y += lineH;
 
@@ -351,7 +354,7 @@ export class PDFService {
             const pereLine = ar(
                `ابن / ابنة : ${v(d.pereNomPrenom, '...............')}    السن : ${v(d.pereAge, '......')}    المهنة : ${v(d.pereMetier, '...............')}`
             );
-            doc.fontSize(10).font('Helvetica').fillColor(black)
+            doc.fontSize(10).font('ArabicFont').fillColor(black)
                .text(pereLine, marginX, y, { align: 'right', width: contentW });
             y += lineH;
 
@@ -359,7 +362,7 @@ export class PDFService {
             const mereLine = ar(
                `و من : ${v(d.mereNomPrenom, '...............')}    السن : ${v(d.mereAge, '......')}    المهنة : ${v(d.mereMetier, '...............')}`
             );
-            doc.fontSize(10).font('Helvetica').fillColor(black)
+            doc.fontSize(10).font('ArabicFont').fillColor(black)
                .text(mereLine, marginX, y, { align: 'right', width: contentW });
             y += lineH;
 
@@ -367,7 +370,7 @@ export class PDFService {
             const domLine = ar(
                `المقيم في : ${v(d.domicile, '...............')}    بلدية : ${v(d.domicileCommune, '...............')}    ولاية : ${v(d.domicileWilaya, '...............')}`
             );
-            doc.fontSize(10).font('Helvetica').fillColor(black)
+            doc.fontSize(10).font('ArabicFont').fillColor(black)
                .text(domLine, marginX, y, { align: 'right', width: contentW });
             y += lineH;
 
@@ -377,12 +380,12 @@ export class PDFService {
             drawLine('ضابط الحالة المدنية', d.officierEtatCivil, y); y += lineH + 5;
 
             // ── MENTIONS MARGINALES ───────────────────────────────────────────
-            doc.fontSize(10).font('Helvetica-Bold').fillColor(black)
+            doc.fontSize(10).font('ArabicFont').fillColor(black)
                .text(ar('الهوامش :'), marginX, y, { align: 'right', width: contentW });
             y += lineH;
 
             if (d.mentions_marginales) {
-               doc.font('Helvetica')
+               doc.font('ArabicFont')
                   .text(ar(d.mentions_marginales), marginX, y, { align: 'right', width: contentW });
                y += lineH;
             }
