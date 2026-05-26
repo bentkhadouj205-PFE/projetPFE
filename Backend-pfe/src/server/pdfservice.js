@@ -392,23 +392,23 @@ export class PDFService {
 
             // 5 dotted lines
             for (let i = 0; i < 5; i++) {
-               doc.fontSize(10).font('Helvetica').fillColor(black)
+               doc.fontSize(10).font('ArabicFont').fillColor(black)
                   .text('........................................................................................................................................', marginX, y, { align: 'right', width: contentW });
                y += 18;
             }
 
             // ── DATE / SIGNATURE ─────────────────────────────────────────────
             y += 15;
-            doc.fontSize(10).font('Helvetica-Bold').fillColor(black)
+            doc.fontSize(10).font('ArabicFont').fillColor(black)
                .text(ar(`حُرِّرَ في مستغانم بتاريخ  ${formatDate(new Date())}`), marginX, y, { align: 'left', width: contentW });
 
             // ── FOOTER ───────────────────────────────────────────────────────
             const footerY = H - 85;
-            doc.fontSize(8).font('Helvetica').fillColor(gray)
+            doc.fontSize(8).font('ArabicFont').fillColor(gray)
                .text(ar(`١- بالحروف : ${v(d.fullName, '')}`), marginX, footerY, { align: 'right', width: contentW })
                .text(ar(`٢- اسم ولقب المولود : ${v(d.fullName, '')}`), marginX, footerY + 12, { align: 'right', width: contentW });
 
-            doc.fillColor(black).font('Helvetica-Bold')
+            doc.fillColor(black).font('ArabicFont')
                .text(ar('مستخرج من السجل الوطني للحالة المدنية'), marginX, footerY + 30, { align: 'right', width: contentW })
                .text(ar('مرجع 7 م.غ.'), marginX, footerY + 42, { align: 'right', width: contentW });
 
