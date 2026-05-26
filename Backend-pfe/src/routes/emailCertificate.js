@@ -37,6 +37,8 @@ router.post('/generate-and-send', async (req, res) => {
       .from('demandes')
       .select('*')
       .eq('nin', citizenNin)
+      .order('id', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
      // 2. جلب بيانات الأكت من Supabase (Only for birth certificates)
@@ -49,6 +51,8 @@ router.post('/generate-and-send', async (req, res) => {
          .from('citizens')
          .select('*')
          .eq('nin', citizenNin)
+         .order('id', { ascending: false })
+         .limit(1)
          .maybeSingle();
 
        console.log('citizen for birth certificate search:', citizenData, citizenError);
@@ -65,7 +69,7 @@ router.post('/generate-and-send', async (req, res) => {
          query = query.eq('nin', citizenNin);
        }
 
-       const { data: acteData, error: acteError } = await query.maybeSingle();
+       const { data: acteData, error: acteError } = await query.order('id', { ascending: false }).limit(1).maybeSingle();
 
        console.log('acte found:', acteData);
        console.log('acte error:', acteError);
@@ -111,6 +115,33 @@ router.post('/generate-and-send', async (req, res) => {
        citizens: citizenForActe,
      };
 
+     if (acte) {
+       Object.assign(pdfData, {
+         // Direct DB column names from actes_naissance
+         numero_acte:        acte.numero_acte,
+         date_naissance:     acte.date_naissance,
+         heure_naissance:    acte.heure_naissance,
+         commune_naissance:  acte.commune_naissance,
+         wilaya_naissance:   acte.wilaya_naissance,
+         nom_prenom_enfant:  acte.nom_prenom_enfant,
+         genre_enfant:       acte.genre_enfant,
+         nom_prenom_pere:    acte.nom_prenom_pere,
+         age_pere:           acte.age_pere,
+         metier_pere:        acte.metier_pere,
+         nom_prenom_mere:    acte.nom_prenom_mere,
+         age_mere:           acte.age_mere,
+         metier_mere:        acte.metier_mere,
+         domicile:           acte.domicile,
+         domicile_commune:   acte.domicile_commune,
+         domicile_wilaya:    acte.domicile_wilaya,
+         date_redaction:     acte.date_redaction,
+         heure_redaction:    acte.heure_redaction,
+         declare_par:        acte.declare_par,
+         officier_etat_civil: acte.officier_etat_civil,
+         mentions_marginales: acte.mentions_marginales,
+       });
+     }
+
     // 4. If Residence Card or Road Authorization, fetch legal citizen data
     if (isResidenceCard || isVoirie) {
       const { data: citizen } = await supabase
@@ -118,6 +149,8 @@ router.post('/generate-and-send', async (req, res) => {
         .from('citizens')
         .select('*')
         .eq('nin', citizenNin)
+        .order('id', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       console.log('citizen found:', citizen);
