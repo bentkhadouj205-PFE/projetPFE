@@ -69,32 +69,32 @@ export class PDFService {
             const W = 595.28;
             const marginX = 40;
 
-             const d = {
-                numeroChahada:    data.numero_acte        || data.numero_chahada   || data.numeroActe      || data.numeroChahada,
-                dateNaissance:    data.date_naissance     || data.date_acte        || data.dateNaissance,
-                heureNaissance:   data.heure_naissance    || data.heureNaissance,
-                communeNaissance: data.commune_naissance  || data.communeNaissance || data.commune,
-                wilayaNaissance:  data.wilaya_naissance   || data.wilayaNaissance  || data.wilaya,
-                // nom_prenom_enfant is the correct DB column — check it first
-                fullName:         data.nom_prenom_enfant  || data.nom_prenom       || data.fullName,
-                // DB column is sexe — not genre_enfant
-                genre:            data.sexe              || data.genre_enfant      || data.genre,
-                pereNomPrenom:    data.pere_nom_prenom   || data.nom_prenom_pere   || data.pereNomPrenom,
-                pereAge:          clean(data.pere_age    || data.age_pere          || data.pereAge),
-                pereMetier:       clean(data.pere_metier || data.metier_pere       || data.pereMetier),
-                mereNomPrenom:    data.mere_nom_prenom   || data.nom_prenom_mere   || data.mereNomPrenom,
-                mereAge:          clean(data.mere_age    || data.age_mere          || data.mereAge),
-                mereMetier:       clean(data.mere_metier || data.metier_mere       || data.mereMetier),
-                domicile:         clean(data.domicile),
-                domicileCommune:  clean(data.domicile_commune  || data.domicileCommune),
-                domicileWilaya:   clean(data.domicile_wilaya   || data.domicileWilaya),
-                dateRedaction:    data.date_redaction    || data.date_acte         || data.created_at,
-                heureRedaction:   data.heure_redaction   || data.heureRedaction,
-                declarePar:       data.declare_par       || data.declarePar,
-                officierEtatCivil:data.officier_etat_civil || data.officierEtatCivil,
-                // DB column is marginal_notes in the query, mentions_marginales in the table
-                mentions_marginales: data.mentions_marginales || data.marginal_notes,
-             };
+            const d = {
+               numeroChahada: data.numero_acte || data.numero_chahada || data.numeroActe || data.numeroChahada,
+               dateNaissance: data.date_naissance || data.date_acte || data.dateNaissance,
+               heureNaissance: data.heure_naissance || data.heureNaissance,
+               communeNaissance: data.commune_naissance || data.communeNaissance || data.commune,
+               wilayaNaissance: data.wilaya_naissance || data.wilayaNaissance || data.wilaya,
+               // nom_prenom_enfant is the correct DB column — check it first
+               fullName: data.nom_prenom_enfant || data.nom_prenom || data.fullName,
+               // DB column is sexe — not genre_enfant
+               genre: data.sexe || data.genre_enfant || data.genre,
+               pereNomPrenom: data.pere_nom_prenom || data.nom_prenom_pere || data.pereNomPrenom,
+               pereAge: clean(data.pere_age || data.age_pere || data.pereAge),
+               pereMetier: clean(data.pere_metier || data.metier_pere || data.pereMetier),
+               mereNomPrenom: data.mere_nom_prenom || data.nom_prenom_mere || data.mereNomPrenom,
+               mereAge: clean(data.mere_age || data.age_mere || data.mereAge),
+               mereMetier: clean(data.mere_metier || data.metier_mere || data.mereMetier),
+               domicile: clean(data.domicile),
+               domicileCommune: clean(data.domicile_commune || data.domicileCommune),
+               domicileWilaya: clean(data.domicile_wilaya || data.domicileWilaya),
+               dateRedaction: data.date_redaction || data.date_acte || data.created_at,
+               heureRedaction: data.heure_redaction || data.heureRedaction,
+               declarePar: data.declare_par || data.declarePar,
+               officierEtatCivil: data.officier_etat_civil || data.officierEtatCivil,
+               // DB column is marginal_notes in the query, mentions_marginales in the table
+               mentions_marginales: data.mentions_marginales || data.marginal_notes,
+            };
 
             const col2 = 150;
             const lineH = 22;
@@ -231,10 +231,6 @@ export class PDFService {
       });
    }
 
-   // ═══════════════════════════════════════════════════════════════════════════
-   //  ACTE DE NAISSANCE – ARABIC (true RTL)
-   // ═══════════════════════════════════════════════════════════════════════════
-
    static generateActeNaissanceArabic(data) {
       return new Promise((resolve, reject) => {
          try {
@@ -367,7 +363,7 @@ export class PDFService {
                const rowY = startY + lineH;
                doc.fontSize(10).font('ArabicFont').fillColor(black);
                let cx = leftColX + leftColW; // start from right edge
-               cx -= doc.widthOfString(lbl1); doc.text(lbl1, cx, rowY); 
+               cx -= doc.widthOfString(lbl1); doc.text(lbl1, cx, rowY);
                cx -= 4; doc.font('Helvetica'); cx -= doc.widthOfString(val1); doc.text(val1, cx, rowY);
                cx -= 8; doc.font('ArabicFont'); cx -= doc.widthOfString(lbl2); doc.text(lbl2, cx, rowY);
                cx -= 4; doc.font('Helvetica'); cx -= doc.widthOfString(val2); doc.text(val2, cx, rowY);
