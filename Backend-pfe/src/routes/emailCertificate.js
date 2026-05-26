@@ -55,26 +55,30 @@ router.post('/generate-and-send', async (req, res) => {
 
        if (citizenData) {
          citizenForActe = citizenData;
-         const { data: acteData, error: acteError } = await supabase
-           .schema('register')
-           .from('actes_naissance')
-           .select('*')
-           .eq('citizen_id', citizenData.id)
-           .maybeSingle();
+       }
 
-         console.log('acte found:', acteData);
-         console.log('acte error:', acteError);
-         if (acteData) {
-           acte = acteData;
-         }
+       // Try to query actes_naissance by citizen_id or directly by NIN
+       let query = supabase.schema('register').from('actes_naissance').select('*');
+       if (citizenData) {
+         query = query.or(`citizen_id.eq.${citizenData.id},nin.eq.${citizenNin}`);
+       } else {
+         query = query.eq('nin', citizenNin);
+       }
+
+       const { data: acteData, error: acteError } = await query.maybeSingle();
+
+       console.log('acte found:', acteData);
+       console.log('acte error:', acteError);
+       if (acteData) {
+         acte = acteData;
        }
      }
 
      // 3. دمج البيانات للـ PDF
      const pdfData = {
        ...req.body,
-       // From demandes
-       fullName: demande ? `${demande.prenom} ${demande.nom}` : (acte?.nom_prenom || acte?.nom_prenom_enfant || req.body.fullName),
+       // From demandes / actes_naissance
+       fullName: acte?.nom_prenom_enfant || (demande ? `${demande.prenom} ${demande.nom}` : (acte?.nom_prenom || req.body.fullName)),
        citizenEmail: demande?.email || req.body.citizenEmail,
        citizenFirstName: demande?.prenom || req.body.citizenFirstName,
        nin: citizenNin,
@@ -84,26 +88,26 @@ router.post('/generate-and-send', async (req, res) => {
        type_document: requestSubject || 'Certificat de Naissance',
 
        // From citizens & actes_naissance
-       numeroActe: acte?.numero_acte || req.body.actNumber,
-       dateNaissance: citizenForActe?.date_naissance || acte?.date_naissance || req.body.dateNaissance || '',
-       heureNaissance: acte?.heure_naissance || '',
+       numeroActe: acte?.numero_acte || req.body.actNumber || req.body.numeroActe,
+       dateNaissance: acte?.date_naissance || citizenForActe?.date_naissance || req.body.dateNaissance || '',
+       heureNaissance: acte?.heure_naissance || req.body.heureNaissance || '',
        communeNaissance: acte?.commune_naissance || citizenForActe?.lieu_naissance || citizenForActe?.commune || demande?.commune || req.body.commune,
        wilayaNaissance: acte?.wilaya_naissance || citizenForActe?.wilaya || demande?.wilaya_naissance || req.body.wilaya,
-       genre: acte?.sexe || acte?.genre_enfant || '',
-       pereNomPrenom: acte?.pere_nom_prenom || acte?.nom_prenom_pere || '',
-       pereAge: clean(acte?.pere_age || acte?.age_pere),
-       pereMetier: clean(acte?.pere_metier || acte?.metier_pere),
-       mereNomPrenom: acte?.mere_nom_prenom || acte?.nom_prenom_mere || '',
-       mereAge: clean(acte?.mere_age || acte?.age_mere),
-       mereMetier: clean(acte?.mere_metier || acte?.metier_mere),
-       domicile: acte?.domicile || citizenForActe?.adresse || '',
-       dateRedaction: acte?.date_acte || acte?.date_redaction || '',
-       heureRedaction: acte?.heure_redaction || '',
-       domicileCommune: clean(acte?.domicile_commune) || citizenForActe?.commune || demande?.commune || req.body.commune,
-       domicileWilaya: clean(acte?.domicile_wilaya) || citizenForActe?.wilaya || demande?.wilaya_naissance || req.body.wilaya,
-       declarePar: acte?.notes || acte?.declare_par || '',
-       officierEtatCivil: acte?.officier_etat_civil || '',
-       mentions_marginales: acte?.notes || acte?.mentions_marginales || '',
+       genre: acte?.genre_enfant || acte?.sexe || req.body.genre || '',
+       pereNomPrenom: acte?.nom_prenom_pere || acte?.pere_nom_prenom || req.body.pereNomPrenom || '',
+       pereAge: clean(acte?.age_pere || acte?.pere_age || req.body.pereAge),
+       pereMetier: clean(acte?.metier_pere || acte?.pere_metier || req.body.pereMetier),
+       mereNomPrenom: acte?.nom_prenom_mere || acte?.mere_nom_prenom || req.body.mereNomPrenom || '',
+       mereAge: clean(acte?.age_mere || acte?.mere_age || req.body.mereAge),
+       mereMetier: clean(acte?.metier_mere || acte?.mere_metier || req.body.mereMetier),
+       domicile: acte?.domicile || citizenForActe?.adresse || req.body.domicile || '',
+       dateRedaction: acte?.date_redaction || acte?.date_acte || req.body.dateRedaction || '',
+       heureRedaction: acte?.heure_redaction || req.body.heureRedaction || '',
+       domicileCommune: clean(acte?.domicile_commune) || citizenForActe?.commune || demande?.commune || req.body.domicileCommune || req.body.commune,
+       domicileWilaya: clean(acte?.domicile_wilaya) || citizenForActe?.wilaya || demande?.wilaya_naissance || req.body.domicileWilaya || req.body.wilaya,
+       declarePar: acte?.declare_par || acte?.notes || req.body.declarePar || '',
+       officierEtatCivil: acte?.officier_etat_civil || req.body.officierEtatCivil || '',
+       mentions_marginales: acte?.mentions_marginales || acte?.notes || req.body.mentions_marginales || '',
        citizens: citizenForActe,
      };
 

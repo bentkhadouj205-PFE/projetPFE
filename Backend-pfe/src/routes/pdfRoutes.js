@@ -37,9 +37,9 @@ router.get('/acte-naissance/:nin', async (req, res) => {
     const { rows } = await registryPool.query(
       `SELECT c.*, a.*
        FROM citizens c
-       LEFT JOIN actes_naissance a ON a.citizen_id = c.id
+       LEFT JOIN actes_naissance a ON (a.nin = c.nin OR a.citizen_id = c.id)
        WHERE c.nin = $1
-       ORDER BY a.created_at DESC
+       ORDER BY a.id DESC
        LIMIT 1`,
       [nin]
     );

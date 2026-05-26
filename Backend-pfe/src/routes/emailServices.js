@@ -26,12 +26,12 @@ export async function generateCertificatePDF(input) {
     data = await fetchActeNaissance(input);
   } else {
     data = input || {};
-    if (!data.pere_nom_prenom && (data.citizen_id || data.citizen_nin)) {
+    if (!data.nom_prenom_pere && (data.citizen_id || data.citizen_nin)) {
       const { data: fullRecord } = await supabase
         .schema('register')
         .from('actes_naissance')
         .select('*')
-        .or(`citizen_id.eq.${data.citizen_id},numero_chahada.eq.${data.actNumber}`)
+        .or(`citizen_id.eq.${data.citizen_id || null},numero_acte.eq.${data.actNumber || data.numeroActe || data.numero_acte || null}`)
         .maybeSingle();
       if (fullRecord) data = { ...fullRecord, ...data };
     }

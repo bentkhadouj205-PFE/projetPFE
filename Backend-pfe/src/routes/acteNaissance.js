@@ -25,7 +25,7 @@ router.get('/:id/pdf', async (req, res) => {
     
     // Send PDF response
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="certificat_naissance_${acteData.numero_acte || acteData.numero_chahada}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="certificat_naissance_${acteData.numero_acte || 'acte'}.pdf"`);
     res.send(pdfBuffer);
     
   } catch (error) {
@@ -43,7 +43,7 @@ router.get('/numero/:numero/pdf', async (req, res) => {
       .schema('register')
       .from('actes_naissance')
       .select('*, citizens(*)')
-      .or(`numero_acte.eq.${numero},numero_chahada.eq.${numero}`)
+      .eq('numero_acte', numero)
       .limit(1)
       .single();
     
