@@ -259,8 +259,9 @@ export class PDFService {
             const H = 841.89;
             const marginX = 40;
             const contentW = W - marginX * 2;
+            const lineH = 22;
 
-            // Normalise DB row (same column names as the DB schema)
+            // Normalise DB row
             const d = {
                numeroChahada: data.numero_acte,
                dateNaissance: data.date_naissance,
@@ -274,7 +275,7 @@ export class PDFService {
                pereMetier: clean(data.metier_pere),
                mereNomPrenom: data.nom_prenom_mere,
                mereAge: clean(data.age_mere),
-               mereMetier: clean(data.metier_mere),
+               mereMetier: clean(data.mere_metier),
                domicile: clean(data.domicile),
                domicileCommune: clean(data.domicile_commune),
                domicileWilaya: clean(data.domicile_wilaya),
@@ -285,112 +286,75 @@ export class PDFService {
                mentions_marginales: data.mentions_marginales,
             };
 
-            // ── Draw a single RTL line (label : value), right-aligned ────────
-            // label and value are raw Arabic strings — ar() will reshape them
-            const lineH = 28;
-
-            const drawLine = (label, value, yPos) => {
-               const line = ar(`${label} : ${v(value, '................................')}`);
-               doc.fontSize(10).font('ArabicFont')
-                  .fillColor(black)
-                  .text(line, marginX, yPos, { align: 'right', width: contentW });
-            };
-
             // ── HEADER ───────────────────────────────────────────────────────
-            doc.fillColor(black).fontSize(13).font('ArabicFont')
-               .text(
-                  ar('الجمهورية الجزائرية الديمقراطية الشعبية'),
-                  marginX, 30,
-                  { align: 'center', width: contentW }
-               );
+            doc.fillColor(black).fontSize(14).font('ArabicFont')
+               .text(ar('الجمهورية الجزائرية الديمقراطية الشعبية'), marginX, 30, { align: 'center', width: contentW });
 
             doc.fontSize(9).font('ArabicFont')
-               .text(
-                  ar('وزارة الداخلية والجماعات المحلية'),
-                  marginX, 52,
-                  { align: 'right', width: contentW }
-               )
-               .text(
-                  ar('السجل الوطني للحالة المدنية'),
-                  marginX, 64,
-                  { align: 'right', width: contentW }
-               );
+               .text(ar('وزارة الداخلية والجماعات المحلية'), marginX, 55, { align: 'right', width: contentW })
+               .text(ar('السجل الوطني للحالة المدنية'), marginX, 70, { align: 'right', width: contentW });
 
             // ── TITLE ────────────────────────────────────────────────────────
-            let y = 95;
+            let y = 100;
             doc.fontSize(20).font('ArabicFont')
                .text(ar('شهادة الميلاد'), marginX, y, { align: 'center', width: contentW });
-            y += 22;
+            y += 28;
             doc.fontSize(8).font('ArabicFont')
                .text(ar('نسخة إلكترونية'), marginX, y, { align: 'center', width: contentW });
-            y += 35;
+            y += 40;
 
-            // ── N° ACT (right side) + date de naissance (right side below) ──
-            // رقم الشهادة — top right
-            doc.fontSize(10).font('ArabicFont')
-               .text(ar('رقم الشهادة'), marginX, y, { align: 'right', width: contentW });
-            doc.font('ArabicFont')
-               .text(v(d.numeroChahada, '.....'), marginX, y + 14, { align: 'right', width: contentW });
+            // N° acte
+            doc.fontSize(10).font('ArabicFont').fillColor(black);
+            doc.text(ar(`رقم الشهادة : ${v(d.numeroChahada, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            y += lineH + 5;
 
-            y += 42;
+            // Date & heure
+            doc.text(ar(`تاريخ الميلاد : ${v(d.dateNaissance, '.....')}  الساعة : ${v(d.heureNaissance, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            y += lineH + 5;
 
-            // ── CONTENT LINES ────────────────────────────────────────────────
-            drawLine('اليوم', d.dateNaissance, y); y += lineH;
-            drawLine('الساعة', d.heureNaissance, y); y += lineH;
-            drawLine('مكان الولادة', d.communeNaissance, y); y += lineH;
+            // Lieu naissance
+            doc.text(ar(`مكان الميلاد : ${v(d.communeNaissance, '.....')}  ولاية : ${v(d.wilayaNaissance, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            y += lineH + 5;
 
-            // بلدية + ولاية on one line
-            const communeLine = ar(
-               `بلدية : ${v(d.communeNaissance, '...............')}    ولاية : ${v(d.wilayaNaissance, '...............')}`
-            );
-            doc.fontSize(10).font('ArabicFont').fillColor(black)
-               .text(communeLine, marginX, y, { align: 'right', width: contentW });
+            // Nom enfant
+            doc.text(ar(`اسم ولقب المولود : ${v(d.fullName, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            y += lineH + 5;
+
+            // Genre
+            doc.text(ar(`الجنس : ${v(d.genre, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            y += lineH + 5;
+
+            // Père
+            doc.text(ar(`ابن / بنت : ${v(d.pereNomPrenom, '.....')}  السن : ${v(d.pereAge, '.....')}  المهنة : ${v(d.pereMetier, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            y += lineH + 5;
+
+            // Mère
+            doc.text(ar(`ومن : ${v(d.mereNomPrenom, '.....')}  السن : ${v(d.mereAge, '.....')}  المهنة : ${v(d.mereMetier, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            y += lineH + 5;
+
+            // Domicile
+            doc.text(ar(`المقيم بـ : ${v(d.domicile, '.....')}  بلدية : ${v(d.domicileCommune, '.....')}  ولاية : ${v(d.domicileWilaya, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            y += lineH + 5;
+
+            // Date rédaction
+            doc.text(ar(`حُرِّرَ بتاريخ : ${v(d.dateRedaction, '.....')}  على الساعة : ${v(d.heureRedaction, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            y += lineH + 5;
+
+            // Déclarant
+            doc.text(ar(`بناءً على تصريح : ${v(d.declarePar, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            y += lineH + 5;
+
+            // Officier
+            doc.text(ar(`ضابط الحالة المدنية : ${v(d.officierEtatCivil, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            y += lineH + 10;
+
+            // Mentions marginales
+            doc.text(ar('الملاحظات الهامشية :'), marginX, y, { align: 'right', width: contentW });
             y += lineH;
-
-            drawLine('اسم ولقب المولود', d.fullName, y); y += lineH;
-            drawLine('الجنس', d.genre, y); y += lineH;
-
-            // ابن/ابنة + سن + مهنة (الأب)
-            const pereLine = ar(
-               `ابن / ابنة : ${v(d.pereNomPrenom, '...............')}    السن : ${v(d.pereAge, '......')}    المهنة : ${v(d.pereMetier, '...............')}`
-            );
-            doc.fontSize(10).font('ArabicFont').fillColor(black)
-               .text(pereLine, marginX, y, { align: 'right', width: contentW });
-            y += lineH;
-
-            // و من + سن + مهنة (الأم)
-            const mereLine = ar(
-               `و من : ${v(d.mereNomPrenom, '...............')}    السن : ${v(d.mereAge, '......')}    المهنة : ${v(d.mereMetier, '...............')}`
-            );
-            doc.fontSize(10).font('ArabicFont').fillColor(black)
-               .text(mereLine, marginX, y, { align: 'right', width: contentW });
-            y += lineH;
-
-            // المقيم + البلدية + الولاية
-            const domLine = ar(
-               `المقيم في : ${v(d.domicile, '...............')}    بلدية : ${v(d.domicileCommune, '...............')}    ولاية : ${v(d.domicileWilaya, '...............')}`
-            );
-            doc.fontSize(10).font('ArabicFont').fillColor(black)
-               .text(domLine, marginX, y, { align: 'right', width: contentW });
-            y += lineH;
-
-            drawLine('حُرِّرَ في', d.dateRedaction, y); y += lineH;
-            drawLine('على الساعة', d.heureRedaction, y); y += lineH;
-            drawLine('بتصريح من السيد/ة', d.declarePar, y); y += lineH;
-            drawLine('ضابط الحالة المدنية', d.officierEtatCivil, y); y += lineH + 5;
-
-            // ── MENTIONS MARGINALES ───────────────────────────────────────────
-            doc.fontSize(10).font('ArabicFont').fillColor(black)
-               .text(ar('الهوامش :'), marginX, y, { align: 'right', width: contentW });
-            y += lineH;
-
             if (d.mentions_marginales) {
-               doc.font('ArabicFont')
-                  .text(ar(d.mentions_marginales), marginX, y, { align: 'right', width: contentW });
+               doc.text(ar(d.mentions_marginales), marginX, y, { align: 'right', width: contentW });
                y += lineH;
             }
-
-            // 5 dotted lines
             for (let i = 0; i < 5; i++) {
                doc.fontSize(10).font('ArabicFont').fillColor(black)
                   .text('........................................................................................................................................', marginX, y, { align: 'right', width: contentW });
