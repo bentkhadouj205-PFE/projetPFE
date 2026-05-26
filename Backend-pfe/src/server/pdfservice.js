@@ -14,10 +14,6 @@ const reshaper = require('arabic-reshaper');
 /** Returns true if the string contains at least one Arabic character */
 const isArabic = (str) => /[\u0600-\u06FF]/.test(str ?? '');
 
-/**
- * Reshape Arabic glyphs + reverse word order so pdfkit (which has no BiDi engine)
- * renders the line correctly when drawn right-aligned.
- */
 const ar = (str) => {
    if (!str) return '';
    return reshaper.convertArabic(String(str)).split(' ').reverse().join(' ');
@@ -40,22 +36,16 @@ const formatDate = (d) => {
 
 export class PDFService {
 
-   // ═══════════════════════════════════════════════════════════════════════════
    //  LANGUAGE DETECTOR  –  auto-detect from the data, no extra DB field needed
-   // ═══════════════════════════════════════════════════════════════════════════
 
-   /**
-    * Call this instead of calling Arabic/French generators manually.
-    * It reads `nom_prenom_enfant` (or any other name field) from the DB row
-    * and decides which generator to use.
-    */
-    static generateActeNaissance(data) {
-       const nameField = data.nom_prenom_enfant || data.fullName || '';
-       if (isArabic(nameField)) {
-          return PDFService.generateActeNaissanceArabic(data);
-       }
-       return PDFService.generateActeNaissanceFrench(data);
-    }
+   static generateActeNaissance(data) {
+      // DB stores child name in 'nom_prenom'; older callers may pass 'nom_prenom_enfant' or 'fullName'
+      const nameField = data.nom_prenom || data.nom_prenom_enfant || data.fullName || '';
+      if (isArabic(nameField)) {
+         return PDFService.generateActeNaissanceArabic(data);
+      }
+      return PDFService.generateActeNaissanceFrench(data);
+   }
 
    // ═══════════════════════════════════════════════════════════════════════════
    //  ACTE DE NAISSANCE – FRENCH (original, kept intact)
@@ -79,29 +69,39 @@ export class PDFService {
             const W = 595.28;
             const marginX = 40;
 
-            // Normalise DB row
+            // Normalise DB row — supports both real DB column names and legacy field names
             const d = {
-               numeroChahada: data.numero_acte,
-               dateNaissance: data.date_naissance,
-               heureNaissance: data.heure_naissance,
-               communeNaissance: data.commune_naissance,
-               wilayaNaissance: data.wilaya_naissance,
-               fullName: data.nom_prenom_enfant,
-               genre: data.genre_enfant,
-               pereNomPrenom: data.nom_prenom_pere,
-               pereAge: clean(data.age_pere),
-               pereMetier: clean(data.metier_pere),
-               mereNomPrenom: data.nom_prenom_mere,
-               mereAge: clean(data.age_mere),
-               mereMetier: clean(data.metier_mere),
-               domicile: clean(data.domicile),
-               domicileCommune: clean(data.domicile_commune),
-               domicileWilaya: clean(data.domicile_wilaya),
-               dateRedaction: data.date_redaction,
-               heureRedaction: data.heure_redaction,
-               declarePar: data.declare_par,
-               officierEtatCivil: data.officier_etat_civil,
-               mentions_marginales: data.mentions_marginales,
+               // numero: DB uses 'numero_acte'
+               numeroChahada: data.numero_acte || data.numero_chahada || data.numeroChahada || data.numeroActe,
+               // date: DB uses 'date_acte'; some callers may pass 'date_naissance'
+               dateNaissance: data.date_naissance || (data.citizens && data.citizens.date_naissance) || data.date_naissance_enfant || data.dateNaissance || data.date_acte,
+               heureNaissance: data.heure_naissance || data.heureNaissance,
+               communeNaissance: data.commune_naissance || (data.citizens && data.citizens.commune) || data.communeNaissance || data.commune,
+               wilayaNaissance: data.wilaya_naissance || (data.citizens && data.citizens.wilaya) || data.wilayaNaissance || data.wilaya,
+               // child name: DB uses 'nom_prenom'
+               fullName: data.nom_prenom || data.nom_prenom_enfant || data.fullName || (data.citizens && (data.citizens.nom_prenom || `${data.citizens.prenom} ${data.citizens.nom}`)),
+               // gender: DB uses 'sexe'
+               genre: data.sexe || data.genre_enfant || data.genre || (data.citizens && data.citizens.sexe),
+               // father: DB uses 'pere_nom_prenom'
+               pereNomPrenom: data.pere_nom_prenom || data.nom_prenom_pere || data.pereNomPrenom,
+               pereAge: clean(data.pere_age || data.age_pere || data.pereAge),
+               pereMetier: clean(data.pere_metier || data.metier_pere || data.pereMetier),
+               // mother: DB uses 'mere_nom_prenom'
+               mereNomPrenom: data.mere_nom_prenom || data.nom_prenom_mere || data.mereNomPrenom,
+               mereAge: clean(data.mere_age || data.age_mere || data.mereAge),
+               mereMetier: clean(data.mere_metier || data.metier_mere || data.mereMetier),
+               // domicile: DB only has domicile_commune and domicile_wilaya
+               domicile: clean(data.domicile || (data.citizens && data.citizens.adresse)),
+               domicileCommune: clean(data.domicile_commune || data.domicileCommune || (data.citizens && data.citizens.commune)),
+               domicileWilaya: clean(data.domicile_wilaya || data.domicileWilaya || (data.citizens && data.citizens.wilaya)),
+               // date redaction: DB doesn't have a dedicated field; fall back to date_acte
+               dateRedaction: data.date_redaction || data.date_acte || data.dateRedaction || data.created_at,
+               heureRedaction: data.heure_redaction || data.heureRedaction,
+               // declarant: DB doesn't have a dedicated field
+               declarePar: data.declare_par || data.notes || data.declarePar,
+               officierEtatCivil: data.officier_etat_civil || data.officierEtatCivil,
+               // notes: DB uses 'notes' instead of 'mentions_marginales'
+               mentions_marginales: data.mentions_marginales || data.notes,
             };
 
             const col2 = 150;
@@ -220,12 +220,12 @@ export class PDFService {
             doc.page.margins.bottom = 0;
 
             const H = 841.89;
-            const footerY = H - 85;
+            const footerY = H - 95;
             doc.fontSize(8).font('Helvetica').fillColor(gray)
                .text(`1- En toutes lettres  ${v(d.fullName, '')}`, marginX, footerY)
                .text(`2- Nom et Prénom de l'enfant  ${v(d.fullName, '')}`, marginX, footerY + 12);
 
-            doc.fillColor(black).font('Helvetica-Bold')
+            doc.fillColor(black).font('Helvetica-Bold').fontSize(8)
                .text("Extrait du Registre National de l'État Civil", marginX, footerY + 30)
                .text('Référence  7 M.G.', marginX, footerY + 42);
 
@@ -267,28 +267,36 @@ export class PDFService {
 
             // Normalise DB row
             const d = {
-               numeroChahada: data.numero_acte,
-               dateNaissance: data.date_naissance,
-               heureNaissance: data.heure_naissance,
-               communeNaissance: data.commune_naissance,
-               wilayaNaissance: data.wilaya_naissance,
-               fullName: data.nom_prenom_enfant,
-               genre: data.genre_enfant,
-               pereNomPrenom: data.nom_prenom_pere,
-               pereAge: clean(data.age_pere),
-               pereMetier: clean(data.metier_pere),
-               mereNomPrenom: data.nom_prenom_mere,
-               mereAge: clean(data.age_mere),
-               mereMetier: clean(data.mere_metier),
-               domicile: clean(data.domicile),
-               domicileCommune: clean(data.domicile_commune),
-               domicileWilaya: clean(data.domicile_wilaya),
-               dateRedaction: data.date_redaction,
-               heureRedaction: data.heure_redaction,
-               declarePar: data.declare_par,
-               officierEtatCivil: data.officier_etat_civil,
-               mentions_marginales: data.mentions_marginales,
+               numeroChahada: data.numero_acte || data.numero_chahada || data.numeroChahada || data.numeroActe,
+               dateNaissance: data.date_naissance || (data.citizens && data.citizens.date_naissance) || data.date_naissance_enfant || data.dateNaissance || data.date_acte,
+               heureNaissance: data.heure_naissance || data.heureNaissance,
+               communeNaissance: data.commune_naissance || (data.citizens && data.citizens.commune) || data.communeNaissance || data.commune,
+               wilayaNaissance: data.wilaya_naissance || (data.citizens && data.citizens.wilaya) || data.wilayaNaissance || data.wilaya,
+               fullName: data.nom_prenom_enfant || data.nom_prenom || data.fullName || (data.citizens && (data.citizens.nom_prenom || `${data.citizens.prenom} ${data.citizens.nom}`)),
+               genre: data.genre_enfant || data.sexe || data.genre || (data.citizens && data.citizens.sexe),
+               pereNomPrenom: data.nom_prenom_pere || data.pere_nom_prenom || data.pereNomPrenom,
+               pereAge: clean(data.age_pere || data.pere_age || data.pereAge),
+               pereMetier: clean(data.metier_pere || data.pere_metier || data.pereMetier),
+               mereNomPrenom: data.nom_prenom_mere || data.mere_nom_prenom || data.mereNomPrenom,
+               mereAge: clean(data.age_mere || data.mere_age || data.mereAge),
+               mereMetier: clean(data.mere_metier || data.mere_metier || data.mereMetier),
+               domicile: clean(data.domicile || (data.citizens && data.citizens.adresse)),
+               domicileCommune: clean(data.domicile_commune || data.domicileCommune || (data.citizens && data.citizens.commune)),
+               domicileWilaya: clean(data.domicile_wilaya || data.domicileWilaya || (data.citizens && data.citizens.wilaya)),
+               dateRedaction: data.date_redaction || data.date_acte || data.created_at || data.dateRedaction,
+               heureRedaction: data.heure_redaction || data.heureRedaction,
+               declarePar: data.declare_par || data.notes || data.declarePar,
+               officierEtatCivil: data.officier_etat_civil || data.officierEtatCivil,
+               mentions_marginales: data.mentions_marginales || data.notes || data.mentions_marginales,
+               nomLatin: data.citizens
+                  ? `${data.citizens.nom || ''} ${data.citizens.prenom || ''}`.trim().toUpperCase()
+                  : (data.nom && data.prenom ? `${data.nom} ${data.prenom}`.trim().toUpperCase() : ''),
             };
+
+            // Fix nested name if query was different
+            if (!d.nomLatin && data.citizens && typeof data.citizens === 'object') {
+               d.nomLatin = `${data.citizens.nom || ''} ${data.citizens.prenom || ''}`.trim().toUpperCase();
+            }
 
             // ── HEADER ───────────────────────────────────────────────────────
             doc.fillColor(black).fontSize(14).font('ArabicFont')
@@ -304,62 +312,65 @@ export class PDFService {
                .text(ar('شهادة الميلاد'), marginX, y, { align: 'center', width: contentW });
             y += 28;
             doc.fontSize(8).font('ArabicFont')
-               .text(ar('نسخة إلكترونية'), marginX, y, { align: 'center', width: contentW });
+               .text(ar('نسخة الكترونية'), marginX, y, { align: 'center', width: contentW });
             y += 35;
 
-            // N° acte
+            // ── TWO COLUMN LAYOUT ────────────────────────────────────────────
+            const rightColX = 470;
+            const rightColW = W - marginX - rightColX;
+            const leftColX = marginX;
+            const leftColW = rightColX - leftColX - 10;
+
+            const startY = y;
+
+            // Draw right column fields
             doc.fontSize(10).font('ArabicFont').fillColor(black);
-            doc.text(ar(`رقم الشهادة : ${v(d.numeroChahada, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            doc.text(ar('رقم الشهادة'), rightColX, startY, { align: 'center', width: rightColW });
+            doc.text(v(d.numeroChahada, '.........'), rightColX, startY + lineH, { align: 'center', width: rightColW });
+            doc.text(formatDate(d.dateNaissance) || '..../../..', rightColX, startY + lineH * 2, { align: 'center', width: rightColW });
+
+            // Draw left column fields
+            doc.text(ar(`في يوم : ${formatDate(d.dateNaissance) || '.......................................'}`), leftColX, startY, { align: 'right', width: leftColW });
+            doc.text(ar(`ولد(ت) بـ : ${v(d.communeNaissance, '....................')} على الساعة : ${v(d.heureNaissance, '....................')}`), leftColX, startY + lineH, { align: 'right', width: leftColW });
+            doc.text(ar(`بلدية : ${v(d.communeNaissance, '....................')} ولاية : ${v(d.wilayaNaissance, '....................')}`), leftColX, startY + lineH * 2, { align: 'right', width: leftColW });
+
+            y = startY + lineH * 3;
+
+            doc.text(ar(`المسمى(ة) : ${v(d.fullName, '............................................................')}`), marginX, y, { align: 'right', width: contentW });
             y += lineH + lineGap;
 
-            // Date & heure
-            doc.text(ar(`تاريخ الميلاد : ${v(d.dateNaissance, '.....')}  الساعة : ${v(d.heureNaissance, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            doc.text(ar(`الجنس : ${v(d.genre, '............................................................')}`), marginX, y, { align: 'right', width: contentW });
             y += lineH + lineGap;
 
-            // Lieu naissance
-            doc.text(ar(`مكان الميلاد : ${v(d.communeNaissance, '.....')}  ولاية : ${v(d.wilayaNaissance, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            doc.text(ar(`ابن(ة) : ${v(d.pereNomPrenom, '....................')} عمره : ${v(d.pereAge, '..........')} مهنة : ${v(d.pereMetier, '....................')}`), marginX, y, { align: 'right', width: contentW });
             y += lineH + lineGap;
 
-            // Nom enfant
-            doc.text(ar(`اسم ولقب المولود : ${v(d.fullName, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            doc.text(ar(`و : ${v(d.mereNomPrenom, '....................')} عمرها : ${v(d.mereAge, '..........')} مهنتها : ${v(d.mereMetier, '....................')}`), marginX, y, { align: 'right', width: contentW });
             y += lineH + lineGap;
 
-            // Genre
-            doc.text(ar(`الجنس : ${v(d.genre, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            doc.text(ar(`الساكنين بـ : ${v(d.domicile, '....................')} بلدية : ${v(d.domicileCommune, '..........')} ولاية : ${v(d.domicileWilaya, '..........')}`), marginX, y, { align: 'right', width: contentW });
             y += lineH + lineGap;
 
-            // Père
-            doc.text(ar(`ابن / بنت : ${v(d.pereNomPrenom, '.....')}  السن : ${v(d.pereAge, '.....')}  المهنة : ${v(d.pereMetier, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            doc.text(ar(`حرر في : ${formatDate(d.dateRedaction) || '....................'} على الساعة : ${v(d.heureRedaction, '..........')}`), marginX, y, { align: 'right', width: contentW });
             y += lineH + lineGap;
 
-            // Mère
-            doc.text(ar(`ومن : ${v(d.mereNomPrenom, '.....')}  السن : ${v(d.mereAge, '.....')}  المهنة : ${v(d.mereMetier, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            doc.text(ar(`بإعلان ادلى به السيد(ة) : ${v(d.declarePar, '............................................................')}`), marginX, y, { align: 'right', width: contentW });
             y += lineH + lineGap;
 
-            // Domicile
-            doc.text(ar(`المقيم بـ : ${v(d.domicile, '.....')}  بلدية : ${v(d.domicileCommune, '.....')}  ولاية : ${v(d.domicileWilaya, '.....')}`), marginX, y, { align: 'right', width: contentW });
+            doc.text(ar('........................................................................................................................................'), marginX, y, { align: 'right', width: contentW });
             y += lineH + lineGap;
 
-            // Date rédaction
-            doc.text(ar(`حُرِّرَ بتاريخ : ${v(d.dateRedaction, '.....')}  على الساعة : ${v(d.heureRedaction, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + lineGap;
-
-            // Déclarant
-            doc.text(ar(`بناءً على تصريح : ${v(d.declarePar, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + lineGap;
-
-            // Officier
-            doc.text(ar(`ضابط الحالة المدنية : ${v(d.officierEtatCivil, '.....')}`), marginX, y, { align: 'right', width: contentW });
-            y += lineH + lineGap + 3;
+            doc.text(ar(`وبعد التلاوة وقع معنا نحن : ${v(d.officierEtatCivil, '........................................')} ضابط الحالة المدنية بالبلدية`), marginX, y, { align: 'right', width: contentW });
+            y += lineH + lineGap + 5;
 
             // Mentions marginales
-            doc.text(ar('الملاحظات الهامشية :'), marginX, y, { align: 'right', width: contentW });
+            doc.font('ArabicFont').text(ar('البيانات الهامشية'), marginX, y, { align: 'right', width: contentW });
             y += lineH;
             if (d.mentions_marginales) {
                doc.text(ar(d.mentions_marginales), marginX, y, { align: 'right', width: contentW });
                y += lineH;
             }
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 3; i++) {
                doc.fontSize(10).font('ArabicFont').fillColor(black)
                   .text('........................................................................................................................................', marginX, y, { align: 'right', width: contentW });
                y += 16;
@@ -368,20 +379,35 @@ export class PDFService {
             // ── DATE / SIGNATURE ─────────────────────────────────────────────
             y += 10;
             doc.fontSize(10).font('ArabicFont').fillColor(black)
-               .text(ar(`حُرِّرَ في مستغانم بتاريخ  ${formatDate(new Date())}`), marginX, y, { align: 'left', width: contentW });
+               .text(ar('حررت بـ .. مستغانم ......في.. '), marginX, y, { align: 'left', width: contentW, continued: true })
+               .font('Helvetica').text(formatDate(new Date()));
 
             // ── FOOTER ───────────────────────────────────────────────────────
             // Temporarily set bottom margin to 0 for footer to prevent auto page break
             doc.page.margins.bottom = 0;
 
-            const footerY = H - 85;
-            doc.fontSize(8).font('ArabicFont').fillColor(gray)
-               .text(ar(`١- بالحروف : ${v(d.fullName, '')}`), marginX, footerY, { align: 'right', width: contentW })
-               .text(ar(`٢- اسم ولقب المولود : ${v(d.fullName, '')}`), marginX, footerY + 12, { align: 'right', width: contentW });
+            const footerY = H - 95;
 
-            doc.fillColor(black).font('ArabicFont')
+            const label1 = ar('١-بكامل الحروف ');
+            const label2 = ar('٢-اسم ولقب الولد ');
+
+            // Print headers
+            doc.font('ArabicFont').fontSize(8).fillColor(gray)
+               .text(ar('الكتابة السابقة للاسم واللقب بالأحرف اللاتينية'), marginX, footerY - 24, { align: 'right', width: contentW })
+               .text('.............................................................................', marginX, footerY - 12, { align: 'right', width: contentW });
+
+            // Print labels
+            doc.text(label1, marginX, footerY, { align: 'right', width: contentW })
+               .text(label2, marginX, footerY + 12, { align: 'right', width: contentW });
+
+            // Print Latin name next to labels
+            doc.font('Helvetica').fontSize(8).fillColor(gray)
+               .text(d.nomLatin || '....................', marginX, footerY, { align: 'right', width: contentW - labelW1 - 5 })
+               .text(d.nomLatin || '....................', marginX, footerY + 12, { align: 'right', width: contentW - labelW2 - 5 });
+
+            doc.fillColor(black).font('ArabicFont').fontSize(8)
                .text(ar('مستخرج من السجل الوطني للحالة المدنية'), marginX, footerY + 30, { align: 'right', width: contentW })
-               .text(ar('مرجع 7 م.غ.'), marginX, footerY + 42, { align: 'right', width: contentW });
+               .text(ar('المرجع م 7'), marginX, footerY + 42, { align: 'right', width: contentW });
 
             doc.end();
          } catch (error) {
@@ -389,11 +415,6 @@ export class PDFService {
          }
       });
    }
-
-   // ═══════════════════════════════════════════════════════════════════════════
-   //  EXISTING METHODS (unchanged)
-   // ═══════════════════════════════════════════════════════════════════════════
-
    static generateCitizenPDF(requestRow) {
       return new Promise((resolve, reject) => {
          try {

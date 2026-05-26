@@ -12,7 +12,7 @@ router.get('/:id/pdf', async (req, res) => {
     const { data: acteData, error } = await supabase
       .schema('register')
       .from('actes_naissance')
-      .select('*')
+      .select('*, citizens(*)')
       .eq('id', id)
       .single();
     
@@ -42,7 +42,7 @@ router.get('/numero/:numero/pdf', async (req, res) => {
     const { data: acteData, error } = await supabase
       .schema('register')
       .from('actes_naissance')
-      .select('*')
+      .select('*, citizens(*)')
       .or(`numero_acte.eq.${numero},numero_chahada.eq.${numero}`)
       .limit(1)
       .single();

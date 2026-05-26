@@ -39,56 +39,73 @@ router.post('/generate-and-send', async (req, res) => {
       .eq('nin', citizenNin)
       .maybeSingle();
 
-    // 2. جلب بيانات الأكت من Supabase (Only for birth certificates)
-    let acte = null;
-    if (!isResidenceCard && !isVoirie) {
-      const { data: acteData, error: acteError } = await supabase
-        .schema('register')
-        .from('actes_naissance')
-        .select('*')
-        .eq('nin', citizenNin)
-        .maybeSingle();
+     // 2. جلب بيانات الأكت من Supabase (Only for birth certificates)
+     let acte = null;
+     let citizenForActe = null;
+     if (!isResidenceCard && !isVoirie) {
+       // First find the citizen to get the correct UUID id
+       const { data: citizenData, error: citizenError } = await supabase
+         .schema('register')
+         .from('citizens')
+         .select('*')
+         .eq('nin', citizenNin)
+         .maybeSingle();
 
-      console.log('acte found:', acteData);
-      console.log('acte error:', acteError);
-      if (acteData) acte = acteData;
-    }
+       console.log('citizen for birth certificate search:', citizenData, citizenError);
 
-    // 3. دمج البيانات للـ PDF
-    const pdfData = {
-      ...req.body,
-      // From demandes
-      fullName: demande ? `${demande.prenom} ${demande.nom}` : (acte?.nom_prenom_enfant || req.body.fullName),
-      citizenEmail: demande?.email || req.body.citizenEmail,
-      citizenFirstName: demande?.prenom || req.body.citizenFirstName,
-      nin: citizenNin,
-      wilaya: demande?.wilaya_naissance || req.body.wilaya,
-      commune: demande?.commune || req.body.commune,
-      subject: requestSubject || 'Certificat de Naissance',
-      type_document: requestSubject || 'Certificat de Naissance',
+       if (citizenData) {
+         citizenForActe = citizenData;
+         const { data: acteData, error: acteError } = await supabase
+           .schema('register')
+           .from('actes_naissance')
+           .select('*')
+           .eq('citizen_id', citizenData.id)
+           .maybeSingle();
 
-      // From actes_naissance
-      numeroActe: acte?.numero_acte || req.body.actNumber,
-      dateNaissance: acte?.date_naissance || req.body.dateNaissance || '',
-      heureNaissance: acte?.heure_naissance || '',
-      communeNaissance: acte?.commune_naissance || demande?.commune || req.body.commune,
-      wilayaNaissance: acte?.wilaya_naissance || demande?.wilaya_naissance || req.body.wilaya,
-      genre: acte?.genre_enfant || '',
-      pereNomPrenom: acte?.nom_prenom_pere || '',
-      pereAge: clean(acte?.age_pere),
-      pereMetier: clean(acte?.metier_pere),
-      mereNomPrenom: acte?.nom_prenom_mere || '',
-      mereAge: clean(acte?.age_mere),
-      mereMetier: clean(acte?.metier_mere),
-      domicile: acte?.domicile || '',
-      dateRedaction: acte?.date_redaction || '',
-      heureRedaction: acte?.heure_redaction || '',
-      domicileCommune: clean(acte?.domicile_commune) || demande?.commune || req.body.commune,
-      domicileWilaya: clean(acte?.domicile_wilaya) || demande?.wilaya_naissance || req.body.wilaya,
-      declarePar: acte?.declare_par || '',
-      officierEtatCivil: acte?.officier_etat_civil || '',
-      mentions_marginales: acte?.mentions_marginales || '',
-    };
+         console.log('acte found:', acteData);
+         console.log('acte error:', acteError);
+         if (acteData) {
+           acte = acteData;
+         }
+       }
+     }
+
+     // 3. دمج البيانات للـ PDF
+     const pdfData = {
+       ...req.body,
+       // From demandes
+       fullName: demande ? `${demande.prenom} ${demande.nom}` : (acte?.nom_prenom || acte?.nom_prenom_enfant || req.body.fullName),
+       citizenEmail: demande?.email || req.body.citizenEmail,
+       citizenFirstName: demande?.prenom || req.body.citizenFirstName,
+       nin: citizenNin,
+       wilaya: demande?.wilaya_naissance || req.body.wilaya,
+       commune: demande?.commune || req.body.commune,
+       subject: requestSubject || 'Certificat de Naissance',
+       type_document: requestSubject || 'Certificat de Naissance',
+
+       // From citizens & actes_naissance
+       numeroActe: acte?.numero_acte || req.body.actNumber,
+       dateNaissance: citizenForActe?.date_naissance || acte?.date_naissance || req.body.dateNaissance || '',
+       heureNaissance: acte?.heure_naissance || '',
+       communeNaissance: acte?.commune_naissance || citizenForActe?.lieu_naissance || citizenForActe?.commune || demande?.commune || req.body.commune,
+       wilayaNaissance: acte?.wilaya_naissance || citizenForActe?.wilaya || demande?.wilaya_naissance || req.body.wilaya,
+       genre: acte?.sexe || acte?.genre_enfant || '',
+       pereNomPrenom: acte?.pere_nom_prenom || acte?.nom_prenom_pere || '',
+       pereAge: clean(acte?.pere_age || acte?.age_pere),
+       pereMetier: clean(acte?.pere_metier || acte?.metier_pere),
+       mereNomPrenom: acte?.mere_nom_prenom || acte?.nom_prenom_mere || '',
+       mereAge: clean(acte?.mere_age || acte?.age_mere),
+       mereMetier: clean(acte?.mere_metier || acte?.metier_mere),
+       domicile: acte?.domicile || citizenForActe?.adresse || '',
+       dateRedaction: acte?.date_acte || acte?.date_redaction || '',
+       heureRedaction: acte?.heure_redaction || '',
+       domicileCommune: clean(acte?.domicile_commune) || citizenForActe?.commune || demande?.commune || req.body.commune,
+       domicileWilaya: clean(acte?.domicile_wilaya) || citizenForActe?.wilaya || demande?.wilaya_naissance || req.body.wilaya,
+       declarePar: acte?.notes || acte?.declare_par || '',
+       officierEtatCivil: acte?.officier_etat_civil || '',
+       mentions_marginales: acte?.notes || acte?.mentions_marginales || '',
+       citizens: citizenForActe,
+     };
 
     // 4. If Residence Card or Road Authorization, fetch legal citizen data
     if (isResidenceCard || isVoirie) {

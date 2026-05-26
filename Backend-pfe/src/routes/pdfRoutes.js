@@ -92,8 +92,9 @@ router.get('/official-acte/:acteId', async (req, res) => {
 
     // Fetch from Supabase (your table: register.actes_naissance)
     const { data: acte, error } = await supabase
+      .schema('register')
       .from('actes_naissance')
-      .select('*')
+      .select('*, citizens(*)')
       .eq('id', acteId)
       .single();
 
