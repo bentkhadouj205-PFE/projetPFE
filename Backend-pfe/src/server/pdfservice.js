@@ -334,9 +334,9 @@ export class PDFService {
             doc.fontSize(10).font('ArabicFont').fillColor(black);
 
             // Left column labels (stacked)
-            doc.text(ar('رقم الشهادة'), stubX, y, { width: stubW, align: 'center' });
-            doc.text(fv(d.numeroActe, 8), stubX, y + lineH, { width: stubW, align: 'center' });
-            doc.text(ar('../../....'), stubX, y + lineH * 2, { width: stubW, align: 'center' });
+            doc.text(ar('رقم الشهادة'), stubX, y, { width: stubW, align: 'right' });
+            doc.text(fv(d.numeroActe, 8), stubX, y + lineH, { width: stubW, align: 'right' });
+            doc.text(ar('../../....'), stubX, y + lineH * 2, { width: stubW, align: 'right' });
 
             // Right column – في يوم / الساعة / ولد(ت)بـ
             doc.text(
