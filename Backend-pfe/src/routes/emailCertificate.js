@@ -219,7 +219,7 @@ router.post('/generate-and-send', async (req, res) => {
       employeeName || 'Service État Civil',
       comment || '',
       pdfBuffer
-    );
+    ).catch(err => console.error('[EMAIL background error]', err?.message || err));
 
     // 6. Update status in DB
     const updateId = requestId || demande?.id;
