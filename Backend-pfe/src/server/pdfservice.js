@@ -124,10 +124,6 @@ export class PDFService {
             doc.fontSize(8).font('Helvetica')
                .text('Copie électronique', 0, y, { align: 'center', width: W });
             y += 12;
-            doc.fontSize(9).font('Helvetica-Bold').fillColor('#b91c1c')
-               .text('EXEMPLAIRE EN GROS', 0, y, { align: 'center', width: W });
-            y += 28;
-
             doc.fontSize(10).font('Helvetica').fillColor(black);
 
             // N° acte (left column)
@@ -336,7 +332,7 @@ export class PDFService {
             // Left column labels (stacked)
             doc.text(ar('رقم الشهادة'), fieldsX, y, { width: stubW, align: 'right' });
             doc.text(fv(d.numeroActe, 8), fieldsX, y + lineH, { width: stubW, align: 'right' });
-            doc.text(ar('../../....'), fieldsX, y + lineH * 2, { width: stubW, align: 'right' });
+
 
             // Right column – في يوم / الساعة / ولد(ت)بـ
             doc.text(
@@ -363,9 +359,9 @@ export class PDFService {
 
             row(`المسمى(ة) ${fv(d.nomPrenomEnfant, 50)}`);
             row(`الجنس ${fv(d.genreEnfant, 55)}`);
-            row(`ابن(ة) ${fv(d.nomPrenomPere, 20)} عمره ${fv(d.agePere, 8)} مهنة ${fv(d.metierPere, 15)}`);
-            row(`و ${fv(d.nomPrenomMere, 20)} عمرها ${fv(d.ageMere, 8)} مهنتها ${fv(d.metierMere, 15)}`);
-            row(`الساكنين ${fv(d.domicile, 15)} بلدية ${fv(d.domicileCommune, 10)} ولاية ${fv(d.domicileWilaya, 10)}`);
+            row(`ابن(ة) ${fv(d.nomPrenomPere, 20)} عمره ${fv(d.agePere, 8)} مهنة ${fv(d.metierPere, '........................')}`);
+            row(`و ${fv(d.nomPrenomMere, 20)} عمرها ${fv(d.ageMere, 8)} مهنتها ${fv(d.metierMere, '........................')}`);
+            row(`الساكنين ${fv(d.domicile, 15)} بلدية ${fv(d.domicileCommune, ' ...................')} ولاية ${fv(d.domicileWilaya, 10)}`);
             row(`حرر في ${fv(d.dateRedaction, 20)} على الساعة ${fv(d.heureRedaction, 10)}`);
             row(`بإعلان ادلى به السيد(ة) ${fv(d.declarePar, 40)}`);
             row(dots(80));
