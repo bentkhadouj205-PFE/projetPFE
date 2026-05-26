@@ -376,13 +376,7 @@ export class PDFService {
             // ── MENTIONS MARGINALES ──────────────────────────────────────────
             doc.fontSize(10).font('ArabicFont').fillColor(black)
                .text(ar('البيانات الهامشية'), marginX, y, { width: contentW, align: 'right' });
-            y += lineH;
-            for (let i = 0; i < 4; i++) {
-               doc.text('........................................................................................................................................', marginX, y, { width: contentW, align: 'right' });
-               y += 18;
-            }
-
-            const marginalesText = d.mentionsMarginales
+            y += lineH; const marginalesText = d.mentionsMarginales
                ? ar(d.mentionsMarginales)
                : dots(80);
 
@@ -390,6 +384,12 @@ export class PDFService {
             y += lineH;
 
             y += 10;
+            for (let i = 0; i < 4; i++) {
+               doc.text('........................................................................................................................................', marginX, y, { width: contentW, align: 'right' });
+               y += 18;
+            }
+
+
             doc.fontSize(10).font('ArabicFont').fillColor(black)
                .text(ar(`حررت بـ مستغانم في ${formatDate(new Date())}`), marginX, y, { align: 'left', width: contentW });
 
