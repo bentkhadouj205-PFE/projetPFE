@@ -132,28 +132,56 @@ export class PDFService {
             const clean = (val) => (!val || String(val).includes('/../') ? '' : val);
 
             // Data Normalization
+            // Priority: camelCase pdfData keys → snake_case DB keys → citizens sub-object
+            const c = data.citizens ?? {};
             const d = {
-               numeroChahada: data.numero_acte ?? data.numeroActe,
-               dateNaissance: data.date_naissance ?? data.dateNaissance,
-               heureNaissance: data.heure_naissance ?? data.heureNaissance,
-               communeNaissance: data.commune_naissance ?? data.communeNaissance,
-               wilayaNaissance: data.wilaya_naissance ?? data.wilayaNaissance,
-               fullName: data.nom_prenom_enfant ?? data.fullName,
-               genre: data.genre_enfant ?? data.genre,
-               pereNomPrenom: data.nom_prenom_pere ?? data.pereNomPrenom,
-               pereAge: clean(data.age_pere ?? data.pereAge),
-               pereMetier: clean(data.metier_pere ?? data.pereMetier),
-               mereNomPrenom: data.nom_prenom_mere ?? data.mereNomPrenom,
-               mereAge: clean(data.age_mere ?? data.mereAge),
-               mereMetier: clean(data.metier_mere ?? data.mereMetier),
-               domicile: clean(data.domicile),
-               domicileCommune: clean(data.domicile_commune ?? data.domicileCommune),
-               domicileWilaya: clean(data.domicile_wilaya ?? data.domicileWilaya),
-               dateRedaction: data.date_redaction ?? data.dateRedaction,
-               heureRedaction: data.heure_redaction ?? data.heureRedaction,
-               declarePar: data.declare_par ?? data.declarePar,
-               officierEtatCivil: data.officier_etat_civil ?? data.officierEtatCivil,
-               mentions_marginales: data.mentions_marginales,
+               // Act number: pdfData.numeroActe → DB numero_acte
+               numeroChahada: data.numeroActe ?? data.numero_acte ?? data.numeroChahada,
+
+               // Birth date: pdfData.dateNaissance → DB date_acte (date_naissance not a DB col)
+               dateNaissance: data.dateNaissance ?? data.date_acte ?? c.date_naissance,
+
+               // Birth time: pdfData.heureNaissance → DB heure_naissance
+               heureNaissance: data.heureNaissance ?? data.heure_naissance,
+
+               // Birth commune/wilaya: pdfData keys → DB keys → citizen
+               communeNaissance: data.communeNaissance ?? data.commune_naissance ?? c.commune ?? c.lieu_naissance,
+               wilayaNaissance: data.wilayaNaissance ?? data.wilaya_naissance ?? c.wilaya,
+
+               // Child name: pdfData.fullName → DB nom_prenom → legacy nom_prenom_enfant
+               fullName: data.fullName ?? data.nom_prenom ?? data.nom_prenom_enfant,
+
+               // Gender: pdfData.genre → DB sexe → legacy genre_enfant
+               genre: data.genre ?? data.sexe ?? data.genre_enfant,
+
+               // Father: pdfData camelCase → DB snake_case
+               pereNomPrenom: data.pereNomPrenom ?? data.pere_nom_prenom ?? data.nom_prenom_pere,
+               pereAge: clean(data.pereAge ?? data.pere_age ?? data.age_pere),
+               pereMetier: clean(data.pereMetier ?? data.pere_metier ?? data.metier_pere),
+
+               // Mother: pdfData camelCase → DB snake_case
+               mereNomPrenom: data.mereNomPrenom ?? data.mere_nom_prenom ?? data.nom_prenom_mere,
+               mereAge: clean(data.mereAge ?? data.mere_age ?? data.age_mere),
+               mereMetier: clean(data.mereMetier ?? data.mere_metier ?? data.metier_mere),
+
+               // Domicile: pdfData.domicile → citizen adresse
+               domicile: clean(data.domicile ?? c.adresse),
+               domicileCommune: clean(data.domicileCommune ?? data.domicile_commune ?? c.commune),
+               domicileWilaya: clean(data.domicileWilaya ?? data.domicile_wilaya ?? c.wilaya),
+
+               // Redaction: pdfData.dateRedaction → DB date_acte; pdfData.heureRedaction → DB heure_redaction
+               dateRedaction: data.dateRedaction ?? data.date_acte ?? data.date_redaction,
+               heureRedaction: data.heureRedaction ?? data.heure_redaction,
+
+               // Declaration & civil officer: pdfData camelCase → DB snake_case
+               declarePar: data.declarePar ?? data.declare_par,
+               officierEtatCivil: data.officierEtatCivil ?? data.officier_etat_civil,
+
+               // Marginal notes: pdfData.mentions_marginales → DB notes
+               mentions_marginales: data.mentions_marginales ?? data.notes,
+
+               // Latin name for footer (citizens record)
+               fullNameLatin: data.fullName ?? data.nom_prenom ?? `${c.prenom ?? ''} ${c.nom ?? ''}`.trim(),
             };
 
             // ── HEADER ───────────────────────────────────────────────────────
@@ -254,9 +282,9 @@ export class PDFService {
             y += lineH + 10;
 
             doc.font('Helvetica-Bold').text("dressé le : ", col2, y, { continued: true })
-               .font('Helvetica').text(v(d.dateRedaction, ''), { continued: true })
+               .font('Helvetica').text(v(formatDate(d.dateRedaction), ''), { continued: true })
                .font('Helvetica-Bold').text("  à heures : ", { continued: true })
-               .font('Helvetica').text(v(d.heureRedaction, '....'), { continued: true })
+               .font('Helvetica').text(v(formatTime(d.heureRedaction), '....'), { continued: true })
                .text(' ...................');
             y += lineH + 10;
 
