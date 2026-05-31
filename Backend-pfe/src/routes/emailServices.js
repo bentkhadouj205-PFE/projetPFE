@@ -1,6 +1,10 @@
 import { supabase } from '../supabaseClient.js';
 import PDFService from '../server/pdfservice.js';
 import nodemailer from 'nodemailer';
+import dns from 'dns';
+
+// Force DNS resolution to prefer IPv4 to completely prevent IPv6 ENETUNREACH errors
+dns.setDefaultResultOrder('ipv4first');
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
