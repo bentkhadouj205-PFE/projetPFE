@@ -14,7 +14,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER || 'baladiyadigital27@gmail.com',
     pass: process.env.SMTP_PASS || 'ctrbiowopulkfocs',
   },
-  family: 4 // Force IPv4 to prevent ENETUNREACH on broken IPv6 networks
+  family: 4, // Force IPv4 to prevent ENETUNREACH on broken IPv6 networks
+  connectionTimeout: 2500, // Fallback to Brevo quickly if port 465 is blocked (2.5 seconds)
+  greetingTimeout: 2000    // Timeout on greeting handshake (2 seconds)
 });
 
 export async function initializeEmail() {

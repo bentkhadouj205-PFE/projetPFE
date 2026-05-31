@@ -243,8 +243,10 @@ router.post('/generate-and-send', async (req, res) => {
           })
           .eq('id', updateId);
 
-        console.log('DB update result:', data);
-        console.log('DB update error:', error);
+        console.log('[Supabase] Request marked as completed successfully');
+        if (error) {
+          console.error('[Supabase Error] Database update failed:', error);
+        }
 
         const io = req.app.get('io');
         if (io) {
@@ -356,8 +358,10 @@ router.post('/reject', async (req, res) => {
           })
           .eq('id', updateId);
 
-        console.log('DB reject update result:', data);
-        console.log('DB reject update error:', error);
+        console.log('[Supabase] Request marked as rejected successfully');
+        if (error) {
+          console.error('[Supabase Error] Database update failed:', error);
+        }
 
         const io = req.app.get('io');
         if (io) {
