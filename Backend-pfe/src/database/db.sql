@@ -70,6 +70,7 @@ CREATE TABLE demandes (
     status demande_status NOT NULL DEFAULT 'en_attente',
     date_demande TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     date_traitement TIMESTAMPTZ,
+    date_expiration TIMESTAMPTZ,
     commentaire TEXT,
     assigned_to UUID REFERENCES employees (id) ON DELETE SET NULL
 );

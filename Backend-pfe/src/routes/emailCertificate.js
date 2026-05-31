@@ -92,11 +92,13 @@ router.post('/generate-and-send', async (req, res) => {
          if (!acteError) acteError = error;
        }
 
-       console.log('acte found:', acteData);
-       console.log('acte error:', acteError);
-       if (acteData) {
-         acte = acteData;
-       }
+        console.log('[Supabase] Acte search result:', acteData ? 'FOUND' : 'NOT FOUND');
+        if (acteError) {
+          console.error('[Supabase Error] Acte fetch failed:', acteError);
+        }
+        if (acteData) {
+          acte = acteData;
+        }
      }
 
      // 3. دمج البيانات للـ PDF
