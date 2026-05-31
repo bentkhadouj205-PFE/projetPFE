@@ -8,15 +8,16 @@ dns.setDefaultResultOrder('ipv4first');
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false, // true for 465, false for other ports (like 587)
   auth: {
     user: process.env.SMTP_USER || 'baladiyadigital27@gmail.com',
     pass: process.env.SMTP_PASS || 'ctrbiowopulkfocs',
   },
   family: 4, // Force IPv4 to prevent ENETUNREACH on broken IPv6 networks
-  connectionTimeout: 2500, // Fallback to Brevo quickly if port 465 is blocked (2.5 seconds)
-  greetingTimeout: 2000    // Timeout on greeting handshake (2 seconds)
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 export async function initializeEmail() {
