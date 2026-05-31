@@ -330,21 +330,21 @@ export class PDFService {
             doc.fontSize(10).font('ArabicFont').fillColor(black);
 
             // Left column labels (stacked)
-            doc.text(ar('رقم الشهادة'), fieldsW, y, { width: stubW, align: 'right' });
-            doc.text(fv(d.numeroActe, 8), fieldsW, y + lineH, { width: stubW, align: 'right' });
+            doc.text(ar('رقم الشهادة'), fieldsX, y, { width: stubW, align: 'right' });
+            doc.text(fv(d.numeroActe, 8), fieldsX, y + lineH, { width: stubW, align: 'right' });
 
 
             // Right column – في يوم / الساعة / ولد(ت)بـ
             doc.text(
-               ar(`     :في يوم ${fv(d.dateNaissance, 30)}`),
+               ar(`في يوم ${fv(d.dateNaissance, 30)}`),
                fieldsX, y, { width: fieldsW, align: 'right' }
             );
             doc.text(
-               ar(`     :على الساعة ${fv(d.heureNaissance, 15)} ولد(ت) بـ ${fv(d.communeNaissance, 15)}`),
+               ar(`على الساعة ${fv(d.heureNaissance, 15)} ولد(ت) بـ ${fv(d.communeNaissance, 15)}`),
                fieldsX, y + lineH, { width: fieldsW, align: 'right' }
             );
             doc.text(
-               ar(`     :بلدية ${fv(d.communeNaissance, 20)} ولاية ${fv(d.wilayaNaissance, 20)}`),
+               ar(`بلدية ${fv(d.communeNaissance, 20)} ولاية ${fv(d.wilayaNaissance, 20)}`),
                fieldsX, y + lineH * 2, { width: fieldsW, align: 'right' }
             );
 
@@ -357,15 +357,15 @@ export class PDFService {
                y += lineH + lineGap;
             };
 
-            row(`     :المسمى(ة) ${fv(d.nomPrenomEnfant, 50)}`);
-            row(`     :الجنس ${fv(d.genreEnfant, 55)}`);
-            row(`     :ابن(ة) ${fv(d.nomPrenomPere, 20)} عمره ${fv(d.agePere, 8)} مهنة ${fv(d.metierPere, '........................')}`);
-            row(`     :و ${fv(d.nomPrenomMere, 20)} عمرها ${fv(d.ageMere, 8)} مهنتها ${fv(d.metierMere, '........................')}`);
-            row(`     :الساكنين ${fv(d.domicile, 15)} بلدية ${fv(d.domicileCommune, ' ...................')} ولاية ${fv(d.domicileWilaya, 10)}`);
-            row(`     :حرر في ${fv(d.dateRedaction, 20)} على الساعة ${fv(d.heureRedaction, 10)}`);
-            row(`     :بإعلان ادلى به السيد(ة) ${fv(d.declarePar, 40)}`);
+            row(`المسمى(ة) ${fv(d.nomPrenomEnfant, 50)}`);
+            row(`الجنس ${fv(d.genreEnfant, 55)}`);
+            row(`ابن(ة) ${fv(d.nomPrenomPere, 20)} عمره ${fv(d.agePere, 8)} مهنة ${fv(d.metierPere, '........................')}`);
+            row(`و ${fv(d.nomPrenomMere, 20)} عمرها ${fv(d.ageMere, 8)} مهنتها ${fv(d.metierMere, '........................')}`);
+            row(`الساكنين ${fv(d.domicile, 15)} بلدية ${fv(d.domicileCommune, ' ...................')} ولاية ${fv(d.domicileWilaya, 10)}`);
+            row(`حرر في ${fv(d.dateRedaction, 20)} على الساعة ${fv(d.heureRedaction, 10)}`);
+            row(`بإعلان ادلى به السيد(ة) ${fv(d.declarePar, 40)}`);
             row(dots(80));
-            row(`     :وبعد التلاوة وقع معنا نحن ${fv(d.officierEtatCivil, 25)} ضابط الحالة المدنية بالبلدية`);
+            row(`وبعد التلاوة وقع معنا نحن ${fv(d.officierEtatCivil, 25)} ضابط الحالة المدنية بالبلدية`);
 
             y += 4;
 

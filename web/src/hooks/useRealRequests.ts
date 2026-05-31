@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { createClient } from '@supabase/supabase-js';
 
@@ -39,9 +39,16 @@ export interface Request {
 export function useRealRequests(employeeId: string) {
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(false);
+  const lastServiceRef = useRef<string | undefined>(undefined);
 
   const fetchRequests = useCallback(async (service?: string) => {
-    if (!employeeId && !service) {
+    // Fallback to last known service if none provided
+    const activeService = service !== undefined ? service : lastServiceRef.current;
+    if (service !== undefined) {
+      lastServiceRef.current = service;
+    }
+
+    if (!employeeId && !activeService) {
       setRequests([]);
       setLoading(false);
       return;
@@ -49,8 +56,8 @@ export function useRealRequests(employeeId: string) {
 
     try {
       setLoading(true);
-      const url = service
-        ? `${API_BASE_URL}/requests?service=${service}`
+      const url = activeService
+        ? `${API_BASE_URL}/requests?service=${activeService}`
         : `${API_BASE_URL}/requests/my-requests/${employeeId}`;
 
       const response = await fetch(url);
