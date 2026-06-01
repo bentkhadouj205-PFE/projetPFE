@@ -70,7 +70,7 @@ const normalizeRequest = (raw: any): RegistrationRequest => ({
   address: raw?.address ?? raw?.adresse ?? raw?.citizen_address ?? '',
   status: mapStatus(raw?.status ?? 'pending'),
   rejectionReason: raw?.rejectionReason ?? raw?.rejection_reason ?? raw?.commentaire ?? raw?.comment,
-  cniScanPath: raw?.cniScanPath ?? raw?.cni_scan_path ?? raw?.cni_recto_path ?? null,
+  cniScanPath: raw?.cniScanPath ?? raw?.cniRectoPath ?? raw?.cni_scan_path ?? raw?.cni_recto_path ?? null,
   selfiePath: raw?.selfiePath ?? raw?.selfie_path ?? raw?.photo_domicile_path ?? null,
   reg: raw?.reg ? {
     firstName: raw.reg.firstName ?? raw.reg.prenom ?? raw.reg.first_name ?? null,
