@@ -166,9 +166,9 @@ router.post('/generate-and-send', async (req, res) => {
      } else {
        // Fallback: citizen basic info only — acte fields will show as dots
        console.warn(`[WARN] No acte found for citizen ${citizenForActe?.id} / NIN ${citizenNin}`);
-       pdfData.date_naissance    = citizenForActe?.date_naissance || '';
+       pdfData.date_naissance    = citizenForActe?.date_naissance || citizenForActe?.date || '';
        pdfData.commune_naissance = citizenForActe?.lieu_naissance || citizenForActe?.commune || '';
-       pdfData.wilaya_naissance  = citizenForActe?.wilaya || '';
+       pdfData.wilaya_naissance  = citizenForActe?.wilaya_naissance || citizenForActe?.wilaya || '';
        pdfData.nom_prenom_enfant = `${citizenForActe?.prenom || ''} ${citizenForActe?.nom || ''}`.trim();
      }
 
@@ -189,10 +189,10 @@ router.post('/generate-and-send', async (req, res) => {
         const fn = citizen.prenom || citizen.first_name || '';
         const ln = citizen.nom || citizen.last_name || '';
         pdfData.fullName        = `${fn} ${ln}`.trim();
-        pdfData.dateNaissance   = citizen.date_naissance;
+        pdfData.dateNaissance   = citizen.date_naissance || citizen.date;
         pdfData.lieu_naissance  = citizen.lieu_naissance || citizen.commune;
         pdfData.communeNaissance = citizen.lieu_naissance || citizen.commune;
-        pdfData.wilayaNaissance = citizen.wilaya;
+        pdfData.wilayaNaissance = citizen.wilaya_naissance || citizen.wilaya;
         pdfData.domicile        = citizen.adresse;
         pdfData.adresse         = citizen.adresse;
         pdfData.wilaya          = citizen.wilaya;

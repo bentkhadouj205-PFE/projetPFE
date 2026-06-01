@@ -523,10 +523,12 @@ export class PDFService {
 
             const fullName = fv(data.fullName || data.nom_prenom || `${data.firstName || data.citizenFirstName || ''} ${data.lastName || data.citizenLastName || ''}`.trim());
             const dateNaiss = fv(data.date_naissance || data.dateNaissance || '');
-            const lieuNaiss = fv(data.commune_naissance || data.communeNaissance || data.lieu_naissance || '');
+            const communeNaiss = data.commune_naissance || data.communeNaissance || data.lieu_naissance || '';
+            const wilayaNaiss = data.wilaya_naissance || data.wilayaNaissance || data.wilaya || '';
+            const lieuNaiss = fv(communeNaiss ? `${communeNaiss} (Wilaya de ${wilayaNaiss})` : wilayaNaiss);
             const adresse = fv(data.domicile || data.adresse || data.citizen_address || '');
             const nationalite = fv(data.nationalite || data.citizen_nationalite || 'Algérienne');
-            const profession = fv(data.profession || data.citizen_profession || '');
+            const profession = fv(data.profession || data.citizen_profession || 'Algérien(ne)');
             const wilaya = fv(data.wilaya || data.domicile_wilaya || 'Mostaganem');
             const daira = fv(data.daira || data.domicile_daira || wilaya);
             const commune = fv(data.commune || data.domicile_commune || wilaya);
