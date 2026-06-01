@@ -527,12 +527,13 @@ export class PDFService {
             const wilayaNaiss = data.wilaya_naissance || data.wilayaNaissance || data.wilaya || '';
             const lieuNaiss = fv(communeNaiss ? `${communeNaiss} (Wilaya de ${wilayaNaiss})` : wilayaNaiss);
             const adresse = fv(data.domicile || data.adresse || data.citizen_address || '');
-            const nationalite = fv(data.nationalite || data.citizen_nationalite || 'Algérienne');
-            const profession = fv(data.profession || data.citizen_profession || 'Algérien(ne)');
+            const nationalite = fv(data.nationalite || data.citizen_nationalite || 'Algérien(ne)');
+            const profession = fv(data.profession || data.citizen_profession || '');
             const wilaya = fv(data.wilaya || data.domicile_wilaya || 'Mostaganem');
             const daira = fv(data.daira || data.domicile_daira || wilaya);
             const commune = fv(data.commune || data.domicile_commune || wilaya);
             const today = fd(new Date());
+
 
             doc.fillColor(black).fontSize(13).font('Helvetica-Bold')
                .text('RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE', 40, 18, { align: 'center', width: W - 80 });
