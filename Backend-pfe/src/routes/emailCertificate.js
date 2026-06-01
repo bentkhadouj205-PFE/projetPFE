@@ -41,136 +41,136 @@ router.post('/generate-and-send', async (req, res) => {
       .limit(1)
       .maybeSingle();
 
-     // 2. جلب بيانات الأكت من Supabase (Only for birth certificates)
-     let acte = null;
-     let citizenForActe = null;
-     if (!isResidenceCard && !isVoirie) {
-       // First find the citizen to get the correct UUID id
-       const { data: citizenData, error: citizenError } = await supabase
-         .schema('register')
-         .from('citizens')
-         .select('*')
-         .eq('nin', citizenNin)
-         .order('id', { ascending: false })
-         .limit(1)
-         .maybeSingle();
+    // 2. جلب بيانات الأكت من Supabase (Only for birth certificates)
+    let acte = null;
+    let citizenForActe = null;
+    if (!isResidenceCard && !isVoirie) {
+      // First find the citizen to get the correct UUID id
+      const { data: citizenData, error: citizenError } = await supabase
+        .schema('register')
+        .from('citizens')
+        .select('*')
+        .eq('nin', citizenNin)
+        .order('id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-       console.log('citizen for birth certificate search:', citizenData, citizenError);
+      console.log('citizen for birth certificate search:', citizenData, citizenError);
 
-       if (citizenData) {
-         citizenForActe = citizenData;
-       }
+      if (citizenData) {
+        citizenForActe = citizenData;
+      }
 
-       const realCitizenId = citizenData?.id;
-       let acteData = null;
-       let acteError = null;
+      const realCitizenId = citizenData?.id;
+      let acteData = null;
+      let acteError = null;
 
-       if (realCitizenId) {
-         const { data, error } = await supabase
-           .schema('register')
-           .from('actes_naissance')
-           .select('*')
-           .eq('citizen_id', realCitizenId)
-           .order('id', { ascending: false })
-           .limit(1)
-           .maybeSingle();
-         acteData = data;
-         acteError = error;
-       }
+      if (realCitizenId) {
+        const { data, error } = await supabase
+          .schema('register')
+          .from('actes_naissance')
+          .select('*')
+          .eq('citizen_id', realCitizenId)
+          .order('id', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        acteData = data;
+        acteError = error;
+      }
 
-       // Fallback: try by NIN
-       if (!acteData && citizenNin) {
-         const { data, error } = await supabase
-           .schema('register')
-           .from('actes_naissance')
-           .select('*')
-           .eq('nin', citizenNin)
-           .order('id', { ascending: false })
-           .limit(1)
-           .maybeSingle();
-         acteData = data;
-         if (!acteError) acteError = error;
-       }
+      // Fallback: try by NIN
+      if (!acteData && citizenNin) {
+        const { data, error } = await supabase
+          .schema('register')
+          .from('actes_naissance')
+          .select('*')
+          .eq('nin', citizenNin)
+          .order('id', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        acteData = data;
+        if (!acteError) acteError = error;
+      }
 
-        console.log('[Supabase] Acte search result:', acteData ? 'FOUND' : 'NOT FOUND');
-        if (acteError) {
-          console.error('[Supabase Error] Acte fetch failed:', acteError);
-        }
-        if (acteData) {
-          acte = acteData;
-        }
-     }
+      console.log('[Supabase] Acte search result:', acteData ? 'FOUND' : 'NOT FOUND');
+      if (acteError) {
+        console.error('[Supabase Error] Acte fetch failed:', acteError);
+      }
+      if (acteData) {
+        acte = acteData;
+      }
+    }
 
-     // 3. دمج البيانات للـ PDF
-     const pdfData = {
-       ...req.body,
-       // From demandes / actes_naissance
-       fullName: acte?.nom_prenom_enfant || (demande ? `${demande.prenom} ${demande.nom}` : (acte?.nom_prenom || req.body.fullName)),
-       citizenEmail: demande?.email || req.body.citizenEmail,
-       citizenFirstName: demande?.prenom || req.body.citizenFirstName,
-       nin: citizenNin,
-       wilaya: demande?.wilaya_naissance || req.body.wilaya,
-       commune: demande?.commune || req.body.commune,
-       subject: requestSubject || 'Certificat de Naissance',
-       type_document: requestSubject || 'Certificat de Naissance',
+    // 3. دمج البيانات للـ PDF
+    const pdfData = {
+      ...req.body,
+      // From demandes / actes_naissance
+      fullName: acte?.nom_prenom_enfant || (demande ? `${demande.prenom} ${demande.nom}` : (acte?.nom_prenom || req.body.fullName)),
+      citizenEmail: demande?.email || req.body.citizenEmail,
+      citizenFirstName: demande?.prenom || req.body.citizenFirstName,
+      nin: citizenNin,
+      wilaya: demande?.wilaya_naissance || req.body.wilaya,
+      commune: demande?.commune || req.body.commune,
+      subject: requestSubject || 'Certificat de Naissance',
+      type_document: requestSubject || 'Certificat de Naissance',
 
-       // From citizens & actes_naissance
-       numeroActe: acte?.numero_acte || req.body.actNumber || req.body.numeroActe,
-       dateNaissance: acte?.date_naissance || citizenForActe?.date_naissance || req.body.dateNaissance || '',
-       heureNaissance: acte?.heure_naissance || req.body.heureNaissance || '',
-       communeNaissance: acte?.commune_naissance || citizenForActe?.lieu_naissance || citizenForActe?.commune || demande?.commune || req.body.commune,
-       wilayaNaissance: acte?.wilaya_naissance || citizenForActe?.wilaya || demande?.wilaya_naissance || req.body.wilaya,
-       genre: acte?.genre_enfant || acte?.sexe || req.body.genre || '',
-       pereNomPrenom: acte?.nom_prenom_pere || acte?.pere_nom_prenom || req.body.pereNomPrenom || '',
-       pereAge: clean(acte?.age_pere || acte?.pere_age || req.body.pereAge),
-       pereMetier: clean(acte?.metier_pere || acte?.pere_metier || req.body.pereMetier),
-       mereNomPrenom: acte?.nom_prenom_mere || acte?.mere_nom_prenom || req.body.mereNomPrenom || '',
-       mereAge: clean(acte?.age_mere || acte?.mere_age || req.body.mereAge),
-       mereMetier: clean(acte?.metier_mere || acte?.mere_metier || req.body.mereMetier),
-       domicile: acte?.domicile || citizenForActe?.adresse || req.body.domicile || '',
-       dateRedaction: acte?.date_redaction || acte?.date_acte || req.body.dateRedaction || '',
-       heureRedaction: acte?.heure_redaction || req.body.heureRedaction || '',
-       domicileCommune: clean(acte?.domicile_commune) || citizenForActe?.commune || demande?.commune || req.body.domicileCommune || req.body.commune,
-       domicileWilaya: clean(acte?.domicile_wilaya) || citizenForActe?.wilaya || demande?.wilaya_naissance || req.body.domicileWilaya || req.body.wilaya,
-       declarePar: acte?.declare_par || acte?.notes || req.body.declarePar || '',
-       officierEtatCivil: acte?.officier_etat_civil || req.body.officierEtatCivil || '',
-       mentions_marginales: acte?.mentions_marginales || acte?.notes || req.body.mentions_marginales || '',
-       citizens: citizenForActe,
-     };
+      // From citizens & actes_naissance
+      numeroActe: acte?.numero_acte || req.body.actNumber || req.body.numeroActe,
+      dateNaissance: acte?.date_naissance || citizenForActe?.date_naissance || req.body.dateNaissance || '',
+      heureNaissance: acte?.heure_naissance || req.body.heureNaissance || '',
+      communeNaissance: acte?.commune_naissance || citizenForActe?.lieu_naissance || citizenForActe?.commune || demande?.commune || req.body.commune,
+      wilayaNaissance: acte?.wilaya_naissance || citizenForActe?.wilaya || demande?.wilaya_naissance || req.body.wilaya,
+      genre: acte?.genre_enfant || acte?.sexe || req.body.genre || '',
+      pereNomPrenom: acte?.nom_prenom_pere || acte?.pere_nom_prenom || req.body.pereNomPrenom || '',
+      pereAge: clean(acte?.age_pere || acte?.pere_age || req.body.pereAge),
+      pereMetier: clean(acte?.metier_pere || acte?.pere_metier || req.body.pereMetier),
+      mereNomPrenom: acte?.nom_prenom_mere || acte?.mere_nom_prenom || req.body.mereNomPrenom || '',
+      mereAge: clean(acte?.age_mere || acte?.mere_age || req.body.mereAge),
+      mereMetier: clean(acte?.metier_mere || acte?.mere_metier || req.body.mereMetier),
+      domicile: acte?.domicile || citizenForActe?.adresse || req.body.domicile || '',
+      dateRedaction: acte?.date_redaction || acte?.date_acte || req.body.dateRedaction || '',
+      heureRedaction: acte?.heure_redaction || req.body.heureRedaction || '',
+      domicileCommune: clean(acte?.domicile_commune) || citizenForActe?.commune || demande?.commune || req.body.domicileCommune || req.body.commune,
+      domicileWilaya: clean(acte?.domicile_wilaya) || citizenForActe?.wilaya || demande?.wilaya_naissance || req.body.domicileWilaya || req.body.wilaya,
+      declarePar: acte?.declare_par || acte?.notes || req.body.declarePar || '',
+      officierEtatCivil: acte?.officier_etat_civil || req.body.officierEtatCivil || '',
+      mentions_marginales: acte?.mentions_marginales || acte?.notes || req.body.mentions_marginales || '',
+      citizens: citizenForActe,
+    };
 
-     if (acte) {
-       Object.assign(pdfData, {
-         // Direct DB column names from actes_naissance
-         numero_acte:        acte.numero_acte,
-         date_naissance:     acte.date_naissance,
-         heure_naissance:    acte.heure_naissance,
-         commune_naissance:  acte.commune_naissance,
-         wilaya_naissance:   acte.wilaya_naissance,
-         nom_prenom_enfant:  acte.nom_prenom_enfant,
-         genre_enfant:       acte.genre_enfant,
-         nom_prenom_pere:    acte.nom_prenom_pere,
-         age_pere:           acte.age_pere,
-         metier_pere:        acte.metier_pere,
-         nom_prenom_mere:    acte.nom_prenom_mere,
-         age_mere:           acte.age_mere,
-         metier_mere:        acte.metier_mere,
-         domicile:           acte.domicile,
-         domicile_commune:   acte.domicile_commune,
-         domicile_wilaya:    acte.domicile_wilaya,
-         date_redaction:     acte.date_redaction,
-         heure_redaction:    acte.heure_redaction,
-         declare_par:        acte.declare_par,
-         officier_etat_civil: acte.officier_etat_civil,
-         mentions_marginales: acte.mentions_marginales,
-       });
-     } else {
-       // Fallback: citizen basic info only — acte fields will show as dots
-       console.warn(`[WARN] No acte found for citizen ${citizenForActe?.id} / NIN ${citizenNin}`);
-       pdfData.date_naissance    = citizenForActe?.date_naissance || citizenForActe?.date || '';
-       pdfData.commune_naissance = citizenForActe?.lieu_naissance || citizenForActe?.commune || '';
-       pdfData.wilaya_naissance  = citizenForActe?.wilaya_naissance || citizenForActe?.wilaya || '';
-       pdfData.nom_prenom_enfant = `${citizenForActe?.prenom || ''} ${citizenForActe?.nom || ''}`.trim();
-     }
+    if (acte) {
+      Object.assign(pdfData, {
+        // Direct DB column names from actes_naissance
+        numero_acte: acte.numero_acte,
+        date_naissance: acte.date_naissance,
+        heure_naissance: acte.heure_naissance,
+        commune_naissance: acte.commune_naissance,
+        wilaya_naissance: acte.wilaya_naissance,
+        nom_prenom_enfant: acte.nom_prenom_enfant,
+        genre_enfant: acte.genre_enfant,
+        nom_prenom_pere: acte.nom_prenom_pere,
+        age_pere: acte.age_pere,
+        metier_pere: acte.metier_pere,
+        nom_prenom_mere: acte.nom_prenom_mere,
+        age_mere: acte.age_mere,
+        metier_mere: acte.metier_mere,
+        domicile: acte.domicile,
+        domicile_commune: acte.domicile_commune,
+        domicile_wilaya: acte.domicile_wilaya,
+        date_redaction: acte.date_redaction,
+        heure_redaction: acte.heure_redaction,
+        declare_par: acte.declare_par,
+        officier_etat_civil: acte.officier_etat_civil,
+        mentions_marginales: acte.mentions_marginales,
+      });
+    } else {
+      // Fallback: citizen basic info only — acte fields will show as dots
+      console.warn(`[WARN] No acte found for citizen ${citizenForActe?.id} / NIN ${citizenNin}`);
+      pdfData.date_naissance = citizenForActe?.date_naissance || citizenForActe?.date || '';
+      pdfData.commune_naissance = citizenForActe?.lieu_naissance || citizenForActe?.commune || '';
+      pdfData.wilaya_naissance = citizenForActe?.wilaya_naissance || citizenForActe?.wilaya || '';
+      pdfData.nom_prenom_enfant = `${citizenForActe?.prenom || ''} ${citizenForActe?.nom || ''}`.trim();
+    }
 
     // 4. If Residence Card or Road Authorization, fetch legal citizen data
     if (isResidenceCard || isVoirie) {
@@ -191,28 +191,28 @@ router.post('/generate-and-send', async (req, res) => {
         if (fn || ln) pdfData.fullName = `${fn} ${ln}`.trim();
 
         // Né(e) à — birth place
-        pdfData.lieuNaissance    = citizen.lieu_naissance || citizen.commune || '';
+        pdfData.lieuNaissance = citizen.lieu_naissance || citizen.commune || '';
         pdfData.communeNaissance = citizen.lieu_naissance || citizen.commune || pdfData.communeNaissance;
-        pdfData.wilayaNaissance  = citizen.wilaya_naissance || citizen.wilaya || pdfData.wilayaNaissance;
+        pdfData.wilayaNaissance = citizen.wilaya_naissance || citizen.wilaya || pdfData.wilayaNaissance;
 
         // le — birth date
-        pdfData.dateNaissance    = citizen.date || citizen.date_naissance || pdfData.dateNaissance;
+        pdfData.dateNaissance = citizen.date || citizen.date_naissance || pdfData.dateNaissance;
 
         // Domicile — try both column names
-        pdfData.domicile         = citizen.adresse || citizen.address || pdfData.domicile;
-        pdfData.adresse          = citizen.adresse || citizen.address || pdfData.adresse;
+        pdfData.domicile = citizen.adresse || citizen.address || pdfData.domicile;
+        pdfData.adresse = citizen.adresse || citizen.address || pdfData.adresse;
 
-        // ✅ Profession — was missing proper fallback chain
-        pdfData.profession       = citizen.profession || citizen.job || citizen.metier || '';
+        // Profession — was missing proper fallback chain
+        pdfData.profession = citizen.profession || citizen.job || citizen.metier || '';
 
         // Nationalité (always Algérien for this system)
-        pdfData.nationalite      = citizen.nationalite || 'Algérien(ne)';
+        pdfData.nationalite = citizen.nationalite || 'Algérien(ne)';
 
-        pdfData.wilaya           = citizen.wilaya || pdfData.wilaya;
-        pdfData.commune          = citizen.commune || pdfData.commune;
-        pdfData.nom              = pdfData.fullName;
-        pdfData.projet           = isVoirie 
-          ? "AUTORISATION DE VOIRIE" 
+        pdfData.wilaya = citizen.wilaya || pdfData.wilaya;
+        pdfData.commune = citizen.commune || pdfData.commune;
+        pdfData.nom = pdfData.fullName;
+        pdfData.projet = isVoirie
+          ? "AUTORISATION DE VOIRIE"
           : (requestSubject || "CERTIFICAT DE RESIDENCE");
       }
     }
