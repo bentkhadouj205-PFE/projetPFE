@@ -189,17 +189,31 @@ router.post('/generate-and-send', async (req, res) => {
         const fn = citizen.prenom || citizen.first_name || '';
         const ln = citizen.nom || citizen.last_name || '';
         if (fn || ln) pdfData.fullName = `${fn} ${ln}`.trim();
-        pdfData.dateNaissance   = citizen.date_naissance || citizen.date || pdfData.dateNaissance;
-        pdfData.lieu_naissance  = citizen.lieu_naissance || citizen.commune || pdfData.lieu_naissance;
+
+        // Né(e) à — birth place
+        pdfData.lieuNaissance    = citizen.lieu_naissance || citizen.commune || '';
         pdfData.communeNaissance = citizen.lieu_naissance || citizen.commune || pdfData.communeNaissance;
-        pdfData.wilayaNaissance = citizen.wilaya_naissance || citizen.wilaya || pdfData.wilayaNaissance;
-        pdfData.domicile        = citizen.adresse || citizen.address || pdfData.domicile;
-        pdfData.adresse         = citizen.adresse || citizen.address || pdfData.adresse;
-        pdfData.wilaya          = citizen.wilaya || pdfData.wilaya;
-        pdfData.commune         = citizen.commune || pdfData.commune;
-        pdfData.profession      = citizen.profession || pdfData.profession;
-        pdfData.nom             = pdfData.fullName;
-        pdfData.projet          = isVoirie ? "AUTORISATION DE VOIRIE" : (requestSubject || "CERTIFICAT DE RESIDENCE");
+        pdfData.wilayaNaissance  = citizen.wilaya_naissance || citizen.wilaya || pdfData.wilayaNaissance;
+
+        // le — birth date
+        pdfData.dateNaissance    = citizen.date || citizen.date_naissance || pdfData.dateNaissance;
+
+        // Domicile — try both column names
+        pdfData.domicile         = citizen.adresse || citizen.address || pdfData.domicile;
+        pdfData.adresse          = citizen.adresse || citizen.address || pdfData.adresse;
+
+        // ✅ Profession — was missing proper fallback chain
+        pdfData.profession       = citizen.profession || citizen.job || citizen.metier || '';
+
+        // Nationalité (always Algérien for this system)
+        pdfData.nationalite      = citizen.nationalite || 'Algérien(ne)';
+
+        pdfData.wilaya           = citizen.wilaya || pdfData.wilaya;
+        pdfData.commune          = citizen.commune || pdfData.commune;
+        pdfData.nom              = pdfData.fullName;
+        pdfData.projet           = isVoirie 
+          ? "AUTORISATION DE VOIRIE" 
+          : (requestSubject || "CERTIFICAT DE RESIDENCE");
       }
     }
 
