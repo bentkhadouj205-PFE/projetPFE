@@ -45,7 +45,7 @@ router.post('/generate-and-send', async (req, res) => {
     let acte = null;
     let citizenForActe = null;
     if (!isResidenceCard && !isVoirie) {
-      // First find the citizen to get the correct UUID id
+      // Fetch the citizen record by NIN for supplemental data
       const { data: citizenData, error: citizenError } = await supabase
         .schema('register')
         .from('citizens')
@@ -61,36 +61,15 @@ router.post('/generate-and-send', async (req, res) => {
         citizenForActe = citizenData;
       }
 
-      const realCitizenId = citizenData?.id;
-      let acteData = null;
-      let acteError = null;
-
-      if (realCitizenId) {
-        const { data, error } = await supabase
-          .schema('register')
-          .from('actes_naissance')
-          .select('*')
-          .eq('citizen_id', realCitizenId)
-          .order('id', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        acteData = data;
-        acteError = error;
-      }
-
-      // Fallback: try by NIN
-      if (!acteData && citizenNin) {
-        const { data, error } = await supabase
-          .schema('register')
-          .from('actes_naissance')
-          .select('*')
-          .eq('nin', citizenNin)
-          .order('id', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        acteData = data;
-        if (!acteError) acteError = error;
-      }
+      // Query actes_naissance directly by NIN
+      const { data: acteData, error: acteError } = await supabase
+        .schema('register')
+        .from('actes_naissance')
+        .select('*')
+        .eq('nin', citizenNin)
+        .order('id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       console.log('[Supabase] Acte search result:', acteData ? 'FOUND' : 'NOT FOUND');
       if (acteError) {
