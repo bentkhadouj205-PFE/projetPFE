@@ -1,5 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 import { supabase } from '../supabaseClient.js';
 import sendActivationEmail from '../emails/sendActivation.js';
 import sendRejectionEmail from '../emails/sendRejection.js';
@@ -12,13 +13,12 @@ const router = express.Router();
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://uvmruxcjpgovdrwvykyn.supabase.co';
 const STORAGE_URL = `${SUPABASE_URL}/storage/v1/object/public`;
 
-// Build storage URL — handles both Supabase paths and local paths
 const toStorageUrl = (bucket, path) => {
   if (!path) return null;
-  if (path.startsWith('http')) return path;                    // already full URL
+  if (path.startsWith('http')) return path;
   if (path.startsWith('C:\\') || path.startsWith('D:\\') ||
     path.startsWith('/Users') || path.startsWith('/home')) {
-    return null;                                               // local path — can't serve
+    return null;
   }
   return `${STORAGE_URL}/${bucket}/${path}`;
 };
@@ -26,37 +26,22 @@ const toStorageUrl = (bucket, path) => {
 // ── GET all registration requests ─────────────────────────────────────────
 router.get('/', async (req, res) => {
   try {
-    console.log(' [VALIDATION] GET / hit. Fetching requests...');
     const { data: requests, error } = await supabase
       .from('demandes_inscription')
       .select('*')
       .order('date_demande', { ascending: false });
 
-    if (error) {
-      console.error(' [VALIDATION] Supabase fetch error:', error.message);
-      return res.status(500).json({ error: 'Database fetch failed: ' + error.message });
-    }
-
-    console.log(` [VALIDATION] Found ${requests?.length || 0} requests. Enriching...`);
+    if (error) return res.status(500).json({ error: 'Database fetch failed: ' + error.message });
 
     const enriched = await Promise.all(requests.map(async (r) => {
       try {
         const cleanNIN = String(r.nin || '').trim();
-        console.log(` [VALIDATION] Looking up citizen for NIN: "${cleanNIN}"`);
-
-        // Find matching citizen in register.citizens by NIN
         const { data: citizen, error: citizenError } = await supabase
           .schema('register')
           .from('citizens')
           .select('*')
           .eq('nin', cleanNIN)
           .maybeSingle();
-
-        if (citizenError) {
-          console.error(` [VALIDATION] Database Error for NIN ${cleanNIN}:`, citizenError.message);
-        } else {
-          console.log(` [VALIDATION] Registry result for ${cleanNIN}:`, citizen ? 'FOUND' : 'NOT FOUND');
-        }
 
         return {
           id: r.id,
@@ -81,38 +66,30 @@ router.get('/', async (req, res) => {
           } : null
         };
       } catch (innerErr) {
-        console.error(' [VALIDATION] Error enriching request for NIN ' + r.nin + ':', innerErr.message);
         return { ...r, reg: null };
       }
     }));
 
-    console.log(' [VALIDATION] Enrichment complete. Sending response.');
     res.json({ data: enriched });
   } catch (err) {
-    console.error(' Validation route error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── POST validate — sends activation email ────────────────────────────────
+// ── POST validate ─────────────────────────────────────────────────────────
 router.post('/:id/validate', async (req, res) => {
   const { id } = req.params;
   try {
-    console.log(`[VALIDATE] Processing ID: ${id}`);
     const { data: request, error } = await supabase
       .from('demandes_inscription')
       .select('*')
       .eq('id', id)
       .single();
 
-    if (error || !request) {
-      return res.status(404).json({ error: 'Request not found' });
-    }
+    if (error || !request) return res.status(404).json({ error: 'Request not found' });
 
     const token = crypto.randomBytes(32).toString('hex');
 
-    // Save token to DB FIRST
-    console.log(` [VALIDATE] Saving token to DB for ID: ${id}`);
     const { error: updateError } = await supabase
       .from('demandes_inscription')
       .update({
@@ -122,37 +99,24 @@ router.post('/:id/validate', async (req, res) => {
       })
       .eq('id', id);
 
-    if (updateError) {
-      console.error(' [VALIDATE] DB update error:', updateError.message);
-      return res.status(500).json({ error: updateError.message });
-    }
+    if (updateError) return res.status(500).json({ error: updateError.message });
 
-    // Then try to send email — don't fail if email fails
     try {
       await sendActivationEmail(request.email, request.prenom, token);
       res.json({ success: true, message: 'Validated and activation email sent' });
     } catch (emailErr) {
-      console.error(' [VALIDATE] Email error:', emailErr.message);
-      // DB already updated — just warn about email
-      res.json({
-        success: true,
-        warning: 'Validated but email failed: ' + emailErr.message
-      });
+      res.json({ success: true, warning: 'Validated but email failed: ' + emailErr.message });
     }
   } catch (err) {
-    console.error(' Validate error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── POST reject — sends rejection email ───────────────────────────────────
+// ── POST reject ───────────────────────────────────────────────────────────
 router.post('/:id/reject', async (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
-  const rejectionReason = (reason && reason.trim())
-    ? reason.trim()
-    : 'Your request has been rejected.';
-
+  const rejectionReason = (reason && reason.trim()) ? reason.trim() : 'Your request has been rejected.';
 
   try {
     const { data: request, error } = await supabase
@@ -161,11 +125,8 @@ router.post('/:id/reject', async (req, res) => {
       .eq('id', id)
       .single();
 
-    if (error || !request) {
-      return res.status(404).json({ error: 'Request not found' });
-    }
+    if (error || !request) return res.status(404).json({ error: 'Request not found' });
 
-    // Update status + save reason
     const { error: updateError } = await supabase
       .from('demandes_inscription')
       .update({
@@ -175,29 +136,20 @@ router.post('/:id/reject', async (req, res) => {
       })
       .eq('id', id);
 
-    if (updateError) {
-      console.error(' Update error:', updateError.message);
-      return res.status(500).json({ error: updateError.message });
-    }
+    if (updateError) return res.status(500).json({ error: updateError.message });
 
-    // Send rejection email
     await sendRejectionEmail(request.email, request.prenom, rejectionReason);
-
     res.json({ success: true, message: 'Rejection email sent' });
   } catch (err) {
-    console.error('Reject error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── GET verify-token — called by frontend/mobile after clicking link ──────
+// ── GET verify-token ──────────────────────────────────────────────────────
 router.get('/verify-token', async (req, res) => {
   const { token } = req.query;
-  console.log(' [VERIFY-TOKEN] Received token:', token);
 
-  if (!token) {
-    return res.status(400).json({ valid: false, error: 'No token provided' });
-  }
+  if (!token) return res.status(400).json({ valid: false, error: 'No token provided' });
 
   try {
     const { data, error } = await supabase
@@ -206,31 +158,25 @@ router.get('/verify-token', async (req, res) => {
       .eq('activation_token', token)
       .maybeSingle();
 
-    console.log('[VERIFY-TOKEN] DB result:', data ? { ...data, activation_token: '***' } : 'No record found');
-    if (error) console.log(' [VERIFY-TOKEN] DB error:', error);
-
     if (error || !data) {
-      console.log('[VERIFY-TOKEN] Token not found or invalid');
       return res.status(404).json({ valid: false, error: 'Lien invalide ou expiré' });
     }
 
     if (data.status !== 'termine') {
-      console.log(` [VERIFY-TOKEN] Status mismatch. Found: ${data.status}, Expected: termine`);
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou demande non validée' });
     }
 
-    // Update status to active and clear token
+    // ✅ FIX: use 'activate' instead of 'active' (which is not in the enum)
     const { error: activateErr } = await supabase
       .from('demandes_inscription')
       .update({
-        status: 'active',
+        status: 'activate',   // ✅ was 'active' — not in enum
         activation_token: null
       })
       .eq('id', data.id);
 
     if (activateErr) throw activateErr;
 
-    console.log(` [VERIFY-TOKEN] Success for: ${data.email}`);
     res.json({
       valid: true,
       email: data.email,
@@ -238,28 +184,31 @@ router.get('/verify-token', async (req, res) => {
       nom: data.nom,
     });
   } catch (err) {
-    console.error(' Verify token error:', err.message);
     res.status(500).json({ valid: false, error: err.message });
   }
 });
 
-// ── GET activate (Alternative GET link support) ──────────────────────────
+// ── GET activate redirect ─────────────────────────────────────────────────
 router.get('/activate/:token', async (req, res) => {
   const { token } = req.params;
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
   res.redirect(`${frontendUrl}?token=${token}`);
 });
 
-// ─── POST /activate — Called by VerificationSuccess.tsx ────────────────────
+// ── POST /activate ────────────────────────────────────────────────────────
 router.post('/activate', async (req, res) => {
-  const { token } = req.body;
+  const { token, password } = req.body;  // ✅ FIX: receive password
 
   if (!token) {
     return res.status(400).json({ valid: false, error: 'No token provided' });
   }
 
+  // ✅ FIX: require password
+  if (!password) {
+    return res.status(400).json({ valid: false, error: 'Mot de passe requis' });
+  }
+
   try {
-    // 1. Find the request using the token
     const { data, error } = await supabase
       .from('demandes_inscription')
       .select('*')
@@ -270,10 +219,13 @@ router.post('/activate', async (req, res) => {
       return res.status(404).json({ valid: false, error: 'Lien invalide ou expiré' });
     }
 
-    // 2. Make sure the agent has validated this request
-    if (data.status !== 'termine' && data.status !== 'active') {
+    if (data.status !== 'termine' && data.status !== 'activate') {
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou non validée' });
     }
+
+    // ✅ FIX: hash the password
+    const passwordHash = await bcrypt.hash(password, 10);
+
     const { data: existing } = await supabase
       .from('citizens')
       .select('id')
@@ -289,13 +241,21 @@ router.post('/activate', async (req, res) => {
           last_name: data.nom,
           nin: data.nin,
           adresse: data.adresse,
-          password_hash: data.password_hash,
+          password_hash: passwordHash,  // ✅ FIX: save hashed password
         }]);
 
       if (insertError) {
-        console.error(' Insert citizens error:', insertError);
+        console.error('Insert citizens error:', insertError);
         throw insertError;
       }
+    } else {
+      // ✅ FIX: if citizen already exists, update their password
+      const { error: updatePwErr } = await supabase
+        .from('citizens')
+        .update({ password_hash: passwordHash })
+        .eq('nin', data.nin);
+
+      if (updatePwErr) throw updatePwErr;
     }
 
     const { error: updateError } = await supabase
@@ -306,12 +266,9 @@ router.post('/activate', async (req, res) => {
       })
       .eq('id', data.id);
 
-    if (updateError) {
-      console.error(' Update status error:', updateError);
-      throw updateError;
-    }
+    if (updateError) throw updateError;
 
-    console.log(' Citizen activated:', data.email);
+    console.log('Citizen activated:', data.email);
     res.json({ valid: true, email: data.email, name: data.prenom });
 
   } catch (err) {
@@ -319,6 +276,5 @@ router.post('/activate', async (req, res) => {
     res.status(500).json({ valid: false, error: err.message });
   }
 });
-
 
 export default router;

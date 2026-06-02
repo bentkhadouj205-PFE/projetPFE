@@ -70,7 +70,7 @@ export const VerificationSuccess: React.FC<{ onLogin: () => void }> = ({ onLogin
       const res = await fetch(`${API_BASE_URL}/validations/activate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password }),   // ✅ send both token AND password
+        body: JSON.stringify({ token, password }),   //  send both token AND password
       });
 
       const data = await res.json();
