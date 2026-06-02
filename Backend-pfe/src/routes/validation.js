@@ -271,7 +271,7 @@ router.post('/activate', async (req, res) => {
     }
 
     // 2. Make sure the agent has validated this request
-    if (data.status !== 'termine' && data.status !== 'active') {
+    if (data.status !== 'termine' && data.status !== 'activate') {
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou non validée' });
     }
     const { data: existing } = await supabase
@@ -283,14 +283,16 @@ router.post('/activate', async (req, res) => {
     if (!existing) {
       const { error: insertError } = await supabase
         .from('citizens')
-        .insert([{
-          email: data.email,
-          first_name: data.prenom,
-          last_name: data.nom,
-          nin: data.nin,
-          adresse: data.adresse,
-          password_hash: data.password_hash,
-        }]);
+        .insert([
+          {
+            email: data.email,
+            first_name: data.prenom,
+            last_name: data.nom,
+            nin: data.nin,
+            adresse: data.adresse,
+            password_hash: data.password_hash,
+          },
+        ]);
 
       if (insertError) {
         console.error(' Insert citizens error:', insertError);
