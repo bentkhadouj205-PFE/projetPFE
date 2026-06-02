@@ -632,6 +632,8 @@ export function EmployeeDashboard({
           id: voirieTask.id,
           photo_cni_path: (voirieTask as any).photo_cni_path,
           photo_domicile_path: (voirieTask as any).photo_domicile_path,
+          photo_contrat_path: (voirieTask as any).photo_contrat_path,
+          photo_lettre_path: (voirieTask as any).photo_lettre_path,
         } as VoirieCitizenShape : null}
         language={language}
         onCancel={() => setVoirieTask(null)}

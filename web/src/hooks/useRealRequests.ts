@@ -101,6 +101,10 @@ export function useRealRequests(employeeId: string) {
             assignedTo: req.user_id,
             documentStatus: 'pending',
             dateTraitement: req.date_traitement || null,
+            photo_cni_path: req.photo_cni_path || null,
+            photo_domicile_path: req.photo_domicile_path || null,
+            photo_contrat_path: req.photo_contrat_path || null,
+            photo_lettre_path: req.photo_lettre_path || null,
           };
         }) || [];
 
