@@ -284,7 +284,9 @@ router.post('/activate', async (req, res) => {
           last_name: data.nom,
           nin: data.nin,
           adresse: data.adresse,
+          password_hash: data.password_hash,
         }]);
+
 
       if (insertError) {
         console.error(' Insert citizens error:', insertError);
