@@ -271,7 +271,7 @@ router.post('/activate', async (req, res) => {
     }
 
     // 2. Make sure the agent has validated this request
-    if (data.status !== 'termine') {
+    if (data.status !== 'termine' && data.status !== 'active') {
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou non validée' });
     }
     const { data: existing } = await supabase
