@@ -115,22 +115,22 @@ export const VerificationSuccess: React.FC<{ onLogin: () => void }> = ({ onLogin
 
   // ── Render: set-password form ─────────────────────────────────────────────
   if (stage === 'set_password') return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 dark:from-slate-900 dark:to-slate-950">
-      <div className="bg-white dark:bg-slate-900 p-10 rounded-2xl shadow-lg max-w-md w-full mx-4 animate-in zoom-in duration-300">
-        <Lock className="w-14 h-14 text-green-500 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white text-center mb-1">
+    <div className="min-h-screen flex items-center justify-center bg-[#e8f5e9] dark:bg-slate-950">
+      <div className="bg-white dark:bg-slate-900 p-10 rounded-[24px] shadow-sm max-w-md w-full mx-4">
+        <div className="flex justify-center mb-6">
+          <Lock className="w-16 h-16 text-[#10b981] stroke-[2.5]" />
+        </div>
+        <h1 className="text-[26px] font-bold text-[#1e293b] dark:text-white text-center mb-2">
           Définissez votre mot de passe
         </h1>
-        {userName && (
-          <p className="text-center text-gray-500 dark:text-slate-400 mb-6 text-sm">
-            Bonjour <strong>{userName}</strong>, choisissez un mot de passe pour activer votre compte.
-          </p>
-        )}
+        <p className="text-center text-[#64748b] dark:text-slate-400 mb-8 text-[15px]">
+          Bonjour <strong>{userName}</strong>, choisissez un mot de passe pour activer<br/>votre compte.
+        </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+            <label className="block text-[15px] font-medium text-[#1e293b] dark:text-slate-300 mb-1.5">
               Mot de passe
             </label>
             <div className="relative">
@@ -142,23 +142,23 @@ export const VerificationSuccess: React.FC<{ onLogin: () => void }> = ({ onLogin
                 required
                 minLength={6}
                 placeholder="Minimum 6 caractères"
-                className="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 pr-10
+                className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 pr-10
                            bg-white dark:bg-slate-800 text-gray-900 dark:text-white
-                           focus:outline-none focus:ring-2 focus:ring-green-500"
+                           focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 placeholder-gray-400"
               />
               <button
                 type="button"
                 onClick={() => setShowPw((v) => !v)}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600"
               >
-                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
           </div>
 
           {/* Confirm Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+            <label className="block text-[15px] font-medium text-[#1e293b] dark:text-slate-300 mb-1.5">
               Confirmer le mot de passe
             </label>
             <div className="relative">
@@ -169,72 +169,70 @@ export const VerificationSuccess: React.FC<{ onLogin: () => void }> = ({ onLogin
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 placeholder="Répétez le mot de passe"
-                className="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 pr-10
+                className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 pr-10
                            bg-white dark:bg-slate-800 text-gray-900 dark:text-white
-                           focus:outline-none focus:ring-2 focus:ring-green-500"
+                           focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 placeholder-gray-400"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirm((v) => !v)}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600"
               >
-                {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
           </div>
 
           {/* Inline form error */}
           {formError && (
-            <p className="text-red-500 text-sm">{formError}</p>
+            <p className="text-red-500 text-sm text-center">{formError}</p>
           )}
 
-          <button
-            type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold
-                       py-2 px-4 rounded-lg transition-colors duration-200"
-          >
-            Activer mon compte
-          </button>
+          <div className="pt-2">
+            <button
+              type="submit"
+              className="w-full bg-[#16a34a] hover:bg-green-700 text-white font-semibold
+                         py-3.5 px-4 rounded-xl transition-colors duration-200 text-[16px]"
+            >
+              Activer mon compte
+            </button>
+          </div>
         </form>
       </div>
     </div>
   );
 
   // ── Render: success ────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (stage === 'success') {
-      const timer = setTimeout(() => {
-        onLogin();
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [stage, onLogin]);
-
   if (stage === 'success') return (
-    <div className="min-h-screen flex items-center justify-center bg-[#EAF8F1] dark:bg-slate-950">
+    <div className="min-h-screen flex items-center justify-center bg-[#e8f5e9] dark:bg-slate-950">
       <div className="text-center bg-white dark:bg-slate-900 px-8 py-12 rounded-[24px] shadow-sm max-w-sm w-full mx-4">
         <div className="flex justify-center mb-6">
-          <div className="rounded-full border-4 border-green-500 p-2">
-            <CheckCircle className="w-16 h-16 text-green-500" strokeWidth={3} />
+          <div className="rounded-full border-4 border-[#10b981] p-2">
+            <CheckCircle className="w-16 h-16 text-[#10b981]" strokeWidth={2.5} />
           </div>
         </div>
-        <h1 className="text-[28px] font-bold text-[#1a2332] dark:text-white mb-6 leading-tight">
+        <h1 className="text-[28px] font-bold text-[#1e293b] dark:text-white mb-6 leading-tight">
           Bienvenue sur<br />Baladiya!
         </h1>
         {userName && (
-          <p className="text-lg text-[#4a5568] dark:text-slate-300 mb-6">
+          <p className="text-[17px] text-[#64748b] dark:text-slate-300 mb-6">
             Bonjour <strong>{userName}</strong>,
           </p>
         )}
-        <p className="text-[#64748b] dark:text-slate-400 text-[15px] leading-relaxed">
+        <p className="text-[#64748b] dark:text-slate-400 text-[15px] leading-relaxed mb-8">
           Vous êtes maintenant membre de<br />
           <strong>Baladiya Digital</strong>. Votre compte est<br />
           activé et vous pouvez maintenant vous<br />
           connecter.
         </p>
+        <button
+          onClick={onLogin}
+          className="w-full bg-[#16a34a] hover:bg-green-700 text-white font-semibold
+                     py-3.5 px-4 rounded-xl transition-colors duration-200 text-[16px]"
+        >
+          Se connecter
+        </button>
       </div>
     </div>
   );
-
-  return null;
 };
