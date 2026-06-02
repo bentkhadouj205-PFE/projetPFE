@@ -126,7 +126,7 @@ export const login = async (req, res) => {
     const { rows } = await pool.query(
       `SELECT id, nom, prenom, nin, email, adresse, 
               password_hash, role
-       FROM citizens
+       FROM users
        WHERE email = $1`,
       [email]
     );
