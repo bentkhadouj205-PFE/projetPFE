@@ -201,29 +201,40 @@ export const VerificationSuccess: React.FC<{ onLogin: () => void }> = ({ onLogin
   );
 
   // ── Render: success ────────────────────────────────────────────────────────
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 dark:from-slate-900 dark:to-slate-950">
-      <div className="text-center bg-white dark:bg-slate-900 p-10 rounded-2xl shadow-lg max-w-md w-full mx-4 animate-in zoom-in duration-300">
-        <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-3">
-          Bienvenue sur Baladiya!
+  useEffect(() => {
+    if (stage === 'success') {
+      const timer = setTimeout(() => {
+        onLogin();
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [stage, onLogin]);
+
+  if (stage === 'success') return (
+    <div className="min-h-screen flex items-center justify-center bg-[#EAF8F1] dark:bg-slate-950">
+      <div className="text-center bg-white dark:bg-slate-900 px-8 py-12 rounded-[24px] shadow-sm max-w-sm w-full mx-4">
+        <div className="flex justify-center mb-6">
+          <div className="rounded-full border-4 border-green-500 p-2">
+            <CheckCircle className="w-16 h-16 text-green-500" strokeWidth={3} />
+          </div>
+        </div>
+        <h1 className="text-[28px] font-bold text-[#1a2332] dark:text-white mb-6 leading-tight">
+          Bienvenue sur<br />Baladiya!
         </h1>
         {userName && (
-          <p className="text-lg text-gray-600 dark:text-slate-300 mb-4">
+          <p className="text-lg text-[#4a5568] dark:text-slate-300 mb-6">
             Bonjour <strong>{userName}</strong>,
           </p>
         )}
-        <p className="text-gray-600 dark:text-slate-400 mb-6 text-sm">
-          Votre compte est activé. Vous pouvez maintenant vous connecter avec votre email et mot de passe.
+        <p className="text-[#64748b] dark:text-slate-400 text-[15px] leading-relaxed">
+          Vous êtes maintenant membre de<br />
+          <strong>Baladiya Digital</strong>. Votre compte est<br />
+          activé et vous pouvez maintenant vous<br />
+          connecter.
         </p>
-        <button
-          onClick={onLogin}
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold
-                     py-2 px-4 rounded-lg transition-colors duration-200"
-        >
-          Se connecter
-        </button>
       </div>
     </div>
   );
+
+  return null;
 };

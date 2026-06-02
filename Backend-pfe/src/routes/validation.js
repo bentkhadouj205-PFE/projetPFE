@@ -245,14 +245,14 @@ router.get('/activate/:token', async (req, res) => {
 
 // ─── POST /activate — Called by VerificationSuccess.tsx ────────────────────
 router.post('/activate', async (req, res) => {
-  // ✅ Receive both the activation token AND the citizen's chosen password
+  //Receive both the activation token AND the citizen's chosen password
   const { token, password } = req.body;
 
   if (!token) {
     return res.status(400).json({ valid: false, error: 'No token provided' });
   }
 
-  // ✅ Require a password before doing anything else
+  //  Require a password before doing anything else
   if (!password || password.trim().length < 6) {
     return res.status(400).json({ valid: false, error: 'Mot de passe requis (minimum 6 caractères)' });
   }
@@ -274,7 +274,7 @@ router.post('/activate', async (req, res) => {
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou non validée' });
     }
 
-    // ✅ Hash the password BEFORE inserting into citizens
+    // Hash the password BEFORE inserting into citizens
     const passwordHash = await bcrypt.hash(password.trim(), 10);
 
     const { data: existing } = await supabase
@@ -284,7 +284,7 @@ router.post('/activate', async (req, res) => {
       .maybeSingle();
 
     if (!existing) {
-      // ✅ Insert citizen WITH password_hash so login works
+      // Insert citizen WITH password_hash so login works
       const { error: insertError } = await supabase
         .from('citizens')
         .insert([{
@@ -293,7 +293,7 @@ router.post('/activate', async (req, res) => {
           last_name: data.nom,
           nin: data.nin,
           adresse: data.adresse,
-          password_hash: passwordHash,   // ✅ FIXED: password saved here
+          password_hash: passwordHash,   // FIXED: password saved here
         }]);
 
       if (insertError) {
