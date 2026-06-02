@@ -220,16 +220,8 @@ router.get('/verify-token', async (req, res) => {
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou demande non validée' });
     }
 
-    // Update status to active and clear token
-    const { error: activateErr } = await supabase
-      .from('demandes_inscription')
-      .update({
-        status: 'active',
-        activation_token: null
-      })
-      .eq('id', data.id);
-
-    if (activateErr) throw activateErr;
+    // Do not update the database here. We just want to check if the token is valid
+    // so we can show the Set Password form.
 
     console.log(` [VERIFY-TOKEN] Success for: ${data.email}`);
     res.json({
@@ -324,7 +316,7 @@ router.post('/activate', async (req, res) => {
     const { error: updateError } = await supabase
       .from('demandes_inscription')
       .update({
-        status: 'activated',
+        // keep status as 'termine', just clear the token
         activation_token: null,
       })
       .eq('id', data.id);
