@@ -31,6 +31,8 @@ export interface VoirieCitizenShape {
   writtenRequestUrl?: string;
   photo_cni_path?: string;
   photo_domicile_path?: string;
+  photo_contrat_path?: string;
+  photo_lettre_path?: string;
 }
 
 interface AutorisationVoirieTraitmentDialogProps {
@@ -292,8 +294,8 @@ export function AutorisationVoirieTraitmentDialog({
   );
 
   // Resolve the two document URLs from whichever field is available
-  const domicileUrl = demandes?.photo_domicile_path || demandes?.factureFileUrl || demandes?.cniFileUrl;
-  const writtenRequestUrl = demandes?.writtenRequestUrl || demandes?.photo_cni_path;
+  const domicileUrl = demandes?.photo_domicile_path || demandes?.factureFileUrl || demandes?.cniFileUrl || demandes?.photo_contrat_path;
+  const writtenRequestUrl = demandes?.writtenRequestUrl || demandes?.photo_cni_path || demandes?.photo_lettre_path;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
