@@ -63,19 +63,12 @@ export const VerificationSuccess: React.FC<{ onLogin: () => void }> = ({ onLogin
             Bonjour <strong>{userName}</strong>,
           </p>
         )}
-        <p className="text-[#64748b] dark:text-slate-400 text-[15px] leading-relaxed mb-8">
+        <p className="text-[#64748b] dark:text-slate-400 text-[15px] leading-relaxed">
           Vous êtes maintenant membre de<br />
           <strong>Baladiya Digital</strong>. Votre compte est<br />
           activé et vous pouvez maintenant vous<br />
           connecter.
         </p>
-        <button
-          onClick={onLogin}
-          className="w-full bg-[#16a34a] hover:bg-green-700 text-white font-semibold
-                     py-3.5 px-4 rounded-xl transition-colors duration-200 text-[16px]"
-        >
-          Se connecter
-        </button>
       </div>
     </div>
   );
