@@ -1,6 +1,5 @@
 import express from 'express';
 import crypto from 'crypto';
-import bcrypt from 'bcrypt';
 import { supabase } from '../supabaseClient.js';
 import sendActivationEmail from '../emails/sendActivation.js';
 import sendRejectionEmail from '../emails/sendRejection.js';
@@ -220,8 +219,16 @@ router.get('/verify-token', async (req, res) => {
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou demande non validée' });
     }
 
-    // Do not update the database here. We just want to check if the token is valid
-    // so we can show the Set Password form.
+    // Update status to active and clear token
+    const { error: activateErr } = await supabase
+      .from('demandes_inscription')
+      .update({
+        status: 'active',
+        activation_token: null
+      })
+      .eq('id', data.id);
+
+    if (activateErr) throw activateErr;
 
     console.log(` [VERIFY-TOKEN] Success for: ${data.email}`);
     res.json({
@@ -245,12 +252,12 @@ router.get('/activate/:token', async (req, res) => {
 
 // ─── POST /activate — Called by VerificationSuccess.tsx ────────────────────
 router.post('/activate', async (req, res) => {
-  //Receive both the activation token AND the citizen's chosen password
-  const { token, password } = req.body;
+  const { token } = req.body;
 
   if (!token) {
     return res.status(400).json({ valid: false, error: 'No token provided' });
   }
+
   try {
     // 1. Find the request using the token
     const { data, error } = await supabase
@@ -267,7 +274,6 @@ router.post('/activate', async (req, res) => {
     if (data.status !== 'termine') {
       return res.status(400).json({ valid: false, error: 'Compte déjà activé ou non validée' });
     }
-
     const { data: existing } = await supabase
       .from('citizens')
       .select('id')
@@ -275,7 +281,6 @@ router.post('/activate', async (req, res) => {
       .maybeSingle();
 
     if (!existing) {
-      // Insert citizen (no password_hash needed, login checks 'users' table)
       const { error: insertError } = await supabase
         .from('citizens')
         .insert([{
@@ -287,7 +292,6 @@ router.post('/activate', async (req, res) => {
           password_hash: data.password_hash,
         }]);
 
-
       if (insertError) {
         console.error(' Insert citizens error:', insertError);
         throw insertError;
@@ -297,7 +301,7 @@ router.post('/activate', async (req, res) => {
     const { error: updateError } = await supabase
       .from('demandes_inscription')
       .update({
-        // keep status as 'termine', just clear the token
+        status: 'activated',
         activation_token: null,
       })
       .eq('id', data.id);
