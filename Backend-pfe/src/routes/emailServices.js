@@ -7,41 +7,16 @@ import { promisify } from 'util';
 // Force DNS resolution to prefer IPv4 to completely prevent IPv6 ENETUNREACH errors
 dns.setDefaultResultOrder('ipv4first');
 
-const resolve4 = promisify(dns.resolve4);
-
-let transporter = null;
-
-try {
-  const addresses = await resolve4('smtp.gmail.com');
-  const ipv4 = addresses[0];
-  transporter = nodemailer.createTransport({
-    host: ipv4,
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER || 'baladiyadigital27@gmail.com',
-      pass: process.env.SMTP_PASS || 'ctrbiowopulkfocs',
-    },
-    tls: {
-      servername: 'smtp.gmail.com' // required since we are connecting via IP
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-  });
-} catch (err) {
-  console.warn('Failed to resolve smtp.gmail.com to IPv4, falling back to hostname', err.message);
-  transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER || 'baladiyadigital27@gmail.com',
-      pass: process.env.SMTP_PASS || 'ctrbiowopulkfocs',
-    },
-    family: 4,
-  });
-}
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.SMTP_USER || 'baladiyadigital27@gmail.com',
+    pass: process.env.SMTP_PASS || 'ctrbiowopulkfocs',
+  },
+  family: 4, // Force IPv4
+});
 
 export async function initializeEmail() {
   console.log('Email Service ready (Gmail SMTP IPv4 + Brevo Fallback)');
