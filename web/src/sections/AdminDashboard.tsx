@@ -54,7 +54,7 @@ interface RegistrationRequest {
 const mapStatus = (s: string): RegistrationRequest['status'] => {
   const status = String(s || '').toLowerCase().trim();
   if (['en_attente', 'pending'].includes(status)) return 'en_attente';
-  if (['validee', 'valide', 'completed', 'validated', 'termine', 'terminee', 'approved', 'verified'].includes(status)) return 'termine';
+  if (['validee', 'valide', 'completed', 'validated', 'termine', 'terminee', 'approved', 'verified', 'activated', 'activate'].includes(status)) return 'termine';
   if (['rejetee', 'rejected', 'refuse', 'refused', 'rejete', 'denied'].includes(status)) return 'refuse';
   return 'en_attente';
 };
@@ -222,10 +222,10 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
       const empService = e.service?.toLowerCase().trim();
       const serviceName = s.name.toLowerCase();
       const serviceNameFr = s.nameFr.toLowerCase();
-      
+
       // Direct name matches
       if (empService === serviceName || empService === serviceNameFr) return true;
-      
+
       // Keywords / Alternative names matches
       if (s.id === 'civil') {
         return ['civil status', 'état civil', 'etat civil', 'civil_status'].includes(empService ?? '');
@@ -725,7 +725,7 @@ export function MunicipalAgentDashboard({ user, onLogout, employees, tasks, isDa
                         {language === 'fr' ? 'Changer le mot de passe' : 'Change Password'}
                       </DialogTitle>
                       <DialogDescription className="dark:text-slate-400">
-                        {language === 'fr' 
+                        {language === 'fr'
                           ? `Définir un nouveau mot de passe pour ${changePasswordEmployee ? `${getEmpName(changePasswordEmployee).first} ${getEmpName(changePasswordEmployee).last}` : ''}`
                           : `Set a new password for ${changePasswordEmployee ? `${getEmpName(changePasswordEmployee).first} ${getEmpName(changePasswordEmployee).last}` : ''}`}
                       </DialogDescription>
